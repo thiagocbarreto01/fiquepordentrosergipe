@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 /* FIQUE POR DENTRO SERGIPE — Design System
-   Sóbrio, jornalístico, inspirado em CNN/G1.
+   Premium institucional: azul-marinho + dourado.
+   Vermelho reservado para urgência / plantão / denúncia.
    Todas as cores em HSL.
 */
 
@@ -13,71 +14,74 @@
   :root {
     /* Surfaces */
     --background: 0 0% 100%;
-    --foreground: 220 26% 14%;
+    --foreground: 221 75% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 26% 14%;
+    --card-foreground: 221 75% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 26% 14%;
+    --popover-foreground: 221 75% 12%;
 
-    /* Brand */
-    --primary: 0 72% 38%;            /* Vermelho editorial profundo (A8/G1) */
+    /* Brand — azul institucional */
+    --primary: 214 72% 42%;            /* #1E5BB8 — azul destaque (botões, links, CTAs) */
     --primary-foreground: 0 0% 100%;
 
-    --primary-glow: 358 78% 52%;
-    --brand-navy: 0 0% 8%;            /* Quase preto com calor */
-    --brand-navy-deep: 0 0% 5%;
+    --primary-glow: 217 74% 28%;       /* #123A7A — azul institucional */
+    --brand-navy: 221 75% 17%;         /* #0B1F4D — azul-marinho */
+    --brand-navy-deep: 221 75% 11%;    /* navio mais profundo p/ contraste */
 
-    /* Urgência / Breaking */
-    --urgent: 358 82% 50%;           /* Vermelho notícia mais vivo */
+    /* Urgência / Breaking — vermelho APENAS aqui */
+    --urgent: 358 78% 48%;
     --urgent-foreground: 0 0% 100%;
 
-    /* Alerta / Atenção */
-    --alert: 45 95% 52%;             /* Amarelo destaque */
-    --alert-foreground: 0 0% 8%;
+    /* Alerta / Atenção — dourado */
+    --alert: 44 100% 48%;              /* #F5B400 */
+    --alert-foreground: 221 75% 12%;
 
-    --secondary: 215 20% 96%;
-    --secondary-foreground: 220 26% 14%;
+    --secondary: 214 30% 96%;
+    --secondary-foreground: 221 75% 12%;
 
-    --muted: 215 20% 95%;
-    --muted-foreground: 215 16% 42%;
+    --muted: 214 25% 95%;
+    --muted-foreground: 217 15% 40%;
 
-    --accent: 215 20% 94%;
-    --accent-foreground: 220 26% 14%;
+    --accent: 214 30% 94%;
+    --accent-foreground: 221 75% 12%;
 
-    --destructive: 358 75% 48%;
+    --destructive: 358 78% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 220 70% 18%;
+    --border: 214 25% 88%;
+    --input: 214 25% 88%;
+    --ring: 214 72% 42%;
 
-    --radius: 0.25rem;
+    --radius: 0.375rem;
 
     /* Editorial helpers */
-    --headline: 220 35% 10%;
-    --byline: 215 16% 42%;
-    --rule: 215 20% 85%;
+    --headline: 221 75% 10%;
+    --byline: 217 15% 40%;
+    --rule: 214 25% 85%;
 
     /* Gradients */
-    --gradient-overlay: linear-gradient(180deg, hsl(220 70% 8% / 0) 0%, hsl(220 70% 8% / 0.85) 100%);
-    --gradient-urgent: linear-gradient(90deg, hsl(358 75% 42%), hsl(358 80% 55%));
+    --gradient-overlay: linear-gradient(180deg, hsl(221 75% 8% / 0) 0%, hsl(221 75% 8% / 0.88) 100%);
+    --gradient-urgent: linear-gradient(90deg, hsl(358 78% 42%), hsl(358 82% 55%));
     --gradient-navy: linear-gradient(180deg, hsl(var(--brand-navy)), hsl(var(--brand-navy-deep)));
+    --gradient-premium: linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--primary-glow)) 100%);
 
-    /* Shadows */
-    --shadow-card: 0 1px 2px hsl(220 30% 10% / 0.06), 0 4px 12px hsl(220 30% 10% / 0.04);
-    --shadow-hero: 0 20px 60px -20px hsl(220 70% 10% / 0.45);
+    /* Shadows — refinadas e suaves */
+    --shadow-card: 0 1px 2px hsl(221 50% 10% / 0.04), 0 2px 8px hsl(221 50% 10% / 0.05);
+    --shadow-elevated: 0 4px 12px hsl(221 50% 10% / 0.06), 0 12px 32px hsl(221 50% 10% / 0.08);
+    --shadow-hero: 0 24px 64px -24px hsl(221 75% 10% / 0.45);
+    --shadow-gold: 0 4px 14px hsl(44 100% 48% / 0.25);
 
-    /* Sidebar (admin) */
-    --sidebar-background: 220 70% 14%;
+    /* Sidebar (admin) — mesmo azul institucional */
+    --sidebar-background: 221 75% 12%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 358 75% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 60% 22%;
+    --sidebar-primary: 44 100% 48%;
+    --sidebar-primary-foreground: 221 75% 12%;
+    --sidebar-accent: 217 50% 22%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 220 50% 22%;
-    --sidebar-ring: 215 80% 50%;
+    --sidebar-border: 217 40% 22%;
+    --sidebar-ring: 214 72% 50%;
   }
 
   .dark {
@@ -129,10 +133,10 @@
     @apply inline-block text-[11px] font-bold uppercase tracking-widest text-primary;
   }
   .urgent-badge {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[hsl(var(--urgent-foreground))] bg-[hsl(var(--urgent))];
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[hsl(var(--urgent-foreground))] bg-[hsl(var(--urgent))] rounded-sm;
   }
   .alert-badge {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[hsl(var(--alert-foreground))] bg-[hsl(var(--alert))];
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[hsl(var(--alert-foreground))] bg-[hsl(var(--alert))] rounded-sm;
   }
   .section-title {
     @apply flex items-center gap-3 mb-4 pb-2 border-b-2 border-primary;
@@ -141,10 +145,16 @@
     @apply text-xl font-black uppercase tracking-tight text-primary;
   }
   .news-link {
-    @apply hover:text-[hsl(var(--urgent))] transition-colors;
+    @apply hover:text-primary transition-colors duration-200;
   }
   .ad-slot {
-    @apply flex items-center justify-center bg-muted text-[10px] font-bold uppercase tracking-widest text-muted-foreground border border-dashed border-border;
+    @apply flex items-center justify-center bg-muted text-[10px] font-bold uppercase tracking-widest text-muted-foreground border border-dashed border-border rounded-sm;
+  }
+  .premium-card {
+    @apply bg-card border border-border rounded-md transition-all duration-200 hover:shadow-[var(--shadow-elevated)] hover:-translate-y-0.5;
+  }
+  .gold-accent {
+    @apply text-[hsl(var(--alert))];
   }
 }
 
