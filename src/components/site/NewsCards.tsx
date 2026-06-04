@@ -59,7 +59,7 @@ export function PostBadges({ post, size = "md" }: { post: Post; size?: "sm" | "m
         </span>
       )}
       {isExclusive && (
-        <span className={`${base} font-black uppercase tracking-widest bg-amber-400 text-black rounded-sm`}>
+        <span className={`${base} font-black uppercase tracking-widest bg-alert text-alert-foreground rounded-sm`}>
           EXCLUSIVO
         </span>
       )}
