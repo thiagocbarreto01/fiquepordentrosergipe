@@ -79,7 +79,7 @@ export default function Index() {
 
 
   useEffect(() => {
-    document.title = "TV Barretão — Notícias, Política, Denúncias e Brasil";
+    document.title = "Fique Por Dentro Sergipe — Notícias, Política, Denúncias e Brasil";
   }, []);
 
   // Log da escolha da manchete (recalculada a cada atualização do feed)
@@ -268,10 +268,10 @@ export default function Index() {
         </section>
       )}
 
-      {/* SEÇÃO 2 — TV BARRETÃO VÍDEOS */}
+      {/* SEÇÃO 2 — FIQUE POR DENTRO SERGIPE VÍDEOS */}
       {videos.length > 0 && (
         <section className="container-news mt-10 md:mt-16">
-          <SectionHeader title="TV Barretão Vídeos" colorClass="border-urgent" link="/categoria/videos" icon={Video} />
+          <SectionHeader title="Fique Por Dentro Sergipe Vídeos" colorClass="border-urgent" link="/categoria/videos" icon={Video} />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
             {videos.slice(0, 4).map((v) => <VideoCard key={v.id} post={v} />)}
           </div>

@@ -1,6 +1,6 @@
 import type { Post } from "./news";
 
-// Placeholder neutro oficial do TV Barretão (último recurso, quando não há imagem real nem default de categoria)
+// Placeholder neutro oficial do Fique Por Dentro Sergipe (último recurso, quando não há imagem real nem default de categoria)
 export const FALLBACK_IMAGE = "/news-placeholder.svg";
 
 // Padrões considerados "genéricos / seed / demo" — NUNCA usar como imagem real de notícia.
@@ -25,7 +25,7 @@ export type PostImageInput = Pick<Post, "cover_image_url" | "manual_image_url"> 
 
 /**
  * Escolhe a imagem do post com prioridade:
- *   manual_image_url (override editorial) > cover_image_url (própria notícia) > default da categoria > placeholder TV Barretão
+ *   manual_image_url (override editorial) > cover_image_url (própria notícia) > default da categoria > placeholder Fique Por Dentro Sergipe
  *
  * IMPORTANTE: nunca devolve imagem de outra notícia. Se a própria notícia não tiver
  * imagem válida, cai direto para o default da categoria ou para o placeholder neutro.
@@ -49,7 +49,7 @@ export function getPostImage(post: PostImageInput | null | undefined): string {
     return catDefault;
   }
 
-  // Último recurso: placeholder neutro do TV Barretão
+  // Último recurso: placeholder neutro do Fique Por Dentro Sergipe
   return FALLBACK_IMAGE;
 }
 

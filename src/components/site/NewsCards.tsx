@@ -65,7 +65,7 @@ export function PostBadges({ post, size = "md" }: { post: Post; size?: "sm" | "m
       )}
       {isTvBarretao && !post.is_urgent && (
         <span className={`${base} font-black uppercase tracking-widest bg-navy-deep text-white rounded-sm`}>
-          TV Barretão
+          Fique Por Dentro Sergipe
         </span>
       )}
     </div>
@@ -491,7 +491,7 @@ export function EmptyHero() {
   return (
     <div className="h-[320px] md:h-[420px] bg-secondary/5 border border-dashed border-border flex items-center justify-center rounded-md">
       <div className="text-center px-6">
-        <h1 className="font-display text-2xl font-black text-muted-foreground">Portal TV Barretão</h1>
+        <h1 className="font-display text-2xl font-black text-muted-foreground">Portal Fique Por Dentro Sergipe</h1>
         <p className="mt-2 text-muted-foreground/60 max-w-sm mx-auto text-sm">
           Aguardando a publicação das primeiras notícias para preencher este espaço.
         </p>

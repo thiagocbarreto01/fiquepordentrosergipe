@@ -1,25 +1,24 @@
 import { Link } from "react-router-dom";
 import { Search, Menu, X, Facebook, Instagram, Youtube, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
-import logo from "@/assets/logo-tv-barretao.png";
+import logo from "@/assets/logo-fique-por-dentro.png";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import WeatherTime from "./WeatherTime";
 
 const NAV = [
-  { label: "Últimas", to: "/ultimas" },
   { label: "Polícia", to: "/categoria/policia" },
   { label: "Política", to: "/categoria/politica" },
-  { label: "Esporte", to: "/categoria/esporte" },
   { label: "Sergipe", to: "/categoria/sergipe" },
   { label: "Aracaju", to: "/categoria/aracaju" },
-  { label: "Municípios", to: "/categoria/municipios" },
-  { label: "Denúncias", to: "/categoria/denuncias" },
+  { label: "Interior", to: "/categoria/interior" },
   { label: "Brasil", to: "/categoria/brasil" },
   { label: "Mundo", to: "/categoria/mundo" },
+  { label: "Economia", to: "/categoria/economia" },
+  { label: "Saúde", to: "/categoria/saude" },
+  { label: "Educação", to: "/categoria/educacao" },
+  { label: "Esportes", to: "/categoria/esportes" },
   { label: "Entretenimento", to: "/categoria/entretenimento" },
-  { label: "Vídeos", to: "/categoria/videos" },
-  { label: "Opinião", to: "/categoria/opiniao" },
 ];
 
 export default function SiteHeader() {
@@ -41,7 +40,7 @@ export default function SiteHeader() {
         <div className="container-news flex items-center justify-between h-8">
           <WeatherTime city="Aracaju" />
           <div className="flex items-center gap-3">
-            <a href="https://instagram.com/barretao__news" target="_blank" rel="noreferrer" className="hover:text-alert"><Instagram className="h-3.5 w-3.5" /></a>
+            <a href="https://instagram.com/" target="_blank" rel="noreferrer" className="hover:text-alert"><Instagram className="h-3.5 w-3.5" /></a>
             <a href="#" className="hover:text-alert"><Facebook className="h-3.5 w-3.5" /></a>
             <a href="#" className="hover:text-alert"><Youtube className="h-3.5 w-3.5" /></a>
             <span className="h-3 w-px bg-white/30 mx-1" />
@@ -66,8 +65,8 @@ export default function SiteHeader() {
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        <Link to="/" className="flex items-center" aria-label="TV Barretão - Início">
-          <img src={logo} alt="TV Barretão" className="h-8 md:h-12 w-auto" />
+        <Link to="/" className="flex items-center" aria-label="Fique Por Dentro Sergipe - Início">
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-8 md:h-12 w-auto" />
         </Link>
 
         <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center max-w-md ml-4">

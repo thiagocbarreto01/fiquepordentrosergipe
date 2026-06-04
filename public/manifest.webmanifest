@@ -1,14 +1,14 @@
 {
-  "name": "TV Barretão — Notícias",
-  "short_name": "TV Barretão",
-  "description": "Portal TV Barretão: notícias em tempo real de Sergipe, Aracaju, Brasil e mundo.",
+  "name": "Fique Por Dentro Sergipe — Notícias",
+  "short_name": "FPD Sergipe",
+  "description": "Portal Fique Por Dentro Sergipe: notícias em tempo real de Sergipe, Aracaju, Brasil e mundo.",
   "lang": "pt-BR",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a1130",
-  "theme_color": "#0a1130",
+  "background_color": "#b91c1c",
+  "theme_color": "#b91c1c",
   "icons": [
     {
       "src": "/icon-192.png",

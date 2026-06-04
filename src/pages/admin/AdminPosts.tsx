@@ -629,7 +629,7 @@ export default function AdminPosts() {
                       {!hasOwnImage && (
                         <span
                           className="absolute bottom-0 left-0 right-0 text-[8px] font-bold uppercase text-white bg-amber-600/90 text-center leading-tight py-0.5"
-                          title="Esta notícia não tem imagem própria. Está usando o default da categoria ou o placeholder do TV Barretão."
+                          title="Esta notícia não tem imagem própria. Está usando o default da categoria ou o placeholder do Fique Por Dentro Sergipe."
                         >
                           Sem imagem
                         </span>

@@ -99,7 +99,7 @@ export default function AdminDashboard() {
   }
 
   useEffect(() => {
-    document.title = "Painel — TV Barretão";
+    document.title = "Painel — Fique Por Dentro Sergipe";
     Promise.all([
       supabase.from("posts").select("*", { count: "exact", head: true }),
       supabase.from("denuncias").select("*", { count: "exact", head: true }).eq("status", "nova"),
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <h1 className="font-display text-3xl font-black mb-1">Painel TV Barretão</h1>
+      <h1 className="font-display text-3xl font-black mb-1">Painel Fique Por Dentro Sergipe</h1>
       {loading ? (
         <p className="text-muted-foreground mb-6">Carregando suas permissões…</p>
       ) : (

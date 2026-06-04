@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     const excerpt = typeof body.excerpt === "string" ? body.excerpt.trim() : "";
     if (!title) return json({ error: "title é obrigatório" }, 400);
 
-    const systemPrompt = `Você é o editor social do TV Barretão. Sua tarefa: criar uma MANCHETE CURTA para a arte de Instagram a partir do título completo de uma notícia.
+    const systemPrompt = `Você é o editor social do Fique Por Dentro Sergipe. Sua tarefa: criar uma MANCHETE CURTA para a arte de Instagram a partir do título completo de uma notícia.
 
 REGRAS RÍGIDAS:
 - IDEAL: até 60 caracteres.

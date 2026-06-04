@@ -111,7 +111,7 @@ export default function EnviarDenunciaPage() {
             <Button type="submit" disabled={loading} className="bg-urgent hover:bg-urgent/90 text-urgent-foreground rounded-sm font-bold uppercase tracking-wider">
               {loading ? "Enviando…" : "Enviar denúncia"}
             </Button>
-            <p className="text-xs text-muted-foreground">Ao enviar, você concorda que a TV Barretão fará apuração jornalística. Não nos responsabilizamos por informações falsas enviadas.</p>
+            <p className="text-xs text-muted-foreground">Ao enviar, você concorda que a Fique Por Dentro Sergipe fará apuração jornalística. Não nos responsabilizamos por informações falsas enviadas.</p>
           </form>
         )}
       </div>

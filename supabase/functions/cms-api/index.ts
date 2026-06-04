@@ -36,7 +36,7 @@ function slugify(s: string) {
 }
 
 // Sem cover de demo/seed. Se a notícia chega sem imagem, persistimos NULL
-// e o frontend escolhe (default da categoria → placeholder neutro do TV Barretão).
+// e o frontend escolhe (default da categoria → placeholder neutro do Fique Por Dentro Sergipe).
 // Nunca herdamos imagem de outra notícia.
 const DEFAULT_COVER_URL: string | null = null;
 

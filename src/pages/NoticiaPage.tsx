@@ -11,7 +11,7 @@ import { SmartImage } from "@/components/site/SmartImage";
 import { VideoEmbed } from "@/components/site/VideoEmbed";
 import { parseVideoUrl } from "@/lib/videoEmbed";
 
-// Fonte/URL original NUNCA é exibida ao leitor (TV Barretão 2.0 — Etapa 1).
+// Fonte/URL original NUNCA é exibida ao leitor (Fique Por Dentro Sergipe 2.0 — Etapa 1).
 
 
 export default function NoticiaPage() {
@@ -25,7 +25,7 @@ export default function NoticiaPage() {
     const load = () => getNoticiaBySlug(slug).then((p) => {
       if (!p) { setNotFound(true); return; }
       setPost(p);
-      document.title = `${p.meta_title || p.title} — TV Barretão`;
+      document.title = `${p.meta_title || p.title} — Fique Por Dentro Sergipe`;
       const meta = document.querySelector('meta[name="description"]');
       if (meta) meta.setAttribute("content", p.meta_description || p.subtitle || p.title);
       void supabase.auth.getSession().then(({ data: { session } }) => {
@@ -78,7 +78,7 @@ export default function NoticiaPage() {
             <p className="mt-4 text-lg md:text-xl text-muted-foreground font-serif-news">{post.subtitle}</p>
           )}
           <div className="flex flex-wrap items-center gap-3 mt-6 pb-4 border-b border-border text-sm text-muted-foreground">
-            <span>Por <strong className="text-foreground">{post.profiles?.display_name || "Redação TV Barretão"}</strong></span>
+            <span>Por <strong className="text-foreground">{post.profiles?.display_name || "Redação Fique Por Dentro Sergipe"}</strong></span>
             <span>·</span>
             <span>{post.published_at ? new Date(post.published_at).toLocaleString("pt-BR") : timeAgo(post.created_at)}</span>
             <div className="ml-auto flex items-center gap-2">
@@ -99,7 +99,7 @@ export default function NoticiaPage() {
               mainVideo?.provider === "youtube" ? "YouTube" :
               mainVideo?.provider === "instagram" ? "Instagram" :
               mainVideo?.provider === "mp4" ? "vídeo" : "";
-            // TV Barretão 2.0 — Etapa 1: a fonte original NUNCA é exibida ao leitor.
+            // Fique Por Dentro Sergipe 2.0 — Etapa 1: a fonte original NUNCA é exibida ao leitor.
             // Se o vídeo não puder ser embedado, simplesmente omitimos.
             const showSourceVideoCta = false;
             return (

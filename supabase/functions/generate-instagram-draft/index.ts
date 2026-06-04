@@ -161,7 +161,7 @@ async function generateDraft(input: {
     ? "DENÚNCIA"
     : "";
 
-  const systemPrompt = `Você é o editor social do TV Barretão (portal de notícias regional de Sergipe).
+  const systemPrompt = `Você é o editor social do Fique Por Dentro Sergipe (portal de notícias regional de Sergipe).
 Sua missão: transformar notícias em posts de Instagram seguindo o padrão editorial fixo da marca.
 
 TOM EDITORIAL:
@@ -197,10 +197,10 @@ Gere:
    - contextualização clara (1 a 2 linhas)
    - ponto principal da notícia (1 a 2 linhas)
    - fechamento com chamada para leitura
-   - TERMINAR OBRIGATORIAMENTE com a linha exata: 📲 Acompanhe o TV Barretão para mais notícias
+   - TERMINAR OBRIGATORIAMENTE com a linha exata: 📲 Acompanhe o Fique Por Dentro Sergipe para mais notícias
    - NÃO incluir hashtags na legenda.
    - No máximo 1 emoji adicional além do 📲 final.
-4) hashtags — 6 a 10 hashtags SEM o caractere #, começando por: noticias, sergipe, tvbarretao, e depois temáticas/regionais relevantes.`;
+4) hashtags — 6 a 10 hashtags SEM o caractere #, começando por: noticias, sergipe, fiquepordentrose, e depois temáticas/regionais relevantes.`;
 
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -219,7 +219,7 @@ Gere:
           type: "function",
           function: {
             name: "set_instagram_draft",
-            description: "Devolve o rascunho editorial estruturado para o Instagram do TV Barretão.",
+            description: "Devolve o rascunho editorial estruturado para o Instagram do Fique Por Dentro Sergipe.",
             parameters: {
               type: "object",
               properties: {
@@ -280,7 +280,7 @@ Gere:
     ? parsed.texto_arte.bullets.map((b: any) => String(b).trim()).filter(Boolean).slice(0, 3)
     : [];
 
-  const closer = "📲 Acompanhe o TV Barretão para mais notícias";
+  const closer = "📲 Acompanhe o Fique Por Dentro Sergipe para mais notícias";
   let caption = String(parsed.caption ?? input.excerpt ?? input.title ?? "").trim();
   if (!caption.includes(closer)) {
     caption = `${caption}\n\n${closer}`.trim();
@@ -291,7 +291,7 @@ Gere:
         .map((h: any) => String(h).replace(/^#/, "").trim())
         .filter(Boolean)
         .slice(0, 10)
-    : ["noticias", "sergipe", "tvbarretao"];
+    : ["noticias", "sergipe", "fiquepordentrose"];
 
   return {
     editoria,

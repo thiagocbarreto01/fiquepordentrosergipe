@@ -45,7 +45,7 @@ interface RelevanceResult {
 async function analyzeWithAI(title: string, content: string, subtitle: string): Promise<RelevanceResult> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
-  const systemPrompt = `Você é a IA Editora-Chefe da TV Barretão, portal de notícias de Sergipe (foco em Aracaju e municípios sergipanos).
+  const systemPrompt = `Você é a IA Editora-Chefe da Fique Por Dentro Sergipe, portal de notícias de Sergipe (foco em Aracaju e municípios sergipanos).
 Avalie a relevância editorial da matéria e sugira onde ela deve aparecer no portal.
 
 CRITÉRIOS DE PONTUAÇÃO (0-100):

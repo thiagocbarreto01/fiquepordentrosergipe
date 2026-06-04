@@ -510,7 +510,7 @@ export default function AdminInstagram() {
                 rows={2}
                 value={editForm.hashtags}
                 onChange={(e) => setEditForm((f) => ({ ...f, hashtags: e.target.value }))}
-                placeholder="noticias sergipe tvbarretao"
+                placeholder="noticias sergipe fiquepordentrose"
               />
             </div>
           </div>
