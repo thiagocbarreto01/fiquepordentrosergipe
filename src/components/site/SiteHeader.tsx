@@ -3,6 +3,7 @@ import { Search, Menu, X, Facebook, Instagram, Youtube, LayoutDashboard } from "
 import { useState } from "react";
 import logo from "@/assets/logo-fique-por-dentro.png";
 import { useAuth } from "@/hooks/useAuth";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Button } from "@/components/ui/button";
 import WeatherTime from "./WeatherTime";
 
@@ -23,6 +24,7 @@ const NAV = [
 
 export default function SiteHeader() {
   const { user } = useAuth();
+  const s = useSiteSettings();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -40,9 +42,9 @@ export default function SiteHeader() {
         <div className="container-news flex items-center justify-between h-8">
           <WeatherTime city="Aracaju" />
           <div className="flex items-center gap-3">
-            <a href="https://instagram.com/" target="_blank" rel="noreferrer" className="hover:text-alert"><Instagram className="h-3.5 w-3.5" /></a>
-            <a href="#" className="hover:text-alert"><Facebook className="h-3.5 w-3.5" /></a>
-            <a href="#" className="hover:text-alert"><Youtube className="h-3.5 w-3.5" /></a>
+            {s.instagram_url && <a href={s.instagram_url} target="_blank" rel="noreferrer" className="hover:text-alert"><Instagram className="h-3.5 w-3.5" /></a>}
+            {s.facebook_url && <a href={s.facebook_url} target="_blank" rel="noreferrer" className="hover:text-alert"><Facebook className="h-3.5 w-3.5" /></a>}
+            {s.youtube_url && <a href={s.youtube_url} target="_blank" rel="noreferrer" className="hover:text-alert"><Youtube className="h-3.5 w-3.5" /></a>}
             <span className="h-3 w-px bg-white/30 mx-1" />
             {user ? (
               <Link to="/admin" className="hover:text-alert text-xs font-semibold uppercase tracking-wider flex items-center gap-1">

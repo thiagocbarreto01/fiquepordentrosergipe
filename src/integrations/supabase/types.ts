@@ -838,6 +838,48 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          facebook_url: string | null
+          id: boolean
+          instagram_handle: string | null
+          instagram_url: string | null
+          site_name: string
+          threads_url: string | null
+          updated_at: string
+          whatsapp_url: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          facebook_url?: string | null
+          id?: boolean
+          instagram_handle?: string | null
+          instagram_url?: string | null
+          site_name?: string
+          threads_url?: string | null
+          updated_at?: string
+          whatsapp_url?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          facebook_url?: string | null
+          id?: boolean
+          instagram_handle?: string | null
+          instagram_url?: string | null
+          site_name?: string
+          threads_url?: string | null
+          updated_at?: string
+          whatsapp_url?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

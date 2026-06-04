@@ -25,6 +25,7 @@ import AdminFontes from "./pages/admin/AdminFontes";
 import AdminInstagram from "./pages/admin/AdminInstagram";
 import AdminImportarInstagram from "./pages/admin/AdminImportarInstagram";
 import AdminControleHome from "./pages/admin/AdminControleHome";
+import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/admin/importar-instagram" element={<RequireAuth staffOnly><AdminImportarInstagram /></RequireAuth>} />
             <Route path="/admin/usuarios" element={<RequireAuth adminOnly><AdminUsuarios /></RequireAuth>} />
             <Route path="/admin/home" element={<RequireAuth staffOnly><AdminControleHome /></RequireAuth>} />
+            <Route path="/admin/configuracoes" element={<RequireAuth adminOnly><AdminConfiguracoes /></RequireAuth>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
