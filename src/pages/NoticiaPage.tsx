@@ -4,7 +4,6 @@ import SiteLayout from "@/components/site/SiteLayout";
 import AdSlot from "@/components/site/AdSlot";
 import { getNoticiaBySlug, getMostReadNoticias, Post, subscribeToNoticiasFeed, timeAgo } from "@/lib/noticias";
 import { getPostImage, handleImgError } from "@/lib/postImage";
-import { supabase } from "@/integrations/supabase/client";
 import { Share2, Send, MessageCircle, Facebook, Twitter } from "lucide-react";
 import { NewsListItem } from "@/components/site/NewsCards";
 import { SmartImage } from "@/components/site/SmartImage";
@@ -28,11 +27,6 @@ export default function NoticiaPage() {
       document.title = `${p.meta_title || p.title} — Fique Por Dentro Sergipe`;
       const meta = document.querySelector('meta[name="description"]');
       if (meta) meta.setAttribute("content", p.meta_description || p.subtitle || p.title);
-      void supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-          void supabase.rpc("increment_post_views", { _post_id: p.id });
-        }
-      });
     });
     load();
     getMostReadNoticias(5).then(setMostRead);

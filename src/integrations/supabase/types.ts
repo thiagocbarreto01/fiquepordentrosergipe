@@ -167,124 +167,6 @@ export type Database = {
         }
         Relationships: []
       }
-      financial_budgets: {
-        Row: {
-          amount: number
-          category_id: string | null
-          created_at: string
-          id: string
-          period: string
-          start_date: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          category_id?: string | null
-          created_at?: string
-          id?: string
-          period?: string
-          start_date: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          category_id?: string | null
-          created_at?: string
-          id?: string
-          period?: string
-          start_date?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "financial_budgets_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "financial_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      financial_categories: {
-        Row: {
-          color: string | null
-          created_at: string
-          icon: string | null
-          id: string
-          name: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          icon?: string | null
-          id?: string
-          name: string
-          type: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          icon?: string | null
-          id?: string
-          name?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      financial_transactions: {
-        Row: {
-          amount: number
-          category_id: string | null
-          created_at: string
-          date: string
-          description: string | null
-          id: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          category_id?: string | null
-          created_at?: string
-          date?: string
-          description?: string | null
-          id?: string
-          type: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          category_id?: string | null
-          created_at?: string
-          date?: string
-          description?: string | null
-          id?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "financial_transactions_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "financial_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       home_audit: {
         Row: {
           action: string
@@ -970,8 +852,6 @@ export type Database = {
       is_main_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       restore_post: { Args: { _post_id: string }; Returns: undefined }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "admin" | "editor" | "redator"

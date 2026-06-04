@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router-dom";
 import { ChevronRight, Video, Flame, Eye, AlertTriangle } from "lucide-react";
 import { SmartImage } from "@/components/site/SmartImage";
-import { getPostImage, handleImgError } from "@/lib/postImage";
+import { getPostImage, getPostImageIssue, handleImgError } from "@/lib/postImage";
 import { PostBadges } from "@/components/site/NewsCards";
 import { buildHomeLayout, filterEligibleHomePosts } from "@/lib/homeSlots";
 
@@ -85,14 +85,21 @@ export default function Index() {
   // Log da escolha da manchete (recalculada a cada atualização do feed)
   useEffect(() => {
     if (!heroMain) return;
+    const imageIssues = latest.map(getPostImageIssue).filter(Boolean);
     console.info("[Home] Manchete selecionada", {
       id: heroMain.id,
       title: heroMain.title,
+      imagem: getPostImage(heroMain),
       score: layout.manchetePrincipal.score,
       motivo: layout.manchetePrincipal.reasonLabel,
       fatores: layout.manchetePrincipal.reasons,
       escolhidaEm: new Date().toISOString(),
       publicadaEm: heroMain.published_at,
+    });
+    console.info("[Home] Relatório de imagens", {
+      materias_sem_imagem_valida: imageIssues.length,
+      falhas_registradas: typeof window !== "undefined" ? window.__fpdImageFailures ?? [] : [],
+      exemplos: imageIssues.slice(0, 10),
     });
   }, [heroMain?.id, layout.manchetePrincipal.score]);
 

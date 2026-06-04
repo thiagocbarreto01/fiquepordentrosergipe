@@ -1,4 +1,6 @@
-import { useState, useCallback, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from "react";
+import logo from "@/assets/logo-fique-por-dentro.png";
+import { registerImageFailure, validateImageUrl } from "@/lib/postImage";
 
 interface SmartImageProps {
   src: string;
@@ -14,6 +16,7 @@ interface SmartImageProps {
   width?: number;
   height?: number;
   onError?: (e: SyntheticEvent<HTMLImageElement>) => void;
+  reportContext?: string;
   /**
    * Se true, anima zoom no hover (group-hover:scale-105).
    * Funciona apenas no modo "horizontal" (preserva enquadramento).
@@ -40,19 +43,29 @@ export function SmartImage({
   height,
   onError,
   hoverZoom = false,
+  reportContext,
 }: SmartImageProps) {
-  const [orientation, setOrientation] = useState<"unknown" | "horizontal" | "vertical">("unknown");
+  const [failedReason, setFailedReason] = useState<string | null>(null);
+  const validation = useMemo(() => validateImageUrl(src), [src]);
 
   const handleLoad = useCallback((e: SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
-    if (img.naturalHeight > img.naturalWidth * 1.05) {
-      setOrientation("vertical");
-    } else {
-      setOrientation("horizontal");
-    }
+    if (!img.naturalWidth || !img.naturalHeight) setFailedReason("Imagem carregada sem dimensões válidas");
   }, []);
 
-  const isVertical = orientation === "vertical";
+  useEffect(() => {
+    setFailedReason(null);
+    if (!validation.valid) registerImageFailure(src, validation.reason, reportContext ?? alt);
+  }, [alt, reportContext, src, validation.reason, validation.valid]);
+
+  const unavailableReason = failedReason ?? (!validation.valid ? validation.reason : null);
+
+  const handleError = useCallback((e: SyntheticEvent<HTMLImageElement>) => {
+    const reason = "URL retornou erro ou bloqueou o carregamento";
+    setFailedReason(reason);
+    registerImageFailure(src, reason, reportContext ?? alt);
+    onError?.(e);
+  }, [alt, onError, reportContext, src]);
 
   return (
     <div
@@ -62,23 +75,36 @@ export function SmartImage({
         background: "linear-gradient(135deg, hsl(var(--brand-navy) / 0.95) 0%, hsl(var(--brand-navy-deep) / 0.95) 100%)",
       }}
     >
-      {/* Imagem principal — sempre object-cover (sem fundo desfocado) */}
-      <img
-        src={src}
-        alt={alt}
-        loading={loading}
-        fetchPriority={fetchPriority}
-        width={width}
-        height={height}
-        onLoad={handleLoad}
-        onError={onError}
-        className={[
-          "relative z-10 w-full h-full object-cover transition-transform duration-700",
-          hoverZoom ? "group-hover:scale-105" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-      />
+      {unavailableReason ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-gradient-navy px-6 text-center">
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-10 w-auto rounded-sm bg-white/95 px-2 py-1 shadow-card md:h-12" />
+          <div>
+            <p className="font-display text-sm font-black uppercase tracking-widest text-primary-foreground md:text-base">
+              Imagem indisponível
+            </p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/70">
+              Fique Por Dentro Sergipe
+            </p>
+          </div>
+        </div>
+      ) : (
+        <img
+          src={validation.url}
+          alt={alt}
+          loading={loading}
+          fetchPriority={fetchPriority}
+          width={width}
+          height={height}
+          onLoad={handleLoad}
+          onError={handleError}
+          className={[
+            "relative z-10 w-full h-full object-cover transition-transform duration-700",
+            hoverZoom ? "group-hover:scale-105" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        />
+      )}
     </div>
   );
 }
