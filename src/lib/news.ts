@@ -19,6 +19,7 @@ export type Post = {
   is_main_featured?: boolean;
   is_urgent: boolean;
   source_id?: string | null;
+  is_editorial?: boolean | null;
   is_denuncia: boolean;
   meta_title: string | null;
   meta_description: string | null;
@@ -44,21 +45,20 @@ export type Category = {
   position: number;
 };
 
-// Lista pública: usa a view posts_public que oculta campos editoriais internos
-// (titulo_original, conteudo_original, *_gerado, ai_*, source_id, external_id, duplicate_of)
+// Lista pública: usa posts_public, que expõe somente campos seguros para leitores.
 const POST_SELECT = `
-  id, title, subtitle, excerpt, source_url, slug, cover_image_url, manual_image_url, category_id, author_id,
+  id, title, subtitle, excerpt, slug, cover_image_url, manual_image_url, category_id, author_id,
   is_featured, is_main_featured, is_urgent, is_denuncia, views, published_at, created_at, tags, video_url_principal,
-  home_expires_at, main_featured_expires_at, is_evergreen, source_id,
+  home_expires_at, main_featured_expires_at, is_evergreen, is_editorial,
   categories ( name, slug, color, default_cover_image_url )
 `;
 
 // Apenas estes campos são expostos na página individual (sem campos internos)
 const POST_DETAIL_SELECT = `
-  id, title, subtitle, excerpt, source_url, slug, content, cover_image_url, manual_image_url,
+  id, title, subtitle, excerpt, slug, content, cover_image_url, manual_image_url,
   category_id, author_id, tags, is_featured, is_main_featured, is_urgent, is_denuncia,
   meta_title, meta_description, views, published_at, created_at, updated_at,
-  video_url_principal, videos_relacionados, home_expires_at, main_featured_expires_at, is_evergreen, source_id,
+  video_url_principal, videos_relacionados, home_expires_at, main_featured_expires_at, is_evergreen, is_editorial,
   categories ( name, slug, color, default_cover_image_url )
 `;
 
@@ -120,7 +120,7 @@ export async function getPublishedPosts(limit = 20) {
 
 /**
  * Regra editorial da Manchete/Hero:
- * - Notícias captadas automaticamente (source_id != null) NÃO podem ocupar a manchete principal,
+ * - Notícias captadas automaticamente NÃO podem ocupar a manchete principal,
  *   a menos que tenham sido marcadas como Destaque Principal (is_main_featured) ou Destaque Permanente (is_evergreen).
  */
 export async function getFeaturedPost() {
@@ -158,7 +158,7 @@ export async function getFeaturedPost() {
       .from("posts_public" as any)
       .select(POST_SELECT)
       .eq("is_featured", true)
-      .is("source_id", null)
+        .eq("is_editorial", true)
       .gte("published_at", yesterday.toISOString())
   )
     .order("published_at", { ascending: false })
@@ -172,7 +172,7 @@ export async function getFeaturedPost() {
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
-      .is("source_id", null)
+        .eq("is_editorial", true)
   )
     .order("published_at", { ascending: false })
     .order("created_at", { ascending: false })
@@ -187,7 +187,7 @@ export async function getHighlights(excludeId?: string, limit = 3) {
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
-      .or("is_evergreen.eq.true,is_main_featured.eq.true,and(is_featured.eq.true,source_id.is.null)")
+      .or("is_evergreen.eq.true,is_main_featured.eq.true,and(is_featured.eq.true,is_editorial.eq.true)")
   )
     .order("is_evergreen", { ascending: false })
     .order("is_main_featured", { ascending: false })

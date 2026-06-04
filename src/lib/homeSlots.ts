@@ -403,10 +403,10 @@ export async function getManualHomePosts(): Promise<Partial<Record<HomeSlotKey, 
   const { data, error } = await supabase
     .from("posts_public" as any)
     .select(`
-      id, title, subtitle, excerpt, source_url, slug, content, cover_image_url, manual_image_url,
+      id, title, subtitle, excerpt, slug, content, cover_image_url, manual_image_url,
       category_id, author_id, tags, is_featured, is_main_featured, is_urgent, is_denuncia,
       meta_title, meta_description, views, published_at, created_at, updated_at,
-      video_url_principal, videos_relacionados, home_expires_at, main_featured_expires_at, is_evergreen, source_id,
+      video_url_principal, videos_relacionados, home_expires_at, main_featured_expires_at, is_evergreen, is_editorial,
       categories ( name, slug, color, default_cover_image_url )
     `)
     .in("id", requestedIds);
