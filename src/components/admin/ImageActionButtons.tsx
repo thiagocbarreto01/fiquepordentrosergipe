@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Download, ExternalLink, ImageIcon, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
-import logoTvBarretao from "@/assets/logo-fique-por-dentro.jpg";
+import logoFiquePorDentro from "@/assets/logo-fique-por-dentro.png";
 import sponsorsStrip from "@/assets/sponsors-strip.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -209,7 +209,7 @@ async function generateInstagramArt(opts: Props): Promise<Blob> {
   // Logo
   let logo: HTMLImageElement | null = null;
   try {
-    logo = await loadImageForCanvas(logoTvBarretao);
+    logo = await loadImageForCanvas(logoFiquePorDentro);
   } catch {
     logo = null;
   }
