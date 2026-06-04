@@ -372,13 +372,6 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "instagram_posts_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       news_sources: {
@@ -474,13 +467,6 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "post_status_history_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts_public"
             referencedColumns: ["id"]
           },
         ]
@@ -691,17 +677,118 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "posts_duplicate_of_fkey"
-            columns: ["duplicate_of"]
-            isOneToOne: false
-            referencedRelation: "posts_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "posts_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "news_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts_public: {
+        Row: {
+          author_id: string | null
+          category_id: string | null
+          content: string
+          cover_image_url: string | null
+          created_at: string
+          excerpt: string | null
+          home_expires_at: string | null
+          id: string
+          is_denuncia: boolean
+          is_editorial: boolean
+          is_evergreen: boolean
+          is_featured: boolean
+          is_main_featured: boolean
+          is_urgent: boolean
+          main_featured_expires_at: string | null
+          manual_image_url: string | null
+          meta_description: string | null
+          meta_title: string | null
+          published_at: string | null
+          slug: string
+          status: Database["public"]["Enums"]["post_status"]
+          subtitle: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          video_url_principal: string | null
+          videos_relacionados: string[]
+          views: number
+        }
+        Insert: {
+          author_id?: string | null
+          category_id?: string | null
+          content: string
+          cover_image_url?: string | null
+          created_at: string
+          excerpt?: string | null
+          home_expires_at?: string | null
+          id: string
+          is_denuncia?: boolean
+          is_editorial?: boolean
+          is_evergreen?: boolean
+          is_featured?: boolean
+          is_main_featured?: boolean
+          is_urgent?: boolean
+          main_featured_expires_at?: string | null
+          manual_image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          slug: string
+          status: Database["public"]["Enums"]["post_status"]
+          subtitle?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at: string
+          video_url_principal?: string | null
+          videos_relacionados?: string[]
+          views?: number
+        }
+        Update: {
+          author_id?: string | null
+          category_id?: string | null
+          content?: string
+          cover_image_url?: string | null
+          created_at?: string
+          excerpt?: string | null
+          home_expires_at?: string | null
+          id?: string
+          is_denuncia?: boolean
+          is_editorial?: boolean
+          is_evergreen?: boolean
+          is_featured?: boolean
+          is_main_featured?: boolean
+          is_urgent?: boolean
+          main_featured_expires_at?: string | null
+          manual_image_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          slug?: string
+          status?: Database["public"]["Enums"]["post_status"]
+          subtitle?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          video_url_principal?: string | null
+          videos_relacionados?: string[]
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_public_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_public_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
@@ -797,107 +884,6 @@ export type Database = {
           position?: Database["public"]["Enums"]["banner_position"] | null
         }
         Relationships: []
-      }
-      posts_public: {
-        Row: {
-          author_id: string | null
-          category_id: string | null
-          content: string | null
-          cover_image_url: string | null
-          created_at: string | null
-          excerpt: string | null
-          home_expires_at: string | null
-          id: string | null
-          is_denuncia: boolean | null
-          is_editorial: boolean | null
-          is_evergreen: boolean | null
-          is_featured: boolean | null
-          is_main_featured: boolean | null
-          is_urgent: boolean | null
-          main_featured_expires_at: string | null
-          manual_image_url: string | null
-          meta_description: string | null
-          meta_title: string | null
-          published_at: string | null
-          slug: string | null
-          status: Database["public"]["Enums"]["post_status"] | null
-          subtitle: string | null
-          tags: string[] | null
-          title: string | null
-          updated_at: string | null
-          video_url_principal: string | null
-          videos_relacionados: string[] | null
-          views: number | null
-        }
-        Insert: {
-          author_id?: string | null
-          category_id?: string | null
-          content?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          excerpt?: string | null
-          home_expires_at?: string | null
-          id?: string | null
-          is_denuncia?: boolean | null
-          is_editorial?: never
-          is_evergreen?: boolean | null
-          is_featured?: boolean | null
-          is_main_featured?: boolean | null
-          is_urgent?: boolean | null
-          main_featured_expires_at?: string | null
-          manual_image_url?: string | null
-          meta_description?: string | null
-          meta_title?: string | null
-          published_at?: string | null
-          slug?: string | null
-          status?: Database["public"]["Enums"]["post_status"] | null
-          subtitle?: string | null
-          tags?: string[] | null
-          title?: string | null
-          updated_at?: string | null
-          video_url_principal?: string | null
-          videos_relacionados?: string[] | null
-          views?: number | null
-        }
-        Update: {
-          author_id?: string | null
-          category_id?: string | null
-          content?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          excerpt?: string | null
-          home_expires_at?: string | null
-          id?: string | null
-          is_denuncia?: boolean | null
-          is_editorial?: never
-          is_evergreen?: boolean | null
-          is_featured?: boolean | null
-          is_main_featured?: boolean | null
-          is_urgent?: boolean | null
-          main_featured_expires_at?: string | null
-          manual_image_url?: string | null
-          meta_description?: string | null
-          meta_title?: string | null
-          published_at?: string | null
-          slug?: string | null
-          status?: Database["public"]["Enums"]["post_status"] | null
-          subtitle?: string | null
-          tags?: string[] | null
-          title?: string | null
-          updated_at?: string | null
-          video_url_principal?: string | null
-          videos_relacionados?: string[] | null
-          views?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
