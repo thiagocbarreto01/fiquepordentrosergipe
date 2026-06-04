@@ -58,7 +58,7 @@ export default function SiteHeader() {
       </div>
 
       {/* Main bar — mais compacta no mobile */}
-      <div className="container-news flex items-center gap-3 h-14 md:h-20">
+      <div className="container-news flex items-center gap-3 h-16 md:h-28">
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden p-2 -ml-2 hover:bg-secondary/50 rounded-sm transition-colors"
@@ -68,7 +68,7 @@ export default function SiteHeader() {
         </button>
 
         <Link to="/" className="flex items-center" aria-label="Fique Por Dentro Sergipe - Início">
-          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-8 md:h-12 w-auto" />
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-12 md:h-20 w-auto" />
         </Link>
 
         <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center max-w-md ml-4">

@@ -103,7 +103,7 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
       {/* Manchete principal */}
       <article className={`${hasSecondaries ? "lg:col-span-8" : "lg:col-span-12"} group`}>
         {/* Imagem principal */}
-        <Link to={`/noticia/${main.slug}`} className="block relative overflow-hidden rounded-md md:rounded-lg bg-navy-deep aspect-[16/9] sm:aspect-[16/9] shadow-md ring-1 ring-black/5">
+        <Link to={`/noticia/${main.slug}`} className="block relative overflow-hidden rounded-md md:rounded-lg aspect-[16/9] shadow-lg ring-1 ring-black/5" style={{ background: "linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-deep)) 100%)" }}>
           <SmartImage
             src={getPostImage(main)}
             alt={main.title}
@@ -114,14 +114,16 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
             className="h-full w-full"
             onError={(e) => handleImgError(e, main)}
           />
+          {/* Gradiente inferior para legibilidade premium */}
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
           <div className="absolute top-3 left-3 md:top-4 md:left-4 z-10">
             <PostBadges post={main} size="lg" />
           </div>
         </Link>
 
         {/* Bloco editorial abaixo da foto */}
-        <div className="mt-2.5 md:mt-3.5">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1.5 md:mb-2 text-[11px] md:text-xs font-black uppercase tracking-widest">
+        <div className="mt-3 md:mt-4">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2 md:mb-3 text-[11px] md:text-xs font-black uppercase tracking-widest">
             {main.categories?.name && (
               <Link
                 to={`/categoria/${main.categories.slug ?? ""}`}
@@ -138,7 +140,7 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
             </span>
           </div>
           <Link to={`/noticia/${main.slug}`} className="block group/title">
-            <h1 className="font-display text-xl sm:text-2xl md:text-[28px] lg:text-[34px] font-black leading-[1.1] text-balance text-foreground group-hover/title:text-primary transition-colors">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-[38px] lg:text-[46px] font-black leading-[1.05] tracking-tight text-balance text-foreground group-hover/title:text-primary transition-colors">
               {main.title}
             </h1>
           </Link>

@@ -56,8 +56,11 @@ export function SmartImage({
 
   return (
     <div
-      className={`relative w-full overflow-hidden bg-muted ${className}`}
-      style={{ aspectRatio }}
+      className={`relative w-full overflow-hidden ${className}`}
+      style={{
+        aspectRatio,
+        background: "linear-gradient(135deg, hsl(var(--brand-navy) / 0.95) 0%, hsl(var(--brand-navy-deep) / 0.95) 100%)",
+      }}
     >
       {/* Camada de fundo desfocado (apenas para verticais) */}
       {isVertical && (
