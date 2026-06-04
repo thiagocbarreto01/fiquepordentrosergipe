@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Search, Menu, X, Facebook, Instagram, Youtube, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
-import logo from "@/assets/logo-tv-barretao.png";
+import logo from "@/assets/logo-fique-por-dentro.png";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import WeatherTime from "./WeatherTime";
@@ -66,8 +66,8 @@ export default function SiteHeader() {
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        <Link to="/" className="flex items-center" aria-label="TV Barretão - Início">
-          <img src={logo} alt="TV Barretão" className="h-8 md:h-12 w-auto" />
+        <Link to="/" className="flex items-center" aria-label="Fique Por Dentro Sergipe - Início">
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-8 md:h-12 w-auto" />
         </Link>
 
         <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center max-w-md ml-4">

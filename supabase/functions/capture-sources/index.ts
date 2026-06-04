@@ -302,7 +302,7 @@ async function fetchSiteItems(
 
   const homeHtml = await fetch(homeUrl, {
     headers: {
-      "User-Agent": "TVBarretao-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
+      "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
       Accept: "text/html,application/xhtml+xml",
     },
     signal: AbortSignal.timeout(15000),
@@ -342,7 +342,7 @@ async function fetchSiteItems(
     try {
       const r = await fetch(c.url, {
         headers: {
-          "User-Agent": "TVBarretao-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
+          "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
           Accept: "text/html,application/xhtml+xml",
         },
         signal: AbortSignal.timeout(12000),
@@ -529,7 +529,7 @@ async function fetchPageMedia(url: string): Promise<PageMedia> {
   const empty: PageMedia = { ogImage: null, mainVideo: null, relatedVideos: [] };
   try {
     const r = await fetch(url, {
-      headers: { "User-Agent": "TVBarretao-Captador/1.0" },
+      headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0" },
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) return empty;
@@ -622,7 +622,7 @@ async function captureFromSource(
     let xml: string;
     try {
       const r = await fetch(source.url, {
-        headers: { "User-Agent": "TVBarretao-Captador/1.0 (+https://barretao-news-hub.lovable.app)" },
+        headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)" },
         signal: AbortSignal.timeout(15000),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -679,7 +679,7 @@ async function captureFromSource(
       let similar_to: string | null = null;
       let similarity_score: number | null = null;
       let duplicate_match_reason: string | null = null;
-      // TV Barretão 2.0 — Etapa 1: tudo entra como "captada"; após reescrita por IA
+      // Fique Por Dentro Sergipe 2.0 — Etapa 1: tudo entra como "captada"; após reescrita por IA
       // o post é promovido para "pronta_para_revisao". Duplicatas (>= 91%) viram "duplicada".
       let status: "captada" | "pronta_para_revisao" | "duplicada" = "captada";
       if (dupes && dupes.length > 0) {
@@ -719,7 +719,7 @@ async function captureFromSource(
         : `Notícia captada de ${source.name}. Acesse a fonte original: ${sourceUrl ?? source.url}`;
 
       // Reescrita por IA — qualidade JORNALÍSTICA padrão, com limpeza profunda.
-      // Resultado: texto que parece produzido pela própria redação da TV Barretão.
+      // Resultado: texto que parece produzido pela própria redação da Fique Por Dentro Sergipe.
       let aiRewrite: {
         titulo_gerado?: string;
         subtitle_gerado?: string;
@@ -761,7 +761,7 @@ async function captureFromSource(
 
       if (status !== "duplicada" && LOVABLE_API_KEY && originalContent.length >= 40) {
         try {
-          const systemPrompt = `Você é editor da redação da TV Barretão, portal de notícias profissional brasileiro.
+          const systemPrompt = `Você é editor da redação da Fique Por Dentro Sergipe, portal de notícias profissional brasileiro.
 REGRAS ABSOLUTAS:
 - Reescreva COMPLETAMENTE com suas próprias palavras (não copie frases literais).
 - Mantenha apenas FATOS verificáveis. NÃO invente nada.
@@ -769,7 +769,7 @@ REGRAS ABSOLUTAS:
 - NÃO inclua "continuar lendo", "leia mais", "saiba mais", "clique aqui", "veja também", "assista".
 - NÃO inclua URLs, links nem referências externas.
 - Português do Brasil, linguagem jornalística clara, neutra e objetiva.
-- O texto deve parecer produzido pela própria redação da TV Barretão.
+- O texto deve parecer produzido pela própria redação da Fique Por Dentro Sergipe.
 - Parágrafos curtos (2-4 frases), separados por linha em branco.
 
 NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quando, onde). 3-6 parágrafos. Título informativo até 100 chars. Linha fina (subtítulo) complementar.`;
@@ -793,7 +793,7 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
                   type: "function",
                   function: {
                     name: "salvar_materia",
-                    description: "Matéria reescrita pela redação da TV Barretão.",
+                    description: "Matéria reescrita pela redação da Fique Por Dentro Sergipe.",
                     parameters: {
                       type: "object",
                       properties: {
@@ -847,7 +847,7 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
               const CATS_OK = ["denuncias","policia","politica","esporte","aracaju","municipios","sergipe","brasil","mundo","entretenimento","opiniao","videos"];
               const catRaw = String(args.categoria_sugerida || "").toLowerCase().trim();
               const catSug = CATS_OK.includes(catRaw) ? catRaw : null;
-              // Validação pré-publicação (Etapa 1 TV Barretão 2.0):
+              // Validação pré-publicação (Etapa 1 Fique Por Dentro Sergipe 2.0):
               // - mínimo 4 parágrafos
               // - mínimo 200 chars
               // - sem "continuar lendo", "leia mais", URLs externas, HTML

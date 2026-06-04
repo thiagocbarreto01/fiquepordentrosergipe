@@ -15,7 +15,7 @@ export default function CategoriaPage() {
     const load = () => getNoticiasByCategory(slug, 30).then(setPosts);
     supabase.from("categories").select("name").eq("slug", slug).maybeSingle().then(({ data }) => {
       setName(data?.name ?? slug);
-      document.title = `${data?.name ?? slug} — TV Barretão`;
+      document.title = `${data?.name ?? slug} — Fique Por Dentro Sergipe`;
     });
     load();
     return subscribeToNoticiasFeed(load);

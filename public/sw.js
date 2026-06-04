@@ -1,4 +1,4 @@
-// Minimal pass-through service worker for TV Barretão PWA installability.
+// Minimal pass-through service worker for Fique Por Dentro Sergipe PWA installability.
 // Does NOT cache responses to avoid serving stale content.
 self.addEventListener("install", (event) => {
   self.skipWaiting();

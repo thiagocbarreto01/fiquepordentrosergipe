@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import logo from "@/assets/logo-tv-barretao.png";
+import logo from "@/assets/logo-fique-por-dentro.png";
 import { z } from "zod";
 
 const emailSchema = z.string().trim().email("E-mail inválido").max(255);
@@ -22,7 +22,7 @@ export default function AuthPage() {
   const [name, setName] = useState("");
 
   useEffect(() => {
-    document.title = "Entrar — TV Barretão";
+    document.title = "Entrar — Fique Por Dentro Sergipe";
     if (user) nav(isStaff ? "/admin" : "/");
   }, [user, isStaff, nav]);
 
@@ -63,10 +63,10 @@ export default function AuthPage() {
     <div className="min-h-screen bg-gradient-navy text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-card text-card-foreground p-8 shadow-hero">
         <Link to="/" className="flex justify-center mb-6">
-          <img src={logo} alt="TV Barretão" className="h-12" />
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-12" />
         </Link>
         <h1 className="font-display text-2xl font-black text-center mb-1">Acesso da Redação</h1>
-        <p className="text-sm text-muted-foreground text-center mb-6">Área restrita para equipe TV Barretão</p>
+        <p className="text-sm text-muted-foreground text-center mb-6">Área restrita para equipe Fique Por Dentro Sergipe</p>
 
         <Tabs defaultValue="login">
           <TabsList className="grid grid-cols-2 w-full">

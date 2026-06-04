@@ -1,7 +1,7 @@
 {
-  "name": "TV Barretão — Notícias",
-  "short_name": "TV Barretão",
-  "description": "Portal TV Barretão: notícias em tempo real de Sergipe, Aracaju, Brasil e mundo.",
+  "name": "Fique Por Dentro Sergipe — Notícias",
+  "short_name": "Fique Por Dentro Sergipe",
+  "description": "Portal Fique Por Dentro Sergipe: notícias em tempo real de Sergipe, Aracaju, Brasil e mundo.",
   "lang": "pt-BR",
   "start_url": "/",
   "scope": "/",

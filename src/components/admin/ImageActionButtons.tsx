@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Download, ExternalLink, ImageIcon, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
-import logoTvBarretao from "@/assets/logo-tv-barretao.jpg";
+import logoTvBarretao from "@/assets/logo-fique-por-dentro.jpg";
 import sponsorsStrip from "@/assets/sponsors-strip.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -221,7 +221,7 @@ async function generateInstagramArt(opts: Props): Promise<Blob> {
     // PORTAL LAYOUT — stacked: header (logo) | headline | photo | sponsors
     // =========================================================
 
-    // 1) BLUE TOP BAR — TV Barretão brand identity (offset by SAFE_TOP)
+    // 1) BLUE TOP BAR — Fique Por Dentro Sergipe brand identity (offset by SAFE_TOP)
     const blueBarH = 32;
     ctx.fillStyle = "#0f2a5c"; // brand navy (hsl 220 70% 18%)
     ctx.fillRect(0, SAFE_TOP, SIZE, blueBarH);
@@ -259,7 +259,7 @@ async function generateInstagramArt(opts: Props): Promise<Blob> {
       ctx.font = "bold 56px system-ui, -apple-system, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("TV BARRETÃO", SIZE / 2, headerTop + (headerH - 4) / 2);
+      ctx.fillText("FIQUE POR DENTRO SERGIPE", SIZE / 2, headerTop + (headerH - 4) / 2);
     }
 
     const headerBottom = headerTop + headerH;
@@ -499,7 +499,7 @@ async function generateInstagramArt(opts: Props): Promise<Blob> {
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.textBaseline = "middle";
     ctx.textAlign = "right";
-    ctx.fillText("barretaonews.com.br", SIZE - 56, brandBaselineY);
+    ctx.fillText("fiquepordentrose.com.br", SIZE - 56, brandBaselineY);
 
     if (sponsors) {
       ctx.fillStyle = "#0a0a0a";
@@ -539,7 +539,7 @@ export function ImageActionButtons({ imageUrl, slug, title, categoryName, instag
     if (!hasImage) return;
     setDownloading(true);
     try {
-      await downloadBlob(imageUrl, `tvbarretao-${slug || "noticia"}.jpg`);
+      await downloadBlob(imageUrl, `fiquepordentrose-${slug || "noticia"}.jpg`);
     } catch {
       toast.error("Falha ao baixar imagem");
     } finally {
@@ -630,7 +630,7 @@ export function ImageActionButtons({ imageUrl, slug, title, categoryName, instag
     const url = URL.createObjectURL(previewBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `tvbarretao-${slug || "noticia"}-instagram.png`;
+    a.download = `fiquepordentrose-${slug || "noticia"}-instagram.png`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -738,7 +738,7 @@ export function ImageActionButtons({ imageUrl, slug, title, categoryName, instag
                 size="sm"
                 onClick={() => setArtMode("portal")}
               >
-                Layout Portal TV Barretão
+                Layout Portal Fique Por Dentro Sergipe
               </Button>
               <Button
                 type="button"

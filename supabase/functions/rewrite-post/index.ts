@@ -102,7 +102,7 @@ function violatesGuidelines(text: string): string | null {
 
 // ============ Prompts por nível de qualidade ============
 function systemPromptFor(quality: Quality): string {
-  const base = `Você é editor da redação da TV Barretão, portal de notícias profissional brasileiro.
+  const base = `Você é editor da redação da Fique Por Dentro Sergipe, portal de notícias profissional brasileiro.
 REGRAS ABSOLUTAS:
 - Reescreva COMPLETAMENTE o conteúdo com suas próprias palavras (não copie frases literais).
 - Mantenha apenas FATOS verificáveis (datas, nomes, números, locais, declarações).
@@ -111,7 +111,7 @@ REGRAS ABSOLUTAS:
 - NÃO inclua frases como "continuar lendo", "leia mais", "saiba mais", "clique aqui", "veja também", "assista".
 - NÃO inclua URLs, links ou referências externas no texto.
 - Português do Brasil, linguagem jornalística clara, neutra e objetiva.
-- O texto deve parecer produzido pela própria redação da TV Barretão.
+- O texto deve parecer produzido pela própria redação da Fique Por Dentro Sergipe.
 - Parágrafos curtos (2-4 frases), separados por linha em branco.`;
 
   if (quality === "basica") {
@@ -151,7 +151,7 @@ async function rewriteWithAI(title: string, content: string, quality: Quality): 
           type: "function",
           function: {
             name: "salvar_materia",
-            description: "Retorna a matéria reescrita pela redação da TV Barretão.",
+            description: "Retorna a matéria reescrita pela redação da Fique Por Dentro Sergipe.",
             parameters: {
               type: "object",
               properties: {
@@ -230,7 +230,7 @@ async function rewriteWithAI(title: string, content: string, quality: Quality): 
   const catRaw = String(args.categoria_sugerida || "").toLowerCase().trim();
   const categoria = CATEGORIAS_VALIDAS.includes(catRaw) ? catRaw : null;
 
-  // Validações pré-publicação (Etapa 1 TV Barretão 2.0)
+  // Validações pré-publicação (Etapa 1 Fique Por Dentro Sergipe 2.0)
   if (conteudo.length < 200) {
     throw new Error(`Conteúdo gerado muito curto (${conteudo.length} chars, mín. 200)`);
   }

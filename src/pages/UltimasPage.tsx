@@ -6,7 +6,7 @@ import { Post, getPublishedNoticias, subscribeToNoticiasFeed } from "@/lib/notic
 export default function UltimasPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   useEffect(() => {
-    document.title = "Últimas notícias — TV Barretão";
+    document.title = "Últimas notícias — Fique Por Dentro Sergipe";
     const load = () => getPublishedNoticias(50).then(setPosts);
     load();
     return subscribeToNoticiasFeed(load);

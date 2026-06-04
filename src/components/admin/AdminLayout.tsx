@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import logo from "@/assets/logo-tv-barretao.png";
+import logo from "@/assets/logo-fique-por-dentro.png";
 import { LayoutDashboard, FileText, FolderTree, Megaphone, AlertTriangle, Users, LogOut, ExternalLink, PlusCircle, Rss, Instagram, Home } from "lucide-react";
 
 const ITEMS = [
@@ -26,7 +26,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex bg-secondary">
       <aside className="w-60 bg-sidebar text-sidebar-foreground flex flex-col">
         <Link to="/" className="p-4 border-b border-sidebar-border bg-white/95">
-          <img src={logo} alt="TV Barretão" className="h-9" />
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-9" />
         </Link>
         <nav className="flex-1 p-2 space-y-0.5">
           {ITEMS.filter((i) => !i.adminOnly || isAdmin).map((i) => (

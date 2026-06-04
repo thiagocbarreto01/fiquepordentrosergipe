@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     res = await fetch(sourceUrl, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; TVBarretaoBot/1.0; +https://barretaonews.com.br)",
+          "Mozilla/5.0 (compatible; FiquePorDentroSEBot/1.0; +https://fiquepordentrose.com.br)",
         Accept: "image/*,*/*;q=0.8",
         Referer: new URL(sourceUrl).origin,
       },

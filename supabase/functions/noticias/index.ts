@@ -20,13 +20,13 @@ const json = (status: number, body: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Sem cover de demo/seed. Frontend escolhe (default da categoria → placeholder TV Barretão).
+// Sem cover de demo/seed. Frontend escolhe (default da categoria → placeholder Fique Por Dentro Sergipe).
 const DEFAULT_COVER_URL: string | null = null;
 
 async function fetchOgImage(url: string): Promise<string | null> {
   try {
     const r = await fetch(url, {
-      headers: { "User-Agent": "TVBarretao-Captador/1.0" },
+      headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0" },
       signal: AbortSignal.timeout(5000),
     });
     if (!r.ok) return null;

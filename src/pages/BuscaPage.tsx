@@ -11,7 +11,7 @@ export default function BuscaPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    document.title = `Busca: ${q} — TV Barretão`;
+    document.title = `Busca: ${q} — Fique Por Dentro Sergipe`;
     if (!q) { setPosts([]); return; }
     const load = () => {
       setLoading(true);

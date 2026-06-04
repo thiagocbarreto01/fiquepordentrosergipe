@@ -160,7 +160,7 @@ export default function PwaInstallButton() {
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-black flex items-center gap-2">
               <Download className="h-5 w-5 text-urgent" />
-              Instalar TV Barretão
+              Instalar Fique Por Dentro Sergipe
             </DialogTitle>
             <DialogDescription>
               Adicione o app à tela de início do seu iPhone para acessar como aplicativo.

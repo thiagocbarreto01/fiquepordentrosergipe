@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="TV Barretão">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Fique Por Dentro Sergipe">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0b1f3a"/>
@@ -11,7 +11,7 @@
     <circle cx="200" cy="600" r="220"/>
   </g>
   <g transform="translate(640 360)" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" fill="#ffffff">
-    <text y="-10" font-size="84" font-weight="900" letter-spacing="4">TV BARRETÃO</text>
+    <text y="-10" font-size="84" font-weight="900" letter-spacing="4">FIQUE POR DENTRO SERGIPE</text>
     <text y="60" font-size="22" font-weight="500" opacity="0.75" letter-spacing="6">JORNALISMO DE SERGIPE</text>
   </g>
 </svg>

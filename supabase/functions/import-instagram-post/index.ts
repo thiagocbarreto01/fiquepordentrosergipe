@@ -403,7 +403,7 @@ async function fetchInstagramHtml(url: string): Promise<string> {
   const resp = await fetch(url, {
     headers: {
       "User-Agent":
-        "Mozilla/5.0 (compatible; TVBarretaoBot/1.0; +https://barretao-news-hub.lovable.app)",
+        "Mozilla/5.0 (compatible; FiquePorDentroSEBot/1.0; +https://barretao-news-hub.lovable.app)",
       "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
     },
     redirect: "follow",
@@ -562,7 +562,7 @@ async function generateNews(args: {
     .join("\n");
 
   const systemPrompt = [
-    "Você é um repórter profissional do TV Barretão, portal regional de notícias de Sergipe.",
+    "Você é um repórter profissional do Fique Por Dentro Sergipe, portal regional de notícias de Sergipe.",
     "",
     "REGRA NÚMERO 1 — INVIOLÁVEL:",
     "Você NUNCA pode inventar fatos, nomes, datas, números, locais, declarações, contexto ou desdobramentos que não estejam EXPLICITAMENTE no MATERIAL EXTRAÍDO abaixo (legenda + OCR + transcrição). Se o material for vago, faça uma matéria CURTA e neutra; é melhor uma matéria de 3 parágrafos verdadeira do que uma de 6 inventada.",
@@ -729,7 +729,7 @@ const STOPWORDS = new Set([
   "que","qual","quais","onde","quando","quem","porque","porém","mas","então",
   "uma","umas","uns","com","sem","dos","das","nos","nas","por","após","antes",
   "novo","nova","novos","novas","grande","pequeno","barretao","barretão",
-  "tvbarretao","instagram","reel","post","video","vídeo",
+  "fiquepordentrose","instagram","reel","post","video","vídeo",
 ]);
 
 function tokenize(s: string): string[] {

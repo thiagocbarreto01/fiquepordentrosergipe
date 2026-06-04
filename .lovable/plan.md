@@ -1,6 +1,6 @@
 # Fase 1 — FIQUE POR DENTRO SERGIPE
 
-## 1. Inventário do projeto herdado (TV Barretão)
+## 1. Inventário do projeto herdado (Fique Por Dentro Sergipe)
 
 ### Rotas públicas (src/App.tsx)
 - `/` Home, `/ultimas`, `/busca`, `/categoria/:slug`, `/noticia/:slug`
@@ -42,14 +42,14 @@ posts, posts_public, categories, news_sources, banners, denuncias, instagram_pos
 ### Identidade textual
 - `index.html`: title, description, og:*, twitter:*, canonical, JSON-LD `name` e `url`, apple-mobile-web-app-title, keywords.
 - `public/manifest.webmanifest`: name, short_name, description.
-- `public/news-placeholder.svg`: "TV BARRETÃO" → "FIQUE POR DENTRO SERGIPE" + subtítulo.
+- `public/news-placeholder.svg`: "FIQUE POR DENTRO SERGIPE" → "FIQUE POR DENTRO SERGIPE" + subtítulo.
 - `src/components/site/SiteHeader.tsx`: logo alt, label de aria, link Instagram (se trocar).
 - `src/components/site/SiteFooter.tsx`: nome, descrição, redes sociais, e-mail.
 - Strings espalhadas em: `Index`, `UltimasPage`, `NoticiaPage`, `CategoriaPage`, `BuscaPage`, `AuthPage`, `EnviarDenunciaPage`, `AdminDashboard`, `AdminInstagram`, `AdminPosts`, `AdminLayout`, `PwaInstallButton`, `NewsCards`, `ImageActionButtons`, `lib/postImage.ts`.
 
 ### Visual
 - `src/index.css`: tokens HSL (paleta nova — definida pela escolha de design).
-- `src/assets/logo-tv-barretao.*`: substituir por novo logo (manter nome do arquivo OU renomear + atualizar imports).
+- `src/assets/logo-fique-por-dentro.*`: substituir por novo logo (manter nome do arquivo OU renomear + atualizar imports).
 
 ### Navegação (SiteHeader NAV)
 Substituir lista atual pelas 12 categorias pedidas:
@@ -91,7 +91,7 @@ Depois da escolha, executo nesta ordem:
 2. **Tokens de design** — reescrever paleta em `src/index.css` (HSL) conforme escolha.
 3. **Logo + favicon + PWA icons + placeholder SVG** — gerar e substituir arquivos em `src/assets/` e `public/`.
 4. **Header / Footer** — atualizar marca, nav (12 categorias novas), redes sociais.
-5. **Strings institucionais** — varrer todas as ocorrências de "TV Barretão"/"barretao" nas páginas e componentes e substituir.
+5. **Strings institucionais** — varrer todas as ocorrências de "Fique Por Dentro Sergipe"/"barretao" nas páginas e componentes e substituir.
 6. **Categorias no banco** — migration inserindo as 12 categorias com slugs.
 7. **QA visual** — abrir Home, uma Categoria, uma Notícia, Enviar Denúncia, Dashboard admin no mobile e desktop.
 
