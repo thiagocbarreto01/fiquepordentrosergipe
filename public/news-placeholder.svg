@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Fique Por Dentro Sergipe">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0b1f3a"/>
-      <stop offset="100%" stop-color="#13325c"/>
+      <stop offset="0%" stop-color="#7f1d1d"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#g)"/>
@@ -10,8 +10,9 @@
     <circle cx="1100" cy="120" r="180"/>
     <circle cx="200" cy="600" r="220"/>
   </g>
-  <g transform="translate(640 360)" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" fill="#ffffff">
-    <text y="-10" font-size="84" font-weight="900" letter-spacing="4">FIQUE POR DENTRO SERGIPE</text>
-    <text y="60" font-size="22" font-weight="500" opacity="0.75" letter-spacing="6">JORNALISMO DE SERGIPE</text>
+  <g transform="translate(640 340)" text-anchor="middle" font-family="'Roboto Condensed', Impact, sans-serif" fill="#ffffff">
+    <text y="-30" font-size="78" font-weight="900" letter-spacing="2">FIQUE POR DENTRO</text>
+    <text y="50" font-size="78" font-weight="900" letter-spacing="6" fill="#fbbf24">SERGIPE</text>
+    <text y="110" font-size="20" font-weight="500" opacity="0.85" letter-spacing="6">NOTÍCIAS DO ESTADO EM TEMPO REAL</text>
   </g>
 </svg>

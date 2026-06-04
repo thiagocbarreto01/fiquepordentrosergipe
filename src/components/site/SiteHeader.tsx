@@ -7,19 +7,18 @@ import { Button } from "@/components/ui/button";
 import WeatherTime from "./WeatherTime";
 
 const NAV = [
-  { label: "Últimas", to: "/ultimas" },
   { label: "Polícia", to: "/categoria/policia" },
   { label: "Política", to: "/categoria/politica" },
-  { label: "Esporte", to: "/categoria/esporte" },
   { label: "Sergipe", to: "/categoria/sergipe" },
   { label: "Aracaju", to: "/categoria/aracaju" },
-  { label: "Municípios", to: "/categoria/municipios" },
-  { label: "Denúncias", to: "/categoria/denuncias" },
+  { label: "Interior", to: "/categoria/interior" },
   { label: "Brasil", to: "/categoria/brasil" },
   { label: "Mundo", to: "/categoria/mundo" },
+  { label: "Economia", to: "/categoria/economia" },
+  { label: "Saúde", to: "/categoria/saude" },
+  { label: "Educação", to: "/categoria/educacao" },
+  { label: "Esportes", to: "/categoria/esportes" },
   { label: "Entretenimento", to: "/categoria/entretenimento" },
-  { label: "Vídeos", to: "/categoria/videos" },
-  { label: "Opinião", to: "/categoria/opiniao" },
 ];
 
 export default function SiteHeader() {
