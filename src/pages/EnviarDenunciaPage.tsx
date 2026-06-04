@@ -9,6 +9,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const schema = z.object({
   title: z.string().trim().min(5, "Mínimo 5 caracteres").max(200),
@@ -21,6 +22,7 @@ const schema = z.object({
 });
 
 export default function EnviarDenunciaPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({
@@ -33,6 +35,10 @@ export default function EnviarDenunciaPage() {
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
+      return;
+    }
+    if (!parsed.data.is_anonymous && !user) {
+      toast.error("Entre na sua conta para enviar uma denúncia com dados de contato, ou envie de forma anônima.");
       return;
     }
     setLoading(true);
