@@ -99,9 +99,9 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
   const hasSecondaries = secondaries.length > 0;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6">
-      {/* Manchete principal */}
-      <article className={`${hasSecondaries ? "lg:col-span-8" : "lg:col-span-12"} group`}>
+    <div className="flex flex-col gap-5 md:gap-7">
+      {/* Manchete principal — largura total estilo G1/UOL */}
+      <article className="group w-full">
         {/* Imagem principal */}
         <Link to={`/noticia/${main.slug}`} className="block relative overflow-hidden rounded-md md:rounded-lg aspect-[16/9] shadow-lg ring-1 ring-black/5" style={{ background: "linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-deep)) 100%)" }}>
           <SmartImage
@@ -140,7 +140,7 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
             </span>
           </div>
           <Link to={`/noticia/${main.slug}`} className="block group/title">
-            <h1 className="font-display text-2xl sm:text-3xl md:text-[38px] lg:text-[46px] font-black leading-[1.05] tracking-tight text-balance text-foreground group-hover/title:text-primary transition-colors">
+            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.02] tracking-tight text-balance text-foreground group-hover/title:text-primary transition-colors">
               {main.title}
             </h1>
           </Link>
@@ -209,42 +209,40 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
 
 
 
-      {/* Cards secundários verticais — laterais no desktop, abaixo no mobile */}
+      {/* Cards secundários — 3 colunas abaixo da manchete (estilo G1) */}
       {hasSecondaries && (
-      <div className="lg:col-span-4 flex flex-col gap-3 md:gap-4 lg:border-l lg:border-border lg:pl-6">
-        <div className="hidden lg:flex items-center gap-2 border-b-2 border-primary pb-1.5 mb-1">
-          <h2 className="text-xs font-black uppercase tracking-widest">Em destaque agora</h2>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 pt-4 border-t border-border">
         {secondaries.slice(0, 3).map((post) => (
           <Link
             key={post.id}
             to={`/noticia/${post.slug}`}
-            className="group flex gap-3 lg:flex-col lg:gap-2 pb-3 lg:pb-4 border-b border-border last:border-0 last:pb-0"
+            className="group flex flex-col gap-2.5"
           >
-            <div className="relative shrink-0 w-28 h-20 sm:w-32 sm:h-24 lg:w-full lg:h-auto lg:aspect-[16/10] overflow-hidden rounded-sm bg-muted">
+            <div className="relative w-full aspect-[16/10] overflow-hidden rounded-md">
               <SmartImage
                 src={getPostImage(post)}
                 alt={post.title}
                 aspectRatio="unset"
+                hoverZoom
                 className="h-full w-full"
                 onError={(e) => handleImgError(e, post)}
               />
               {post.is_urgent && (
-                <span className="absolute top-1 left-1 text-[8px] font-black uppercase tracking-widest bg-urgent text-white px-1.5 py-0.5 rounded-sm">
+                <span className="absolute top-2 left-2 text-[9px] font-black uppercase tracking-widest bg-urgent text-white px-1.5 py-0.5 rounded-sm">
                   Plantão
                 </span>
               )}
             </div>
             <div className="flex-1 min-w-0 flex flex-col">
               {post.categories?.name && (
-                <span className="text-primary text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1">
+                <span className="text-primary text-[10px] font-black uppercase tracking-widest mb-1">
                   {post.categories.name}
                 </span>
               )}
-              <h3 className="font-display text-sm md:text-[15px] lg:text-base font-bold leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-3">
+              <h3 className="font-display text-base md:text-lg font-extrabold leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-3">
                 {post.title}
               </h3>
-              <span className="mt-auto pt-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">
+              <span className="mt-auto pt-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
                 {timeAgo(post.published_at)}
               </span>
             </div>
