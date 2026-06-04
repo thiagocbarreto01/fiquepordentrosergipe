@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo-fique-por-dentro.png";
-import { LayoutDashboard, FileText, FolderTree, Megaphone, AlertTriangle, Users, LogOut, ExternalLink, PlusCircle, Rss, Instagram, Home } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Megaphone, AlertTriangle, Users, LogOut, ExternalLink, PlusCircle, Rss, Instagram, Home, Settings } from "lucide-react";
 
 const ITEMS = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -15,6 +15,7 @@ const ITEMS = [
   { to: "/admin/instagram", label: "Instagram", icon: Instagram },
   { to: "/admin/importar-instagram", label: "Importar do Instagram", icon: Instagram },
   { to: "/admin/denuncias", label: "Denúncias", icon: AlertTriangle },
+  { to: "/admin/configuracoes", label: "Configurações", icon: Settings, adminOnly: true },
   { to: "/admin/usuarios", label: "Usuários", icon: Users, adminOnly: true },
 ];
 
