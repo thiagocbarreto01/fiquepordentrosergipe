@@ -809,6 +809,7 @@ export type Database = {
           home_expires_at: string | null
           id: string | null
           is_denuncia: boolean | null
+          is_editorial: boolean | null
           is_evergreen: boolean | null
           is_featured: boolean | null
           is_main_featured: boolean | null
@@ -819,8 +820,6 @@ export type Database = {
           meta_title: string | null
           published_at: string | null
           slug: string | null
-          source_id: string | null
-          source_url: string | null
           status: Database["public"]["Enums"]["post_status"] | null
           subtitle: string | null
           tags: string[] | null
@@ -840,6 +839,7 @@ export type Database = {
           home_expires_at?: string | null
           id?: string | null
           is_denuncia?: boolean | null
+          is_editorial?: never
           is_evergreen?: boolean | null
           is_featured?: boolean | null
           is_main_featured?: boolean | null
@@ -850,8 +850,6 @@ export type Database = {
           meta_title?: string | null
           published_at?: string | null
           slug?: string | null
-          source_id?: string | null
-          source_url?: string | null
           status?: Database["public"]["Enums"]["post_status"] | null
           subtitle?: string | null
           tags?: string[] | null
@@ -871,6 +869,7 @@ export type Database = {
           home_expires_at?: string | null
           id?: string | null
           is_denuncia?: boolean | null
+          is_editorial?: never
           is_evergreen?: boolean | null
           is_featured?: boolean | null
           is_main_featured?: boolean | null
@@ -881,8 +880,6 @@ export type Database = {
           meta_title?: string | null
           published_at?: string | null
           slug?: string | null
-          source_id?: string | null
-          source_url?: string | null
           status?: Database["public"]["Enums"]["post_status"] | null
           subtitle?: string | null
           tags?: string[] | null
@@ -898,13 +895,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "news_sources"
             referencedColumns: ["id"]
           },
         ]
