@@ -1,0 +1,2 @@
+ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS main_featured_expires_at timestamptz;
+CREATE INDEX IF NOT EXISTS idx_posts_main_featured_expires_at ON public.posts (main_featured_expires_at) WHERE is_main_featured = true;

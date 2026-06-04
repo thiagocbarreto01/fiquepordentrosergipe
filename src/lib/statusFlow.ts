@@ -1,0 +1,72 @@
+// Fluxo editorial centralizado
+export type EditorialStatus =
+  | "captada"
+  | "pronta_para_revisao"
+  | "em_revisao"
+  | "aprovada"
+  | "rejeitada"
+  | "publicada"
+  | "duplicada"
+  | "arquivada";
+
+export const STATUS_ORDER: EditorialStatus[] = [
+  "captada",
+  "pronta_para_revisao",
+  "em_revisao",
+  "aprovada",
+  "publicada",
+  "duplicada",
+  "rejeitada",
+  "arquivada",
+];
+
+export const STATUS_LABEL: Record<EditorialStatus, string> = {
+  captada: "Captada",
+  pronta_para_revisao: "Pronta para revisão",
+  em_revisao: "Em revisão",
+  aprovada: "Aprovada",
+  rejeitada: "Rejeitada",
+  publicada: "Publicada",
+  duplicada: "Duplicada",
+  arquivada: "Arquivada",
+};
+
+export const STATUS_COLOR: Record<EditorialStatus, string> = {
+  captada: "bg-slate-100 text-slate-800 border-slate-300",
+  pronta_para_revisao: "bg-violet-100 text-violet-800 border-violet-300",
+  em_revisao: "bg-amber-100 text-amber-800 border-amber-300",
+  aprovada: "bg-sky-100 text-sky-800 border-sky-300",
+  rejeitada: "bg-red-100 text-red-800 border-red-300",
+  publicada: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  duplicada: "bg-orange-100 text-orange-800 border-orange-300",
+  arquivada: "bg-zinc-200 text-zinc-700 border-zinc-300",
+};
+
+export const ARCHIVE_REASON_LABEL: Record<string, string> = {
+  manual: "Arquivada manualmente",
+  "auto:captada_30d": "Auto: captada > 30 dias",
+  "auto:duplicada_15d": "Auto: duplicada > 15 dias",
+  "auto:rejeitada_15d": "Auto: rejeitada > 15 dias",
+  "auto:em_revisao_60d": "Auto: em revisão > 60 dias",
+};
+
+// Normaliza valores antigos do enum
+export function normalizeStatus(s: string | null | undefined): EditorialStatus {
+  if (!s) return "captada";
+  if (s === "rascunho") return "captada";
+  if (s === "revisao") return "em_revisao";
+  if (s === "publicado") return "publicada";
+  if (STATUS_ORDER.includes(s as EditorialStatus)) return s as EditorialStatus;
+  return "captada";
+}
+
+export function canApproveOrPublish(role: string | null): boolean {
+  return role === "admin" || role === "editor";
+}
+
+export const MATCH_REASON_LABEL: Record<string, string> = {
+  slug_exato: "Slug idêntico",
+  fonte_igual: "Mesma URL de fonte",
+  titulo_semelhante: "Título muito semelhante",
+};
+

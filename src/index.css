@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700;900&family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TV BARRETÃO — Design System
+   Sóbrio, jornalístico, inspirado em CNN/G1.
+   Todas as cores em HSL.
+*/
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: 0 0% 100%;
+    --foreground: 220 26% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 26% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 26% 14%;
+
+    /* Brand */
+    --primary: 220 70% 18%;          /* Azul TV escuro */
+    --primary-foreground: 0 0% 100%;
+
+    --primary-glow: 215 80% 32%;
+    --brand-navy: 220 70% 14%;
+    --brand-navy-deep: 222 75% 9%;
+
+    /* Urgência / Breaking */
+    --urgent: 358 75% 48%;           /* Vermelho notícia */
+    --urgent-foreground: 0 0% 100%;
+
+    /* Alerta / Atenção */
+    --alert: 45 95% 52%;             /* Amarelo destaque */
+    --alert-foreground: 220 70% 14%;
+
+    --secondary: 215 20% 96%;
+    --secondary-foreground: 220 26% 14%;
+
+    --muted: 215 20% 95%;
+    --muted-foreground: 215 16% 42%;
+
+    --accent: 215 20% 94%;
+    --accent-foreground: 220 26% 14%;
+
+    --destructive: 358 75% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 220 70% 18%;
+
+    --radius: 0.25rem;
+
+    /* Editorial helpers */
+    --headline: 220 35% 10%;
+    --byline: 215 16% 42%;
+    --rule: 215 20% 85%;
+
+    /* Gradients */
+    --gradient-overlay: linear-gradient(180deg, hsl(220 70% 8% / 0) 0%, hsl(220 70% 8% / 0.85) 100%);
+    --gradient-urgent: linear-gradient(90deg, hsl(358 75% 42%), hsl(358 80% 55%));
+    --gradient-navy: linear-gradient(180deg, hsl(var(--brand-navy)), hsl(var(--brand-navy-deep)));
+
+    /* Shadows */
+    --shadow-card: 0 1px 2px hsl(220 30% 10% / 0.06), 0 4px 12px hsl(220 30% 10% / 0.04);
+    --shadow-hero: 0 20px 60px -20px hsl(220 70% 10% / 0.45);
+
+    /* Sidebar (admin) */
+    --sidebar-background: 220 70% 14%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 358 75% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 60% 22%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 50% 22%;
+    --sidebar-ring: 215 80% 50%;
+  }
+
+  .dark {
+    --background: 222 30% 8%;
+    --foreground: 210 20% 96%;
+    --card: 222 30% 11%;
+    --card-foreground: 210 20% 96%;
+    --popover: 222 30% 11%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 215 80% 55%;
+    --primary-foreground: 222 30% 8%;
+    --secondary: 222 20% 16%;
+    --secondary-foreground: 210 20% 96%;
+    --muted: 222 20% 16%;
+    --muted-foreground: 215 16% 65%;
+    --accent: 222 20% 18%;
+    --accent-foreground: 210 20% 96%;
+    --destructive: 358 75% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 20% 20%;
+    --input: 222 20% 20%;
+    --ring: 215 80% 55%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Source Sans 3', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Roboto Condensed', 'Source Sans 3', sans-serif;
+    letter-spacing: -0.01em;
+  }
+  .font-serif-news {
+    font-family: 'Source Serif 4', Georgia, serif;
+  }
+}
+
+@layer components {
+  .container-news { @apply container max-w-[1280px] mx-auto px-4; }
+
+  .kicker {
+    @apply inline-block text-[11px] font-bold uppercase tracking-widest text-[hsl(var(--urgent))];
+  }
+  .category-tag {
+    @apply inline-block text-[11px] font-bold uppercase tracking-widest text-primary;
+  }
+  .urgent-badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[hsl(var(--urgent-foreground))] bg-[hsl(var(--urgent))];
+  }
+  .alert-badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[hsl(var(--alert-foreground))] bg-[hsl(var(--alert))];
+  }
+  .section-title {
+    @apply flex items-center gap-3 mb-4 pb-2 border-b-2 border-primary;
+  }
+  .section-title h2 {
+    @apply text-xl font-black uppercase tracking-tight text-primary;
+  }
+  .news-link {
+    @apply hover:text-[hsl(var(--urgent))] transition-colors;
+  }
+  .ad-slot {
+    @apply flex items-center justify-center bg-muted text-[10px] font-bold uppercase tracking-widest text-muted-foreground border border-dashed border-border;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .pulse-dot {
+    animation: pulse-dot 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .marquee {
+    --marquee-speed-desktop: 11s;
+    --marquee-speed-mobile: 18s;
+    animation: marquee var(--marquee-speed-mobile) linear infinite;
+  }
+  @media (min-width: 768px) {
+    .marquee {
+      animation-duration: var(--marquee-speed-desktop);
+    }
+  }
+  .marquee:hover {
+    animation-play-state: paused;
+  }
+@keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-25%); }
+  }
+}
+
+/* Hide Lovable badge on published site */
+#lovable-badge {
+  display: none !important;
+}

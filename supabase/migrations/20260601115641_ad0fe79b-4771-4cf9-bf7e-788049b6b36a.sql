@@ -1,0 +1,1 @@
+ALTER TYPE public.post_status ADD VALUE IF NOT EXISTS 'pronta_para_revisao';

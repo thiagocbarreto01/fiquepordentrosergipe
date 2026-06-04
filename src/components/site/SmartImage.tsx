@@ -1,0 +1,92 @@
+import { useState, useCallback, type SyntheticEvent } from "react";
+
+interface SmartImageProps {
+  src: string;
+  alt: string;
+  /**
+   * Aspect ratio do container (formato CSS aspect-ratio). Ex: "16/9", "1/1".
+   * Default: "16/9".
+   */
+  aspectRatio?: string;
+  className?: string;
+  loading?: "eager" | "lazy";
+  fetchPriority?: "high" | "low" | "auto";
+  width?: number;
+  height?: number;
+  onError?: (e: SyntheticEvent<HTMLImageElement>) => void;
+  /**
+   * Se true, anima zoom no hover (group-hover:scale-105).
+   * Funciona apenas no modo "horizontal" (preserva enquadramento).
+   */
+  hoverZoom?: boolean;
+}
+
+/**
+ * Renderiza uma imagem dentro de um container com aspect-ratio fixo:
+ * - Imagens horizontais ou quadradas: usa object-cover (preenche o container).
+ * - Imagens verticais (h > w): mostra a imagem inteira centralizada (object-contain),
+ *   com a própria imagem desfocada como fundo para preencher as laterais.
+ *
+ * Assim evitamos cortes feios em fotos verticais (Instagram, retratos).
+ */
+export function SmartImage({
+  src,
+  alt,
+  aspectRatio = "16/9",
+  className = "",
+  loading = "lazy",
+  fetchPriority,
+  width,
+  height,
+  onError,
+  hoverZoom = false,
+}: SmartImageProps) {
+  const [orientation, setOrientation] = useState<"unknown" | "horizontal" | "vertical">("unknown");
+
+  const handleLoad = useCallback((e: SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalHeight > img.naturalWidth * 1.05) {
+      setOrientation("vertical");
+    } else {
+      setOrientation("horizontal");
+    }
+  }, []);
+
+  const isVertical = orientation === "vertical";
+
+  return (
+    <div
+      className={`relative w-full overflow-hidden bg-muted ${className}`}
+      style={{ aspectRatio }}
+    >
+      {/* Camada de fundo desfocado (apenas para verticais) */}
+      {isVertical && (
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 pointer-events-none"
+        />
+      )}
+
+      {/* Imagem principal */}
+      <img
+        src={src}
+        alt={alt}
+        loading={loading}
+        fetchPriority={fetchPriority}
+        width={width}
+        height={height}
+        onLoad={handleLoad}
+        onError={onError}
+        className={[
+          "relative z-10 w-full h-full transition-transform duration-700",
+          isVertical ? "object-contain" : "object-cover",
+          hoverZoom && !isVertical ? "group-hover:scale-105" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      />
+    </div>
+  );
+}
