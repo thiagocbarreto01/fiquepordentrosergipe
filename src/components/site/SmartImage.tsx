@@ -62,17 +62,7 @@ export function SmartImage({
         background: "linear-gradient(135deg, hsl(var(--brand-navy) / 0.95) 0%, hsl(var(--brand-navy-deep) / 0.95) 100%)",
       }}
     >
-      {/* Camada de fundo desfocado (apenas para verticais) */}
-      {isVertical && (
-        <img
-          src={src}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 pointer-events-none"
-        />
-      )}
-
-      {/* Imagem principal */}
+      {/* Imagem principal — sempre object-cover (sem fundo desfocado) */}
       <img
         src={src}
         alt={alt}
@@ -83,9 +73,8 @@ export function SmartImage({
         onLoad={handleLoad}
         onError={onError}
         className={[
-          "relative z-10 w-full h-full transition-transform duration-700",
-          isVertical ? "object-contain" : "object-cover",
-          hoverZoom && !isVertical ? "group-hover:scale-105" : "",
+          "relative z-10 w-full h-full object-cover transition-transform duration-700",
+          hoverZoom ? "group-hover:scale-105" : "",
         ]
           .filter(Boolean)
           .join(" ")}

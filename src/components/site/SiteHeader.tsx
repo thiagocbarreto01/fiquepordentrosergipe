@@ -57,8 +57,8 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {/* Main bar — mais compacta no mobile */}
-      <div className="container-news flex items-center gap-3 h-16 md:h-28">
+      {/* Main bar — logo grande, busca centralizada, denúncia à direita (estilo TV Barretão) */}
+      <div className="container-news flex items-center gap-4 h-20 md:h-36">
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden p-2 -ml-2 hover:bg-secondary/50 rounded-sm transition-colors"
@@ -67,31 +67,32 @@ export default function SiteHeader() {
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        <Link to="/" className="flex items-center" aria-label="Fique Por Dentro Sergipe - Início">
-          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-12 md:h-20 w-auto" />
+        <Link to="/" className="flex items-center shrink-0" aria-label="Fique Por Dentro Sergipe - Início">
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-16 md:h-28 w-auto" />
         </Link>
 
-        <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center max-w-md ml-4">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center justify-center px-6">
+          <div className="relative w-full max-w-xl">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
               value={q} onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar notícias..."
-              className="w-full h-10 pl-10 pr-3 rounded-sm border border-border bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full h-12 pl-12 pr-4 rounded-md border border-border bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           </div>
         </form>
 
-        <div className="hidden md:flex items-center gap-2 ml-auto">
+        <div className="hidden md:flex items-center gap-2 shrink-0">
           {user && (
             <Button asChild variant="outline" className="rounded-sm font-bold uppercase tracking-wider text-xs border-primary text-primary hover:bg-primary hover:text-primary-foreground">
               <Link to="/admin"><LayoutDashboard className="h-4 w-4" /> Painel</Link>
             </Button>
           )}
-          <Button asChild variant="default" className="bg-urgent hover:bg-urgent/90 text-urgent-foreground rounded-sm font-bold uppercase tracking-wider text-xs">
+          <Button asChild variant="default" className="bg-urgent hover:bg-urgent/90 text-urgent-foreground rounded-sm font-bold uppercase tracking-wider text-xs h-11 px-5">
             <Link to="/denuncias/enviar">Enviar Denúncia</Link>
           </Button>
         </div>
+
 
         {/* Mobile actions: busca em ícone + denúncia compacta */}
         <div className="md:hidden flex items-center gap-1 ml-auto">
