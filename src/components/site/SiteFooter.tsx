@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo-fique-por-dentro.png";
-import { Facebook, Instagram, Youtube, Mail } from "lucide-react";
+import { Facebook, Instagram, Youtube, Mail, MessageCircle } from "lucide-react";
 import AdSlot from "./AdSlot";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 export default function SiteFooter() {
+  const s = useSiteSettings();
   return (
     <footer className="mt-16 bg-navy-deep text-white">
       <div className="container-news py-8">
@@ -17,10 +19,11 @@ export default function SiteFooter() {
             Apuração responsável e linguagem direta para você ficar bem informado todos os dias.
           </p>
           <div className="flex items-center gap-3 mt-4">
-            <a href="https://instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Instagram className="h-4 w-4" /></a>
-            <a href="#" aria-label="Facebook" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Facebook className="h-4 w-4" /></a>
-            <a href="#" aria-label="YouTube" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Youtube className="h-4 w-4" /></a>
-            <a href="mailto:contato@fiquepordentrose.com" aria-label="Email" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Mail className="h-4 w-4" /></a>
+            {s.instagram_url && <a href={s.instagram_url} target="_blank" rel="noreferrer" aria-label="Instagram" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Instagram className="h-4 w-4" /></a>}
+            {s.facebook_url && <a href={s.facebook_url} target="_blank" rel="noreferrer" aria-label="Facebook" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Facebook className="h-4 w-4" /></a>}
+            {s.youtube_url && <a href={s.youtube_url} target="_blank" rel="noreferrer" aria-label="YouTube" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Youtube className="h-4 w-4" /></a>}
+            {s.whatsapp_url && <a href={s.whatsapp_url} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><MessageCircle className="h-4 w-4" /></a>}
+            <a href={`mailto:${s.contact_email}`} aria-label="Email" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Mail className="h-4 w-4" /></a>
           </div>
         </div>
 
