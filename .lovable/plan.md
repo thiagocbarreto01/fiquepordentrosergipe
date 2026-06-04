@@ -1,55 +1,102 @@
-## Sistema Inteligente de Detecção de Duplicadas
+# Fase 1 — FIQUE POR DENTRO SERGIPE
 
-### Situação atual
-- A função `capture-sources` já chama o RPC `find_duplicate_post` (que retorna `similarity` e `match_reason`), mas o resultado é binário: ou marca como `duplicada` ou ignora. O score de similaridade é descartado.
-- Já existe o campo `posts.duplicate_of` e o status `duplicada`.
-- Não existe registro de decisões nem nível "similar" intermediário.
+## 1. Inventário do projeto herdado (TV Barretão)
 
-### Plano
+### Rotas públicas (src/App.tsx)
+- `/` Home, `/ultimas`, `/busca`, `/categoria/:slug`, `/noticia/:slug`
+- `/denuncias/enviar`, `/auth`
 
-#### 1. Banco de dados (migração)
-- Adicionar em `posts`:
-  - `similarity_score` (real, 0–1)
-  - `similar_to` (uuid, FK lógica para `posts.id` — usado quando similaridade fica em 71–90%, ainda não é duplicada)
-  - `duplicate_match_reason` (text — `slug_exato`, `fonte_igual`, `titulo_semelhante`)
-- Nova tabela `duplicate_decisions` (id, post_id, decided_by, decision `manter|mesclar|marcar_duplicada`, reference_post_id, note, created_at) com RLS (staff lê, staff insere).
+### Rotas admin (todas com RequireAuth)
+- `/admin` dashboard, `/admin/posts` (lista + novo + editor), `/admin/revisao`
+- `/admin/categorias`, `/admin/banners`, `/admin/denuncias`
+- `/admin/fontes`, `/admin/instagram`, `/admin/importar-instagram`
+- `/admin/usuarios`, `/admin/home`
 
-#### 2. Captação (`supabase/functions/capture-sources/index.ts`)
-- Salvar sempre `similarity_score`, `duplicate_match_reason` e referência ao melhor match.
-- Classificação automática no insert:
-  - `≥ 0.91` → status `duplicada`, preencher `duplicate_of` (comportamento atual)
-  - `0.71 – 0.90` → status `em_revisao`, preencher apenas `similar_to` (NÃO bloqueia)
-  - `< 0.71` → status `em_revisao`, sem referência
+### Edge functions (supabase/functions)
+- `capture-sources` (captação automática / RSS)
+- `analyze-relevance`, `reclassify-categories`
+- `rewrite-post` (IA jornalística / reescrita)
+- `generate-instagram-draft`, `generate-instagram-headline`, `publish-instagram`, `backfill-instagram-drafts`
+- `import-instagram-post`, `import-image-to-storage`, `backfill-images`
+- `cms-api`, `noticias`, `secure-publish-trigger`
 
-#### 3. Tipos & helpers
-- `src/lib/duplicates.ts` — helper `classifyDuplicate(score)` retornando `{ tier: "nova"|"similar"|"duplicada", label, color, pct }`.
+### Tabelas no banco (15)
+posts, posts_public, categories, news_sources, banners, denuncias, instagram_posts, profiles, user_roles, post_status_history, duplicate_decisions, home_audit, financial_* (3 — herdadas, sem uso visível no app).
 
-#### 4. Lista de Captadas (`AdminPosts.tsx`)
-- Buscar também `similarity_score, similar_to, duplicate_of, duplicate_match_reason` + join no post referenciado (`title, published_at, slug`).
-- Adicionar coluna/badge "Duplicidade" com cor por tier (verde/amarelo/vermelho) e tooltip mostrando:
-  - "Possível duplicada de: [Título]"
-  - "Publicada em: [Data]"
-  - "Similaridade: XX%"
-- Novo filtro de duplicidade (Todas | Apenas novas | Apenas similares | Apenas duplicadas) aplicado no client após o fetch.
-- Ações na linha quando há referência:
-  - **Manter** (registra decisão `manter`, limpa `similar_to`/`duplicate_of`, mantém status atual)
-  - **Mesclar** (abre o editor do post de referência em nova aba e marca este como `duplicada`)
-  - **Marcar como duplicada** (registra decisão e seta status `duplicada` + `duplicate_of`)
+### Estado atual dos dados
+- `categories`: **0 linhas** (vazio)
+- `news_sources`: **0 linhas** (vazio)
+- Ou seja: precisa popular categorias novas e fontes de captação.
 
-#### 5. Dashboard (`AdminDashboard.tsx`)
-- Novo card "Duplicadas evitadas hoje" = contagem de posts criados hoje com status `duplicada` OU decisões `mesclar`/`marcar_duplicada` registradas hoje.
+## 2. O que será REAPROVEITADO (sem alteração)
 
-#### 6. Histórico
-- Toda ação editorial sobre duplicidade insere linha em `duplicate_decisions`.
-- Mini-painel "Últimas decisões" no editor (`AdminPostEditor.tsx`), só quando o post tem similar/duplicado.
+- Toda a camada de dados (schema, RLS, functions SECURITY DEFINER já blindadas).
+- Todas as edge functions (captação, IA, Instagram 4:5, publish-trigger).
+- Workflow editorial completo: status, histórico, duplicatas, auto-arquivamento.
+- Dashboard, editor, banners, denúncias, fontes, usuários, controle home.
+- PWA (manifest + sw.js), SEO base, JSON-LD, AdSlot.
+- Hooks (useAuth), helpers (homeSlots, news, postImage, statusFlow).
 
-### Detalhes técnicos
-- O RPC `find_duplicate_post` já retorna `similarity` — usaremos o valor diretamente; para matches por slug/fonte forçamos `1.0`.
-- Filtros de duplicidade ficam no client (a tabela é pequena após o filtro de status); evita SQL complexo.
-- Sem alteração de RLS de `posts`. Nova tabela usa as mesmas regras (staff lê/insere via `is_staff`).
-- Nenhuma exclusão automática (regra 7).
+## 3. O que será RENOMEADO / SUBSTITUÍDO (Fase 1)
 
-### O que não muda
-- Layout do site público.
-- Fluxo editorial existente (`captada → em_revisao → aprovada → publicada`).
-- Lógica de reescrita por IA, imagens, vídeos, fontes.
+### Identidade textual
+- `index.html`: title, description, og:*, twitter:*, canonical, JSON-LD `name` e `url`, apple-mobile-web-app-title, keywords.
+- `public/manifest.webmanifest`: name, short_name, description.
+- `public/news-placeholder.svg`: "TV BARRETÃO" → "FIQUE POR DENTRO SERGIPE" + subtítulo.
+- `src/components/site/SiteHeader.tsx`: logo alt, label de aria, link Instagram (se trocar).
+- `src/components/site/SiteFooter.tsx`: nome, descrição, redes sociais, e-mail.
+- Strings espalhadas em: `Index`, `UltimasPage`, `NoticiaPage`, `CategoriaPage`, `BuscaPage`, `AuthPage`, `EnviarDenunciaPage`, `AdminDashboard`, `AdminInstagram`, `AdminPosts`, `AdminLayout`, `PwaInstallButton`, `NewsCards`, `ImageActionButtons`, `lib/postImage.ts`.
+
+### Visual
+- `src/index.css`: tokens HSL (paleta nova — definida pela escolha de design).
+- `src/assets/logo-tv-barretao.*`: substituir por novo logo (manter nome do arquivo OU renomear + atualizar imports).
+
+### Navegação (SiteHeader NAV)
+Substituir lista atual pelas 12 categorias pedidas:
+Polícia, Política, Sergipe, Aracaju, Interior, Brasil, Mundo, Economia, Saúde, Educação, Esportes, Entretenimento.
+
+## 4. O que EXIGE nova configuração
+
+### Dados (migration única, mínima)
+- Inserir as 12 categorias em `public.categories` com slug correto. Nenhuma alteração de schema.
+- Fontes (`news_sources`): vazio hoje. Cadastro fica para Fase 2 (ou via UI `/admin/fontes`).
+
+### Assets a gerar
+- Novo logo "FIQUE POR DENTRO SERGIPE" (PNG transparente).
+- Novo favicon + apple-touch-icon + icon-192 + icon-512 (PWA).
+- Nova og-image (opcional — só se útil).
+- Novo `news-placeholder.svg` com nova marca.
+
+### Segredos / integrações externas
+Nada novo. Já existem: LOVABLE_API_KEY (IA), CMS_API_KEY, bucket `media`.
+Trocar handle do Instagram (`barretao__news`) pelo novo @ — usuário precisa informar.
+
+## 5. Dependências externas em uso
+- Supabase (Lovable Cloud) — auth, db, storage, edge functions, pg_net, pg_trgm.
+- Lovable AI Gateway (LOVABLE_API_KEY) — análise de relevância, reescrita, Instagram.
+- Instagram (publish-instagram) — credenciais ainda dependentes de configuração do usuário.
+
+## 6. Fontes de captação existentes
+Zero cadastradas. A infraestrutura (`capture-sources`, tabela `news_sources`, página `/admin/fontes`) está pronta. O usuário cadastra as URLs RSS / sites de origem na UI; nada a fazer em código nesta fase.
+
+---
+
+## Plano de execução da Fase 1
+
+Antes de implementar, preciso de 1 decisão visual (paleta + tipografia + layout) e o handle correto do Instagram. Vou perguntar logo a seguir.
+
+Depois da escolha, executo nesta ordem:
+
+1. **Identidade textual global** — `index.html`, `manifest.webmanifest`, JSON-LD, SEO meta, og:*.
+2. **Tokens de design** — reescrever paleta em `src/index.css` (HSL) conforme escolha.
+3. **Logo + favicon + PWA icons + placeholder SVG** — gerar e substituir arquivos em `src/assets/` e `public/`.
+4. **Header / Footer** — atualizar marca, nav (12 categorias novas), redes sociais.
+5. **Strings institucionais** — varrer todas as ocorrências de "TV Barretão"/"barretao" nas páginas e componentes e substituir.
+6. **Categorias no banco** — migration inserindo as 12 categorias com slugs.
+7. **QA visual** — abrir Home, uma Categoria, uma Notícia, Enviar Denúncia, Dashboard admin no mobile e desktop.
+
+Nada de schema novo, nada removido, nada de mexer em segurança ou edge functions.
+
+```text
+Inventory  →  Ask design  →  Tokens+Logo  →  Header/Footer  →  Strings  →  Categories migration  →  QA
+```
