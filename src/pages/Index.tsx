@@ -112,16 +112,16 @@ export default function Index() {
 
   return (
     <SiteLayout>
-      {/* HERO PREMIUM */}
+      {/* HERO PREMIUM — full width estilo G1/UOL */}
       {heroMain && (
-        <section className="container-news pt-2 md:pt-3">
+        <section className="container-news pt-1 md:pt-2">
           <G1Hero main={heroMain} secondaries={heroSecondaries} recent={heroRecent} />
         </section>
       )}
 
       {/* GRID DE DESTAQUES — 4 cards */}
       {highlightGrid.length > 0 && (
-        <section className="container-news mt-6 md:mt-10">
+        <section className="container-news mt-4 md:mt-6">
           <SectionHeader title="Destaques" icon={Flame} link="/ultimas" />
           <HighlightsGrid posts={highlightGrid} />
         </section>
