@@ -120,7 +120,7 @@ export async function getPublishedPosts(limit = 20) {
 
 /**
  * Regra editorial da Manchete/Hero:
- * - Notícias captadas automaticamente (source_id != null) NÃO podem ocupar a manchete principal,
+ * - Notícias captadas automaticamente NÃO podem ocupar a manchete principal,
  *   a menos que tenham sido marcadas como Destaque Principal (is_main_featured) ou Destaque Permanente (is_evergreen).
  */
 export async function getFeaturedPost() {
@@ -158,7 +158,7 @@ export async function getFeaturedPost() {
       .from("posts_public" as any)
       .select(POST_SELECT)
       .eq("is_featured", true)
-      .is("source_id", null)
+        .eq("is_editorial", true)
       .gte("published_at", yesterday.toISOString())
   )
     .order("published_at", { ascending: false })
@@ -172,7 +172,7 @@ export async function getFeaturedPost() {
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
-      .is("source_id", null)
+        .eq("is_editorial", true)
   )
     .order("published_at", { ascending: false })
     .order("created_at", { ascending: false })
@@ -187,7 +187,7 @@ export async function getHighlights(excludeId?: string, limit = 3) {
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
-      .or("is_evergreen.eq.true,is_main_featured.eq.true,and(is_featured.eq.true,source_id.is.null)")
+      .or("is_evergreen.eq.true,is_main_featured.eq.true,and(is_featured.eq.true,is_editorial.eq.true)")
   )
     .order("is_evergreen", { ascending: false })
     .order("is_main_featured", { ascending: false })
