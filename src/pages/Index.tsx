@@ -114,7 +114,7 @@ export default function Index() {
     <SiteLayout>
       {/* HERO PREMIUM */}
       {heroMain && (
-        <section className="container-news pt-3 md:pt-5">
+        <section className="container-news pt-2 md:pt-3">
           <G1Hero main={heroMain} secondaries={heroSecondaries} recent={heroRecent} />
         </section>
       )}
