@@ -105,7 +105,7 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
         {/* Imagem principal */}
         <Link to={`/noticia/${main.slug}`} className="block relative overflow-hidden rounded-md md:rounded-lg aspect-[16/9] shadow-lg ring-1 ring-black/5" style={{ background: "linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-deep)) 100%)" }}>
           <SmartImage
-            src={getPostImage(main)}
+            src={getPostImage(main)} fallbackUrl={main.categories?.default_cover_image_url}
             alt={main.title}
             aspectRatio="unset"
             loading="eager"
@@ -174,7 +174,7 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
                 <Link key={p.id} to={`/noticia/${p.slug}`} className="group flex flex-col gap-2">
                   <div className="relative aspect-[16/10] overflow-hidden rounded-sm bg-muted">
                     <SmartImage
-                      src={getPostImage(p)}
+                      src={getPostImage(p)} fallbackUrl={p.categories?.default_cover_image_url}
                       alt={p.title}
                       aspectRatio="unset"
                       loading="lazy"
@@ -220,7 +220,7 @@ export function G1Hero({ main, secondaries, recent = [] }: { main: Post; seconda
           >
             <div className="relative w-full aspect-[16/10] overflow-hidden rounded-md">
               <SmartImage
-                src={getPostImage(post)}
+                src={getPostImage(post)} fallbackUrl={post.categories?.default_cover_image_url}
                 alt={post.title}
                 aspectRatio="unset"
                 hoverZoom
@@ -269,7 +269,7 @@ export function HighlightsGrid({ posts }: { posts: Post[] }) {
         >
           <div className="relative aspect-[16/10] overflow-hidden bg-muted">
             <SmartImage
-              src={getPostImage(post)}
+              src={getPostImage(post)} fallbackUrl={post.categories?.default_cover_image_url}
               alt={post.title}
               aspectRatio="unset"
               loading="lazy"
@@ -314,7 +314,7 @@ export function NewsThumbItem({ post }: { post: Post }) {
     >
       <div className="relative shrink-0 w-24 h-20 md:w-28 md:h-24 overflow-hidden rounded-sm bg-muted">
         <SmartImage
-          src={getPostImage(post)}
+          src={getPostImage(post)} fallbackUrl={post.categories?.default_cover_image_url}
           alt={post.title}
           aspectRatio="unset"
           loading="lazy"
@@ -395,7 +395,7 @@ export function VideoCard({ post, featured = false }: { post: Post; featured?: b
     >
       <div className={`relative w-full overflow-hidden bg-black ${featured ? "aspect-[16/9]" : "aspect-[16/10]"}`}>
         <SmartImage
-          src={getPostImage(post)}
+          src={getPostImage(post)} fallbackUrl={post.categories?.default_cover_image_url}
           alt={post.title}
           aspectRatio="unset"
           loading="lazy"
@@ -446,7 +446,7 @@ export function NewsCard({ post, size = "md" }: { post: Post; size?: "sm" | "md"
     <Link to={`/noticia/${post.slug}`} className="group flex flex-col h-full bg-white transition-all duration-300">
       <div className={`relative ${imageHeight} w-full overflow-hidden rounded-sm mb-3 bg-muted`}>
         <SmartImage
-          src={getPostImage(post)}
+          src={getPostImage(post)} fallbackUrl={post.categories?.default_cover_image_url}
           alt={post.title}
           aspectRatio="unset"
           loading="lazy"
