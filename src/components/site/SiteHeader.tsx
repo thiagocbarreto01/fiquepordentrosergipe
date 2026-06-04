@@ -40,7 +40,7 @@ export default function SiteHeader() {
         <div className="container-news flex items-center justify-between h-8">
           <WeatherTime city="Aracaju" />
           <div className="flex items-center gap-3">
-            <a href="https://instagram.com/barretao__news" target="_blank" rel="noreferrer" className="hover:text-alert"><Instagram className="h-3.5 w-3.5" /></a>
+            <a href="https://instagram.com/" target="_blank" rel="noreferrer" className="hover:text-alert"><Instagram className="h-3.5 w-3.5" /></a>
             <a href="#" className="hover:text-alert"><Facebook className="h-3.5 w-3.5" /></a>
             <a href="#" className="hover:text-alert"><Youtube className="h-3.5 w-3.5" /></a>
             <span className="h-3 w-px bg-white/30 mx-1" />

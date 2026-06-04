@@ -22,20 +22,20 @@
     --popover-foreground: 220 26% 14%;
 
     /* Brand */
-    --primary: 220 70% 18%;          /* Azul TV escuro */
+    --primary: 0 72% 38%;            /* Vermelho editorial profundo (A8/G1) */
     --primary-foreground: 0 0% 100%;
 
-    --primary-glow: 215 80% 32%;
-    --brand-navy: 220 70% 14%;
-    --brand-navy-deep: 222 75% 9%;
+    --primary-glow: 358 78% 52%;
+    --brand-navy: 0 0% 8%;            /* Quase preto com calor */
+    --brand-navy-deep: 0 0% 5%;
 
     /* Urgência / Breaking */
-    --urgent: 358 75% 48%;           /* Vermelho notícia */
+    --urgent: 358 82% 50%;           /* Vermelho notícia mais vivo */
     --urgent-foreground: 0 0% 100%;
 
     /* Alerta / Atenção */
     --alert: 45 95% 52%;             /* Amarelo destaque */
-    --alert-foreground: 220 70% 14%;
+    --alert-foreground: 0 0% 8%;
 
     --secondary: 215 20% 96%;
     --secondary-foreground: 220 26% 14%;

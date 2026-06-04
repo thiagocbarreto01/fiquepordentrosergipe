@@ -17,7 +17,7 @@ export default function SiteFooter() {
             Apuração responsável e linguagem direta para você ficar bem informado todos os dias.
           </p>
           <div className="flex items-center gap-3 mt-4">
-            <a href="https://instagram.com/barretao__news" target="_blank" rel="noreferrer" aria-label="Instagram" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Instagram className="h-4 w-4" /></a>
+            <a href="https://instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Instagram className="h-4 w-4" /></a>
             <a href="#" aria-label="Facebook" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Facebook className="h-4 w-4" /></a>
             <a href="#" aria-label="YouTube" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Youtube className="h-4 w-4" /></a>
             <a href="mailto:contato@fiquepordentrose.com" aria-label="Email" className="p-2 bg-white/10 hover:bg-urgent rounded-sm"><Mail className="h-4 w-4" /></a>
