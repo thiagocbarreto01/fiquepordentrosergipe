@@ -23,7 +23,6 @@ const NAV = [
 ];
 
 export default function SiteHeader() {
-export default function SiteHeader() {
   const { user } = useAuth();
   const s = useSiteSettings();
   const [open, setOpen] = useState(false);
