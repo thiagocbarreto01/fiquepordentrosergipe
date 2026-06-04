@@ -250,7 +250,7 @@ export default function Index() {
                   className="group flex flex-col bg-white rounded-md overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 border border-border/40"
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                    <SmartImage src={getPostImage(p)} alt={p.title} aspectRatio="unset" loading="lazy" hoverZoom className="h-full w-full" onError={(e) => handleImgError(e, p)} />
+                    <SmartImage src={getPostImage(p)} fallbackUrl={p.categories?.default_cover_image_url} alt={p.title} aspectRatio="unset" loading="lazy" hoverZoom className="h-full w-full" onError={(e) => handleImgError(e, p)} />
                     <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-widest bg-urgent text-white px-2 py-0.5 rounded-sm shadow">
                       #{i + 1}
                     </span>
@@ -309,7 +309,7 @@ export default function Index() {
                 className="group flex flex-col bg-white rounded-md overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 border border-urgent/30"
               >
                 <div className="relative aspect-[16/10] overflow-hidden bg-muted">
-                  <SmartImage src={getPostImage(p)} alt={p.title} aspectRatio="unset" loading="lazy" hoverZoom className="h-full w-full" onError={(e) => handleImgError(e, p)} />
+                  <SmartImage src={getPostImage(p)} fallbackUrl={p.categories?.default_cover_image_url} alt={p.title} aspectRatio="unset" loading="lazy" hoverZoom className="h-full w-full" onError={(e) => handleImgError(e, p)} />
                   <span className="absolute top-2 left-2 z-10 text-[10px] font-black uppercase tracking-widest bg-urgent text-white px-2 py-0.5 rounded-sm shadow flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" /> Denúncia
                   </span>
