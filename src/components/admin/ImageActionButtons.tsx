@@ -387,18 +387,14 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   }
 
   ctx.fillStyle = COLORS.white;
-  ctx.font = "900 22px system-ui, -apple-system, sans-serif";
+  ctx.font = "900 24px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("FIQUE POR DENTRO SERGIPE", textLeftX, footerY + FOOTER_H / 2 - 18);
+  ctx.fillText("FIQUE POR DENTRO SERGIPE", textLeftX, footerY + FOOTER_H / 2 - 6);
 
   ctx.font = "700 22px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = COLORS.yellow;
-  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 + 12);
-
-  ctx.font = "600 18px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.fillText("fiquepordentrosergipe.com.br", textLeftX, footerY + FOOTER_H / 2 + 40);
+  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 + 28);
 
   // Direita — CTA institucional
   ctx.textAlign = "right";
