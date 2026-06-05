@@ -541,6 +541,16 @@ export default function AdminPostEditor() {
         </div>
       </div>
 
+      {!isNew && (
+        <ReelGeneratorDialog
+          open={reelOpen}
+          onOpenChange={setReelOpen}
+          post={{ ...form, id } as any}
+        />
+      )}
+
+
+
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3 hidden">
         <h1 className="font-display text-3xl font-black">{isNew ? "Nova notícia" : "Editar notícia"}</h1>
         {!isNew && (
