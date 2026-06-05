@@ -411,6 +411,13 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ),
   );
 }
+function formatShortDate(iso?: string): string {
+  const d = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(d.getTime())) return "";
+  const MONTHS = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${dd} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 function formatDate(iso?: string): string {
   const d = iso ? new Date(iso) : new Date();
