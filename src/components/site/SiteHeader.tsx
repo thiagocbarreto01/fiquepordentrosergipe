@@ -171,6 +171,7 @@ export default function SiteHeader() {
           </div>
         )}
       </nav>
+      <PlantaoBar />
     </header>
   );
 }
