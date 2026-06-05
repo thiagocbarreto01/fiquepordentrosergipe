@@ -378,19 +378,29 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   ctx.fillStyle = COLORS.yellow;
   ctx.fillRect(0, footerY, W, 4);
 
+  // Logo no rodapé (esquerda) — reforça marca FIQUE POR DENTRO SERGIPE
+  let textLeftX = PAD_X;
+  if (logo) {
+    const logoH = 64;
+    const ratio = logo.width / logo.height;
+    const logoW = logoH * ratio;
+    ctx.drawImage(logo, PAD_X, footerY + (FOOTER_H - logoH) / 2, logoW, logoH);
+    textLeftX = PAD_X + logoW + 24;
+  }
+
   ctx.fillStyle = COLORS.white;
-  ctx.font = "900 30px system-ui, -apple-system, sans-serif";
+  ctx.font = "900 28px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText("@fiquepordentrosergipe", PAD_X, footerY + FOOTER_H / 2 - 14);
+  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 - 12);
 
-  ctx.font = "600 22px system-ui, -apple-system, sans-serif";
+  ctx.font = "600 20px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.fillText("fiquepordentrose.com.br", PAD_X, footerY + FOOTER_H / 2 + 20);
+  ctx.fillText("fiquepordentrose.com.br", textLeftX, footerY + FOOTER_H / 2 + 18);
 
-  // Right-side mini icons
+  // Direita — CTA
   ctx.textAlign = "right";
-  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
+  ctx.font = "900 24px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = COLORS.yellow;
   ctx.fillText("ACOMPANHE NO INSTAGRAM →", W - PAD_X, footerY + FOOTER_H / 2);
 
