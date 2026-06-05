@@ -159,11 +159,9 @@ function wrapPlain(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
 interface ArtOptions {
   imageUrl: string;
   title: string;
-  subtitle?: string;
   categoryName?: string;
   isUrgent?: boolean;
   publishedAt?: string;
-  showSponsors?: boolean;
 }
 
 async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
@@ -175,17 +173,14 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Background base (in case anything fails to render)
+  // Background base
   ctx.fillStyle = COLORS.navy;
   ctx.fillRect(0, 0, W, H);
 
   // Pre-load assets in parallel (resilient to individual failures)
-  const [logo, cover, sponsors] = await Promise.all([
+  const [logo, cover] = await Promise.all([
     loadImageForCanvas(logoFiquePorDentro).catch(() => null),
     opts.imageUrl ? loadImageForCanvas(opts.imageUrl).catch(() => null) : Promise.resolve(null),
-    opts.showSponsors === false
-      ? Promise.resolve(null)
-      : loadImageForCanvas(sponsorsStrip).catch(() => null),
   ]);
 
   // ---------------------------------------------------------------------------
