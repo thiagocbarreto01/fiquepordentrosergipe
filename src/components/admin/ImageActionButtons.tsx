@@ -199,99 +199,101 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   ]);
 
   // ---------------------------------------------------------------------------
-  // 1) TOP HEADER — navy band with logo (principal element) + date
+  // ZONAS FIXAS — total 1350px
+  //   HEADER  15%  →   0 .. 203   (logo + data + categoria)
+  //   PHOTO   50%  → 203 .. 878   (altura fixa, nunca invade outra área)
+  //   TITLE   20%  → 878 .. 1148  (fundo navy, máx 3 linhas, centralizado)
+  //   FOOTER  15%  → 1148 .. 1350 (marca / @ / CTA — nunca se move)
   // ---------------------------------------------------------------------------
-  const HEADER_H = 310;
-  ctx.fillStyle = COLORS.navy;
-  ctx.fillRect(0, 0, W, HEADER_H);
-  // bottom red accent
-  ctx.fillStyle = COLORS.red;
-  ctx.fillRect(0, HEADER_H - 6, W, 6);
+  const HEADER_H = Math.round(H * 0.15);   // 203
+  const PHOTO_H  = Math.round(H * 0.50);   // 675
+  const TITLE_H  = Math.round(H * 0.20);   // 270
+  const FOOTER_H = H - HEADER_H - PHOTO_H - TITLE_H; // 202
 
-  // Logo — protagonista do topo (~240px ≈ 18% da arte, +120% vs anterior)
+  const headerY = 0;
+  const photoY  = HEADER_H;
+  const titleY  = HEADER_H + PHOTO_H;
+  const footerY = titleY + TITLE_H;
+  const PAD_X = 56;
+
+  // ---------------------------------------------------------------------------
+  // 1) HEADER — logo + data + categoria
+  // ---------------------------------------------------------------------------
+  ctx.fillStyle = COLORS.navy;
+  ctx.fillRect(0, headerY, W, HEADER_H);
+
+  const CAT_H = 44;
+  const headerInnerH = HEADER_H - CAT_H; // espaço para logo+data acima da faixa
+
+  // Logo — protagonista do topo
   if (logo) {
-    const maxLogoH = 240;
-    const maxLogoW = 980;
+    const maxLogoH = 110;
+    const maxLogoW = 760;
     const ratio = logo.width / logo.height;
     let lh = maxLogoH;
     let lw = lh * ratio;
     if (lw > maxLogoW) { lw = maxLogoW; lh = lw / ratio; }
     const logoX = (W - lw) / 2;
-    // Empurra a logo levemente pra cima pra deixar espaço pra data
-    const logoY = (HEADER_H - 6 - lh) / 2 - 14;
+    const logoY = 14;
     ctx.drawImage(logo, logoX, logoY, lw, lh);
   } else {
     ctx.fillStyle = COLORS.white;
-    ctx.font = "900 64px system-ui, -apple-system, sans-serif";
+    ctx.font = "900 44px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, HEADER_H / 2 - 18);
+    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, 14 + 110 / 2);
   }
 
-  // Data curta — formato 05 JUN 2026 — fonte discreta e elegante
+  // Data curta (05 JUN 2026) — discreta e elegante
   const dateStr = formatShortDate(opts.publishedAt);
   if (dateStr) {
-    ctx.fillStyle = "rgba(255,255,255,0.82)";
-    ctx.font = "700 24px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "700 20px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    // Pequeno tracking via espaços (canvas não tem letter-spacing nativo)
-    const spaced = dateStr.split("").join("\u2009");
-    ctx.fillText(spaced, W / 2, HEADER_H - 34);
+    ctx.fillText(dateStr.split("").join("\u2009"), W / 2, headerInnerH - 16);
   }
 
-  // ---------------------------------------------------------------------------
-  // 2) FAIXA DE CATEGORIA (ou URGENTE)
-  // ---------------------------------------------------------------------------
-  let yCursor = HEADER_H;
+  // Faixa de categoria — colorida por editoria, ocupa a base do header
+  const catY = HEADER_H - CAT_H;
   if (opts.isUrgent) {
-    const tagH = 64;
     ctx.fillStyle = COLORS.red;
-    ctx.fillRect(0, yCursor, W, tagH);
+    ctx.fillRect(0, catY, W, CAT_H);
     ctx.fillStyle = COLORS.white;
-    ctx.font = "900 38px system-ui, -apple-system, sans-serif";
+    ctx.font = "900 26px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("⚠  URGENTE — PLANTÃO", W / 2, yCursor + tagH / 2 + 2);
-    yCursor += tagH;
+    ctx.fillText("⚠  URGENTE — PLANTÃO", W / 2, catY + CAT_H / 2 + 1);
   } else if (opts.categoryName) {
-    const tagH = 56;
     const { bg, fg } = categoryColor(opts.categoryName);
     ctx.fillStyle = bg;
-    ctx.fillRect(0, yCursor, W, tagH);
+    ctx.fillRect(0, catY, W, CAT_H);
     ctx.fillStyle = fg;
-    ctx.font = "900 30px system-ui, -apple-system, sans-serif";
+    ctx.font = "900 24px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const label = opts.categoryName.toUpperCase().split("").join("\u2009");
-    ctx.fillText(label, W / 2, yCursor + tagH / 2 + 1);
-    yCursor += tagH;
+    ctx.fillText(label, W / 2, catY + CAT_H / 2 + 1);
+  } else {
+    ctx.fillStyle = COLORS.red;
+    ctx.fillRect(0, catY, W, CAT_H);
   }
 
   // ---------------------------------------------------------------------------
-  // 5) FOOTER (compute first to know remaining space)
+  // 2) PHOTO — altura fixa, cover-fit, nunca invade outras áreas
   // ---------------------------------------------------------------------------
-  const FOOTER_H = 140;
-  const footerY = H - FOOTER_H;
-
-  // ---------------------------------------------------------------------------
-  // 3) IMAGE — smart cover-fit (no stretch)
-  // ---------------------------------------------------------------------------
-  const IMG_H = Math.round(H * 0.55); // ~743px — manchete + foto dominantes
-  const imgY = yCursor;
   ctx.fillStyle = COLORS.black;
-  ctx.fillRect(0, imgY, W, IMG_H);
+  ctx.fillRect(0, photoY, W, PHOTO_H);
   if (cover) {
-    const scale = Math.max(W / cover.width, IMG_H / cover.height);
+    const scale = Math.max(W / cover.width, PHOTO_H / cover.height);
     const dw = cover.width * scale;
     const dh = cover.height * scale;
     const dx = (W - dw) / 2;
-    // Bias upward so faces stay in frame
-    const overflow = dh - IMG_H;
-    const dy = imgY - overflow * 0.30;
+    const overflow = dh - PHOTO_H;
+    const dy = photoY - overflow * 0.30; // bias upward — mantém rostos no enquadramento
     ctx.save();
     ctx.beginPath();
-    ctx.rect(0, imgY, W, IMG_H);
+    ctx.rect(0, photoY, W, PHOTO_H);
     ctx.clip();
     ctx.drawImage(cover, dx, dy, dw, dh);
     ctx.restore();
@@ -300,60 +302,56 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ctx.font = "700 24px system-ui";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("SEM IMAGEM DISPONÍVEL", W / 2, imgY + IMG_H / 2);
+    ctx.fillText("SEM IMAGEM DISPONÍVEL", W / 2, photoY + PHOTO_H / 2);
   }
-  // bottom gradient on image — smooth blend into navy title area
-  const grad = ctx.createLinearGradient(0, imgY + IMG_H - 120, 0, imgY + IMG_H);
-  grad.addColorStop(0, "rgba(7,27,77,0)");
-  grad.addColorStop(1, "rgba(7,27,77,1)");
+  // Degradê escuro na base da foto — melhora leitura na transição
+  const grad = ctx.createLinearGradient(0, photoY + PHOTO_H - 120, 0, photoY + PHOTO_H);
+  grad.addColorStop(0, "rgba(4,27,77,0)");
+  grad.addColorStop(1, "rgba(4,27,77,1)");
   ctx.fillStyle = grad;
-  ctx.fillRect(0, imgY + IMG_H - 120, W, 120);
-
-  yCursor = imgY + IMG_H;
+  ctx.fillRect(0, photoY + PHOTO_H - 120, W, 120);
 
   // ---------------------------------------------------------------------------
-  // 4) TITLE area (navy bg) — fills space between image and footer
+  // 3) TITLE BLOCK — fundo navy, altura fixa, até 3 linhas, centralizado
   // ---------------------------------------------------------------------------
-  const textAreaY = yCursor;
-  const textAreaH = footerY - textAreaY;
   ctx.fillStyle = COLORS.navy;
-  ctx.fillRect(0, textAreaY, W, textAreaH);
+  ctx.fillRect(0, titleY, W, TITLE_H);
 
-  const PAD_X = 56;
-  const maxWidth = W - PAD_X * 2;
-  const tokens = tokenizeTitle(opts.title).slice(0, 12); // máx 12 palavras
+  // Clip rígido — manchete NUNCA invade foto nem rodapé
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, titleY, W, TITLE_H);
+  ctx.clip();
 
-  // Auto-fit title: 78 → 40, 3 to 5 lines
-  let fontSize = 78;
+  const maxTitleWidth = W - PAD_X * 2;
+  const tokens = tokenizeTitle(opts.title);
+  const MAX_LINES = 3;
+  const INNER_PAD = 28;
+  const usableH = TITLE_H - INNER_PAD * 2;
+
+  // Auto-fit: tenta 72 → 40, sempre respeitando 3 linhas E altura útil
+  let fontSize = 72;
   let lines: TitleLine[] = [];
   let lineHeight = 0;
-
-  while (fontSize >= 40) {
+  while (fontSize >= 38) {
     ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
     const spaceW0 = ctx.measureText(" ").width;
-    lines = wrapTokens(ctx, tokens, maxWidth, spaceW0);
-    lineHeight = fontSize * 1.06;
-    const titleH = lines.length * lineHeight;
-    if (lines.length <= 5 && titleH + 48 <= textAreaH) break;
-    fontSize -= 3;
+    lines = wrapTokens(ctx, tokens, maxTitleWidth, spaceW0);
+    lineHeight = Math.round(fontSize * 1.08);
+    if (lines.length <= MAX_LINES && lines.length * lineHeight <= usableH) break;
+    fontSize -= 2;
   }
-  if (lines.length > 5) lines = lines.slice(0, 5);
+  if (lines.length > MAX_LINES) lines = lines.slice(0, MAX_LINES);
 
-  // Draw title with yellow highlights
   ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
   const spaceW = ctx.measureText(" ").width;
-  const titleH = lines.length * lineHeight;
-  const titleStartY = textAreaY + 36 + fontSize * 0.85;
+  const blockH = lines.length * lineHeight;
+  // Centralização vertical real dentro do bloco
+  const firstBaseline = titleY + (TITLE_H - blockH) / 2 + fontSize * 0.82;
 
-  let ty = titleStartY;
+  let ty = firstBaseline;
   for (const line of lines) {
-    // measure full line width
-    let lineW = 0;
-    line.forEach((tok, i) => {
-      lineW += measureToken(ctx, tok.text);
-      if (i < line.length - 1) lineW += spaceW;
-    });
-    let x = PAD_X; // left-align for jornalismo feel
+    let x = PAD_X;
     for (let i = 0; i < line.length; i++) {
       const tok = line[i];
       ctx.fillStyle = tok.highlight ? COLORS.yellow : COLORS.white;
@@ -365,43 +363,33 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     }
     ty += lineHeight;
   }
-
-  // (Sem subtítulo / sem corpo da matéria — apenas título)
+  ctx.restore();
 
   // ---------------------------------------------------------------------------
-  // 6) FOOTER — deep navy band: marca FIQUE POR DENTRO SERGIPE
+  // 4) FOOTER — marca FIQUE POR DENTRO SERGIPE (NUNCA se move)
   // ---------------------------------------------------------------------------
   ctx.fillStyle = COLORS.navyDeep;
   ctx.fillRect(0, footerY, W, FOOTER_H);
   ctx.fillStyle = COLORS.yellow;
   ctx.fillRect(0, footerY, W, 4);
 
-  // Logo + nome do portal (esquerda)
-  let textLeftX = PAD_X;
-  if (logo) {
-    const logoH = 72;
-    const ratio = logo.width / logo.height;
-    const logoW = logoH * ratio;
-    ctx.drawImage(logo, PAD_X, footerY + (FOOTER_H - logoH) / 2, logoW, logoH);
-    textLeftX = PAD_X + logoW + 24;
-  }
+  // Conteúdo centralizado no rodapé
+  const footerCx = W / 2;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
 
   ctx.fillStyle = COLORS.white;
-  ctx.font = "900 24px system-ui, -apple-system, sans-serif";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText("FIQUE POR DENTRO SERGIPE", textLeftX, footerY + FOOTER_H / 2 - 6);
+  ctx.font = "900 32px system-ui, -apple-system, sans-serif";
+  ctx.fillText("FIQUE POR DENTRO SERGIPE", footerCx, footerY + FOOTER_H * 0.30);
 
+  ctx.fillStyle = COLORS.yellow;
+  ctx.font = "800 26px system-ui, -apple-system, sans-serif";
+  ctx.fillText("@FIQUEPORDENTROSERGIPE", footerCx, footerY + FOOTER_H * 0.58);
+
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
   ctx.font = "700 22px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = COLORS.yellow;
-  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 + 28);
+  ctx.fillText("DETALHES NA LEGENDA  ↓", footerCx, footerY + FOOTER_H * 0.85);
 
-  // Direita — CTA institucional
-  ctx.textAlign = "right";
-  ctx.textBaseline = "middle";
-  ctx.font = "900 22px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = COLORS.yellow;
-  ctx.fillText("DETALHES NA LEGENDA ↓", W - PAD_X, footerY + FOOTER_H / 2);
 
 
   return new Promise<Blob>((resolve, reject) =>
@@ -458,19 +446,56 @@ export function ImageActionButtons({
   const [generating, setGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const MAX_HEADLINE_CHARS = 70;
+
   const [headline, setHeadline] = useState((instagramHeadline || title || "").trim());
   const [sub, setSub] = useState((subtitle || "").trim());
   const [urgent, setUrgent] = useState(!!isUrgent);
   const [showSponsors, setShowSponsors] = useState(true);
+  const [summarizing, setSummarizing] = useState(false);
 
   const hasImage = !!imageUrl;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const summarizedFor = useRef<string>("");
 
   useEffect(() => {
     setHeadline((instagramHeadline || title || "").trim());
   }, [instagramHeadline, title]);
   useEffect(() => { setSub((subtitle || "").trim()); }, [subtitle]);
   useEffect(() => { setUrgent(!!isUrgent); }, [isUrgent]);
+
+  // Auto-resumir via IA se manchete > 70 caracteres
+  useEffect(() => {
+    if (!open) return;
+    const current = headline.trim();
+    if (current.length <= MAX_HEADLINE_CHARS) return;
+    if (summarizedFor.current === current) return;
+    summarizedFor.current = current;
+    (async () => {
+      setSummarizing(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-instagram-headline", {
+          body: { title: current, subtitle: sub },
+        });
+        if (error) throw error;
+        const short = (data?.headline || "").trim();
+        if (short && short.length <= 80) {
+          setHeadline(short);
+          toast.success("Manchete resumida automaticamente pela IA");
+        }
+      } catch (e) {
+        console.warn("[InstagramArt] auto-resumo falhou, usando truncamento local:", e);
+        // Fallback: corte local respeitando palavra
+        const cut = current.slice(0, MAX_HEADLINE_CHARS);
+        const ls = cut.lastIndexOf(" ");
+        setHeadline((ls > 30 ? cut.slice(0, ls) : cut).trim());
+      } finally {
+        setSummarizing(false);
+      }
+    })();
+  }, [open, headline, sub]);
+
+
 
   const buildArt = async (): Promise<Blob> => {
     let safeUrl = "";
@@ -621,8 +646,8 @@ export function ImageActionButtons({
               <div>
                 <Label className="text-xs flex justify-between">
                   <span>Manchete (CAIXA ALTA na arte)</span>
-                  <span className={headline.length > 90 ? "text-destructive" : "text-muted-foreground"}>
-                    {headline.length}/100
+                  <span className={headline.length > MAX_HEADLINE_CHARS ? "text-destructive" : "text-muted-foreground"}>
+                    {headline.length}/{MAX_HEADLINE_CHARS}
                   </span>
                 </Label>
                 <Textarea
@@ -630,11 +655,16 @@ export function ImageActionButtons({
                   maxLength={120}
                   onChange={(e) => setHeadline(e.target.value)}
                   rows={3}
-                  placeholder="Manchete impactante"
+                  placeholder="Manchete impactante (máx. 70 caracteres)"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Palavras destacadas em amarelo: MORTE, PRISÃO, ACIDENTE, POLÍCIA, SERGIPE, URGENTE, INVESTIGAÇÃO, etc.
+                  Acima de 70 caracteres a IA resume automaticamente. Palavras-chave (MORTE, PRISÃO, ACIDENTE, SERGIPE…) saem em amarelo.
                 </p>
+                {summarizing && (
+                  <p className="text-[10px] text-primary mt-1 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Resumindo manchete com IA…
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between rounded-md border p-2">
