@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SiteLayout from "@/components/site/SiteLayout";
 import AdSlot from "@/components/site/AdSlot";
-import { G1Hero, HighlightsGrid, NewsThumbItem, MostReadItem, VideoCard } from "@/components/site/NewsCards";
+import { G1Hero, HighlightsGrid, NewsThumbItem, MostReadItem, VideoCard, PortalHero } from "@/components/site/NewsCards";
 import DenunciaBanner from "@/components/site/DenunciaBanner";
 import {
   getMostReadNoticias, getNoticiasByCategory,
