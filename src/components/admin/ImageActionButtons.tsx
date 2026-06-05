@@ -17,25 +17,40 @@ const SUPABASE_PUBLIC_MEDIA_PREFIX = `https://${import.meta.env.VITE_SUPABASE_PR
 // Brand palette — TV Barretão / portal regional inspired
 // =============================================================================
 const COLORS = {
-  navy: "#071B4D",
-  navyDeep: "#040F2E",
-  red: "#D9001B",
+  navy: "#041B4D",
+  navyDeep: "#02102E",
+  red: "#E30613",
   yellow: "#FFD60A",
   white: "#FFFFFF",
   black: "#0A0A0A",
 };
 
+// Cor da faixa de categoria por editoria
+function categoryColor(name: string): { bg: string; fg: string } {
+  const n = (name || "").toLowerCase();
+  if (/pol[ií]cia|policial|crime/.test(n)) return { bg: "#E30613", fg: "#FFFFFF" };
+  if (/sergipe|aracaju/.test(n))           return { bg: "#0E8C3A", fg: "#FFFFFF" };
+  if (/pol[ií]tica/.test(n))               return { bg: "#1457C7", fg: "#FFFFFF" };
+  if (/brasil|nacional/.test(n))           return { bg: "#FFC700", fg: "#0A0A0A" };
+  if (/esporte|futebol/.test(n))           return { bg: "#84CC16", fg: "#0A0A0A" };
+  if (/economia|mercado|financ/.test(n))   return { bg: "#C99A2E", fg: "#0A0A0A" };
+  if (/entreten|cultur|celebr/.test(n))    return { bg: "#7C3AED", fg: "#FFFFFF" };
+  if (/mundo|internacional/.test(n))       return { bg: "#0F172A", fg: "#FFFFFF" };
+  return { bg: "#E30613", fg: "#FFFFFF" };
+}
+
 const HIGHLIGHT_WORDS = [
-  "MORTE", "MORTO", "MORTA", "MORREU",
+  "MORTE", "MORTO", "MORTA", "MORREU", "MORTOS", "MORTAS",
   "PRISÃO", "PRESO", "PRESA", "PRESOS",
-  "ACIDENTE", "ACIDENTES",
+  "ACIDENTE", "ACIDENTES", "FATAL", "FATAIS",
   "POLÍCIA", "POLICIAL",
-  "SERGIPE",
+  "SERGIPE", "ARACAJU",
   "URGENTE", "PLANTÃO",
   "INVESTIGAÇÃO", "INVESTIGA",
   "ASSASSINATO", "ASSASSINADO",
   "TIROTEIO", "TIROS",
   "OPERAÇÃO",
+  "MILHÕES", "MILHÃO", "BILHÕES", "BILHÃO",
 ];
 
 // =============================================================================
