@@ -384,7 +384,7 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   ctx.textBaseline = "middle";
   ctx.font = "900 22px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = COLORS.yellow;
-  ctx.fillText("ACOMPANHE NO INSTAGRAM →", W - PAD_X, footerY + FOOTER_H / 2);
+  ctx.fillText("DETALHES NA LEGENDA ↓", W - PAD_X, footerY + FOOTER_H / 2);
 
 
   return new Promise<Blob>((resolve, reject) =>
