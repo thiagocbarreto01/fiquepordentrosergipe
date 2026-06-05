@@ -4,20 +4,25 @@ import SiteLayout from "@/components/site/SiteLayout";
 import AdSlot from "@/components/site/AdSlot";
 import { getNoticiaBySlug, getMostReadNoticias, Post, subscribeToNoticiasFeed, timeAgo } from "@/lib/noticias";
 import { getPostImage, handleImgError } from "@/lib/postImage";
-import { Share2, Send, MessageCircle, Facebook, Twitter } from "lucide-react";
+import { Share2, Send, MessageCircle, Facebook, Twitter, Film } from "lucide-react";
 import { NewsListItem } from "@/components/site/NewsCards";
 import { SmartImage } from "@/components/site/SmartImage";
 import { VideoEmbed } from "@/components/site/VideoEmbed";
 import { parseVideoUrl } from "@/lib/videoEmbed";
+import { useAuth } from "@/hooks/useAuth";
+import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
+import { Button } from "@/components/ui/button";
 
 // Fonte/URL original NUNCA é exibida ao leitor (Fique Por Dentro Sergipe 2.0 — Etapa 1).
 
 
 export default function NoticiaPage() {
   const { slug = "" } = useParams();
+  const { isStaff } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [mostRead, setMostRead] = useState<Post[]>([]);
   const [notFound, setNotFound] = useState(false);
+  const [reelOpen, setReelOpen] = useState(false);
 
   useEffect(() => {
     setPost(null); setNotFound(false);
@@ -64,7 +69,20 @@ export default function NoticiaPage() {
                 {post.categories.name}
               </Link>
             )}
+            {isStaff && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto gap-2"
+                onClick={() => setReelOpen(true)}
+              >
+                <Film className="h-4 w-4" /> Gerar Reel
+              </Button>
+            )}
           </div>
+          {isStaff && (
+            <ReelGeneratorDialog open={reelOpen} onOpenChange={setReelOpen} post={post} />
+          )}
           <h1 className="font-display text-3xl md:text-5xl font-black leading-[1.1] text-balance text-headline" style={{ color: "hsl(var(--headline))" }}>
             {post.title}
           </h1>
