@@ -89,6 +89,97 @@ function formatLongDate(d?: string | null) {
 }
 
 /* ============================================================
+   PORTAL HERO — 70/30 estilo G1/Poder360
+   Esquerda: manchete principal com foto (~400px) + categoria/hora/título/resumo
+   Direita: 3 destaques empilhados com miniatura
+   ============================================================ */
+export function PortalHero({ main, secondaries }: { main: Post; secondaries: Post[] }) {
+  const summary = heroSummary(main);
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-10 gap-5 lg:gap-6">
+      {/* ESQUERDA 70% */}
+      <article className="lg:col-span-7 group bg-white rounded-md border border-border/60 overflow-hidden">
+        <Link to={`/noticia/${main.slug}`} className="block relative overflow-hidden bg-muted">
+          <div className="h-[260px] sm:h-[340px] lg:h-[400px]">
+            <SmartImage
+              src={getPostImage(main)} fallbackUrl={main.categories?.default_cover_image_url}
+              alt={main.title}
+              aspectRatio="unset"
+              loading="eager"
+              fetchPriority="high"
+              hoverZoom
+              className="h-full w-full"
+              onError={(e) => handleImgError(e, main)}
+            />
+          </div>
+          {main.categories?.name && (
+            <span className="absolute top-3 left-3 z-10 text-[10px] font-black uppercase tracking-widest bg-primary text-primary-foreground px-2 py-1 rounded-sm shadow">
+              {main.categories.name}
+            </span>
+          )}
+          <div className="absolute top-3 right-3 z-10">
+            <PostBadges post={main} size="sm" />
+          </div>
+        </Link>
+        <div className="p-4 md:p-5">
+          <div className="flex items-center gap-2 mb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            <Clock className="h-3 w-3 text-urgent" />
+            <span>{timeAgo(main.published_at)}</span>
+          </div>
+          <Link to={`/noticia/${main.slug}`}>
+            <h1 className="font-display text-2xl md:text-3xl lg:text-[28px] xl:text-[32px] font-extrabold leading-[1.1] tracking-tight text-foreground group-hover:text-primary transition-colors">
+              {main.title}
+            </h1>
+          </Link>
+          {summary && (
+            <p className="mt-2 text-sm md:text-[15px] text-muted-foreground leading-relaxed line-clamp-2">
+              {summary}
+            </p>
+          )}
+        </div>
+      </article>
+
+      {/* DIREITA 30% — 3 destaques empilhados */}
+      <div className="lg:col-span-3 flex flex-col gap-3">
+        {secondaries.slice(0, 3).map((p) => (
+          <Link
+            key={p.id}
+            to={`/noticia/${p.slug}`}
+            className="group flex gap-3 bg-white rounded-md border border-border/60 p-2.5 hover:shadow-md transition-shadow"
+          >
+            <div className="relative w-[110px] shrink-0 aspect-[4/3] overflow-hidden rounded-sm bg-muted">
+              <SmartImage
+                src={getPostImage(p)} fallbackUrl={p.categories?.default_cover_image_url}
+                alt={p.title}
+                aspectRatio="unset"
+                loading="lazy"
+                hoverZoom
+                className="h-full w-full"
+                onError={(e) => handleImgError(e, p)}
+              />
+              {p.categories?.name && (
+                <span className="absolute top-1 left-1 text-[8px] font-black uppercase tracking-widest bg-primary text-primary-foreground px-1.5 py-0.5 rounded-sm">
+                  {p.categories.name}
+                </span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col">
+              <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-urgent mb-1">
+                <Clock className="h-2.5 w-2.5" />
+                <span>{timeAgo(p.published_at)}</span>
+              </div>
+              <h3 className="font-display text-[13px] md:text-sm font-bold leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-3">
+                {p.title}
+              </h3>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
    HERO PREMIUM — imagem grande com gradiente e título sobreposto
    + lista vertical de 3 manchetes ao lado
    ============================================================ */

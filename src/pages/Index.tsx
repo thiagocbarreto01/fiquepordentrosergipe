@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SiteLayout from "@/components/site/SiteLayout";
 import AdSlot from "@/components/site/AdSlot";
-import { G1Hero, HighlightsGrid, NewsThumbItem, MostReadItem, VideoCard } from "@/components/site/NewsCards";
+import { G1Hero, HighlightsGrid, NewsThumbItem, MostReadItem, VideoCard, PortalHero } from "@/components/site/NewsCards";
 import DenunciaBanner from "@/components/site/DenunciaBanner";
 import {
   getMostReadNoticias, getNoticiasByCategory,
@@ -119,16 +119,40 @@ export default function Index() {
 
   return (
     <SiteLayout>
-      {/* HERO PREMIUM — full width estilo G1/UOL */}
+      {/* HERO PORTAL — 70/30 estilo G1 / Poder360 / A8 Sergipe */}
       {heroMain && (
-        <section className="container-news pt-1 md:pt-2">
-          <G1Hero main={heroMain} secondaries={heroSecondaries} recent={heroRecent} />
+        <section className="container-news pt-3 md:pt-4">
+          <PortalHero main={heroMain} secondaries={heroSecondaries} />
         </section>
       )}
 
+      {/* MAIS LIDAS (esquerda) + ÚLTIMAS NOTÍCIAS (direita) */}
+      <section className="container-news mt-5 md:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
+        {mostRead.length > 0 && (
+          <div>
+            <SectionHeader title="Mais Lidas" colorClass="border-urgent" icon={Flame} link="/ultimas" />
+            <div className="bg-white border border-border/60 rounded-md px-3 py-1">
+              {mostRead.slice(0, 5).map((p, i) => (
+                <MostReadItem key={p.id} post={p} index={i} />
+              ))}
+            </div>
+          </div>
+        )}
+        {latestFeed.length > 0 && (
+          <div>
+            <SectionHeader title="Últimas Notícias" link="/ultimas" />
+            <div className="bg-white rounded-md border border-border/60 px-3 md:px-4 divide-y divide-border">
+              {latestFeed.slice(0, 5).map((p) => (
+                <NewsThumbItem key={p.id} post={p} />
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* GRID DE DESTAQUES — 4 cards */}
       {highlightGrid.length > 0 && (
-        <section className="container-news mt-4 md:mt-6">
+        <section className="container-news mt-6 md:mt-8">
           <SectionHeader title="Destaques" icon={Flame} link="/ultimas" />
           <HighlightsGrid posts={highlightGrid} />
         </section>
@@ -139,22 +163,10 @@ export default function Index() {
         <AdSlot position="topo_home" />
       </div>
 
-      {/* GRID PRINCIPAL: ÚLTIMAS + SIDEBAR */}
+      {/* SEÇÕES LOCAIS + sidebar */}
       <section className="container-news mt-6 md:mt-8 grid lg:grid-cols-3 gap-6 lg:gap-8">
         <div className="lg:col-span-2">
-          {latestFeed.length > 0 && (
-            <>
-              <SectionHeader title="Últimas Notícias" link="/ultimas" />
-              <div className="bg-white rounded-md border border-border/60 px-3 md:px-4 divide-y divide-border">
-                {latestFeed.slice(0, 10).map((p) => (
-                  <NewsThumbItem key={p.id} post={p} />
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* SEÇÕES LOCAIS */}
-          <div className="mt-8 md:mt-10 space-y-8">
+          <div className="space-y-8">
             <div className="grid md:grid-cols-2 gap-6 md:gap-8">
               {sergipe.length > 0 && (
                 <div>
@@ -214,17 +226,6 @@ export default function Index() {
 
         {/* SIDEBAR */}
         <aside className="space-y-6 lg:space-y-8">
-          {mostRead.length > 0 && (
-            <div>
-              <SectionHeader title="Mais Lidas — Últimas 24h" colorClass="border-urgent" icon={Flame} />
-              <div className="bg-white border border-border/60 rounded-md px-3 py-1">
-                {mostRead.map((p, i) => (
-                  <MostReadItem key={p.id} post={p} index={i} />
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="lg:sticky lg:top-24">
             <AdSlot position="lateral" />
             <div className="mt-8">
@@ -233,6 +234,7 @@ export default function Index() {
           </div>
         </aside>
       </section>
+
 
       {/* SEÇÃO 1 — MAIS LIDAS DA SEMANA */}
       {weekMostRead.length > 0 && (
