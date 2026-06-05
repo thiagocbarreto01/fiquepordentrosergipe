@@ -27,8 +27,8 @@
     --primary-foreground: 0 0% 100%;
 
     --primary-glow: 217 74% 28%;       /* #123A7A — azul institucional */
-    --brand-navy: 221 75% 17%;         /* #0B1F4D — azul-marinho */
-    --brand-navy-deep: 221 75% 11%;    /* navio mais profundo p/ contraste */
+    --brand-navy: 220 81% 16%;         /* #081F4D — azul-marinho premium */
+    --brand-navy-deep: 219 80% 13%;    /* #071A3D — navio institucional */
 
     /* Urgência / Breaking — vermelho APENAS aqui */
     --urgent: 358 78% 48%;
