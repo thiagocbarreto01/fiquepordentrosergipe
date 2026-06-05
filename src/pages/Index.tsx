@@ -121,13 +121,13 @@ export default function Index() {
     <SiteLayout>
       {/* HERO PORTAL — 70/30 estilo G1 / Poder360 / A8 Sergipe */}
       {heroMain && (
-        <section className="container-news pt-3 md:pt-4">
+        <section className="container-news pt-2 md:pt-3">
           <PortalHero main={heroMain} secondaries={heroSecondaries} />
         </section>
       )}
 
       {/* MAIS LIDAS (esquerda) + ÚLTIMAS NOTÍCIAS (direita) */}
-      <section className="container-news mt-5 md:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
+      <section className="container-news mt-3 md:mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
         {mostRead.length > 0 && (
           <div>
             <SectionHeader title="Mais Lidas" colorClass="border-urgent" icon={Flame} link="/ultimas" />
