@@ -59,7 +59,7 @@ export default function SiteHeader() {
       </div>
 
       {/* Main bar — compacta e premium */}
-      <div className="container-news flex items-center gap-4 h-16 md:h-28">
+      <div className="container-news flex items-center gap-4 h-20 md:h-32 py-1">
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden p-2 -ml-2 hover:bg-secondary/50 rounded-sm transition-colors"
@@ -68,8 +68,8 @@ export default function SiteHeader() {
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        <Link to="/" className="flex items-center shrink-0" aria-label="Fique Por Dentro Sergipe - Início">
-          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-14 md:h-24 w-auto" />
+        <Link to="/" className="flex items-center shrink-0 -my-1" aria-label="Fique Por Dentro Sergipe - Início">
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-20 md:h-36 w-auto" />
         </Link>
 
         <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center justify-end px-6">

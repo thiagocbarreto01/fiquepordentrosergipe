@@ -32,14 +32,14 @@ export default function PlantaoBar() {
   const loop = [...items, ...items];
 
   return (
-    <div className="bg-[hsl(var(--brand-navy-deep))] text-white border-b border-white/10">
-      <div className="container-news flex items-stretch h-9 md:h-10 overflow-hidden">
-        <div className="flex items-center gap-2 pr-4 shrink-0 border-r border-white/15">
+    <div className="bg-urgent text-white border-b border-white/10">
+      <div className="container-news flex items-stretch h-8 md:h-9 overflow-hidden">
+        <div className="flex items-center gap-2 pr-4 shrink-0 border-r border-white/25">
           <span className="relative flex items-center justify-center h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-urgent opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-urgent" />
+            <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-75 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
           </span>
-          <span className="font-display text-[11px] md:text-xs font-black uppercase tracking-[0.18em] text-urgent flex items-center gap-1.5">
+          <span className="font-display text-[11px] md:text-xs font-black uppercase tracking-[0.18em] text-white flex items-center gap-1.5">
             <Radio className="h-3.5 w-3.5" /> Plantão
           </span>
         </div>
