@@ -161,7 +161,6 @@ interface ArtOptions {
   title: string;
   subtitle?: string;
   categoryName?: string;
-  sourceName?: string;
   isUrgent?: boolean;
   publishedAt?: string;
   showSponsors?: boolean;
