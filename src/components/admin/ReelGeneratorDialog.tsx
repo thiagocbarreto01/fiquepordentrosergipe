@@ -8,6 +8,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { renderReelMp4, type RenderProgress } from "@/lib/reelRenderer";
 import type { Post } from "@/lib/noticias";
 
+async function getFunctionErrorMessage(error: unknown): Promise<string> {
+  const context = (error as { context?: Response })?.context;
+  if (context instanceof Response) {
+    try {
+      const payload = await context.clone().json();
+      return payload?.message || payload?.error || `Erro HTTP ${context.status}`;
+    } catch {
+      try {
+        const text = await context.clone().text();
+        return text || `Erro HTTP ${context.status}`;
+      } catch {
+        return `Erro HTTP ${context.status}`;
+      }
+    }
+  }
+
+  return String((error as Error)?.message ?? error ?? "Falha ao gerar conteúdo");
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,6 +57,7 @@ export default function ReelGeneratorDialog({ open, onOpenChange, post }: Props)
           subtitle: post.subtitle ?? "",
           content: post.content ?? "",
           category: post.categories?.name ?? "",
+          image: post.cover_image_url ?? post.categories?.default_cover_image_url ?? "",
         },
       });
       if (error) throw error;
@@ -48,7 +68,7 @@ export default function ReelGeneratorDialog({ open, onOpenChange, post }: Props)
       setPhase("ready-to-render");
     } catch (e: any) {
       console.error(e);
-      const msg = String(e?.message ?? e);
+      const msg = await getFunctionErrorMessage(e);
       if (msg.includes("402") || msg.toLowerCase().includes("payment_required")) {
         setErrorMsg("Créditos de IA esgotados. Adicione créditos para gerar conteúdo.");
       } else {

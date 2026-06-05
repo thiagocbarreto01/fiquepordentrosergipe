@@ -6,6 +6,14 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
+type ReelBody = {
+  title?: unknown;
+  subtitle?: unknown;
+  content?: unknown;
+  category?: unknown;
+  image?: unknown;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -13,6 +21,10 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
       return json({ error: "Não autenticado" }, 401);
+    }
+    if (!LOVABLE_API_KEY) {
+      console.error("generate-reel-content missing LOVABLE_API_KEY secret");
+      return json({ error: "missing_ai_key", message: "Chave de IA não configurada no backend." }, 500);
     }
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
@@ -24,12 +36,20 @@ Deno.serve(async (req) => {
     const { data: isStaff } = await admin.rpc("is_staff", { _user_id: userData.user.id });
     if (!isStaff) return json({ error: "Sem permissão" }, 403);
 
-    const body = await req.json().catch(() => ({}));
+    const body = (await req.json().catch(() => ({}))) as ReelBody;
     const title = typeof body.title === "string" ? body.title.trim() : "";
     const subtitle = typeof body.subtitle === "string" ? body.subtitle.trim() : "";
     const content = typeof body.content === "string" ? body.content.trim().slice(0, 6000) : "";
     const category = typeof body.category === "string" ? body.category.trim() : "";
-    if (!title) return json({ error: "title é obrigatório" }, 400);
+    const image = typeof body.image === "string" ? body.image.trim() : "";
+    console.info("generate-reel-content request", {
+      user_id: userData.user.id,
+      has_title: Boolean(title),
+      content_length: content.length,
+      category,
+      has_image: Boolean(image),
+    });
+    if (!title) return json({ error: "invalid_payload", message: "Título é obrigatório." }, 400);
 
     const systemPrompt = `Você é o editor social do portal "Fique Por Dentro Sergipe". Cria conteúdo curto e jornalístico para Reels do Instagram.
 
@@ -88,13 +108,14 @@ Gere o conteúdo do Reel.`;
 
     if (!resp.ok) {
       const txt = await resp.text();
+      console.error("generate-reel-content AI gateway error", { status: resp.status, body: txt.slice(0, 500) });
       if (resp.status === 402) {
         return json({ error: "payment_required", message: "Créditos de IA esgotados." }, 402);
       }
       if (resp.status === 429) {
         return json({ error: "rate_limited", message: "Limite de requisições atingido." }, 429);
       }
-      return json({ error: `Lovable AI ${resp.status}: ${txt}` }, 502);
+      return json({ error: "ai_gateway_error", message: `IA retornou HTTP ${resp.status}: ${txt}` }, 502);
     }
     const data = await resp.json();
     const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
@@ -107,7 +128,8 @@ Gere o conteúdo do Reel.`;
     const summary = summaryRaw.split("|").map((s) => s.trim()).filter(Boolean).slice(0, 3);
 
     if (!headline || summary.length === 0 || !caption) {
-      return json({ error: "IA não retornou conteúdo válido" }, 502);
+      console.error("generate-reel-content invalid AI payload", { headline: Boolean(headline), summary_count: summary.length, caption: Boolean(caption) });
+      return json({ error: "invalid_ai_payload", message: "IA não retornou conteúdo válido." }, 502);
     }
 
     return json({ ok: true, headline, summary, caption });
