@@ -646,8 +646,8 @@ export function ImageActionButtons({
               <div>
                 <Label className="text-xs flex justify-between">
                   <span>Manchete (CAIXA ALTA na arte)</span>
-                  <span className={headline.length > 90 ? "text-destructive" : "text-muted-foreground"}>
-                    {headline.length}/100
+                  <span className={headline.length > MAX_HEADLINE_CHARS ? "text-destructive" : "text-muted-foreground"}>
+                    {headline.length}/{MAX_HEADLINE_CHARS}
                   </span>
                 </Label>
                 <Textarea
@@ -655,11 +655,16 @@ export function ImageActionButtons({
                   maxLength={120}
                   onChange={(e) => setHeadline(e.target.value)}
                   rows={3}
-                  placeholder="Manchete impactante"
+                  placeholder="Manchete impactante (máx. 70 caracteres)"
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Palavras destacadas em amarelo: MORTE, PRISÃO, ACIDENTE, POLÍCIA, SERGIPE, URGENTE, INVESTIGAÇÃO, etc.
+                  Acima de 70 caracteres a IA resume automaticamente. Palavras-chave (MORTE, PRISÃO, ACIDENTE, SERGIPE…) saem em amarelo.
                 </p>
+                {summarizing && (
+                  <p className="text-[10px] text-primary mt-1 flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Resumindo manchete com IA…
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between rounded-md border p-2">
