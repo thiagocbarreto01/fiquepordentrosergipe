@@ -483,12 +483,18 @@ export function ImageActionButtons({
           setHeadline(short);
           toast.success("Manchete resumida automaticamente pela IA");
         }
-      } catch (e) {
+      } catch (e: any) {
+        const msg = String(e?.message || e || "");
+        const isPaymentRequired =
+          msg.includes("402") || msg.toLowerCase().includes("payment_required") || msg.toLowerCase().includes("not enough credits");
         console.warn("[InstagramArt] auto-resumo falhou, usando truncamento local:", e);
-        // Fallback: corte local respeitando palavra
+        // Fallback silencioso: corte local respeitando palavra
         const cut = current.slice(0, MAX_HEADLINE_CHARS);
         const ls = cut.lastIndexOf(" ");
         setHeadline((ls > 30 ? cut.slice(0, ls) : cut).trim());
+        if (isPaymentRequired) {
+          toast.message("Manchete ajustada localmente (créditos de IA esgotados)");
+        }
       } finally {
         setSummarizing(false);
       }
