@@ -190,3 +190,17 @@
 #lovable-badge {
   display: none !important;
 }
+
+/* Plantão marquee */
+@keyframes fpd-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.fpd-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: fpd-marquee 45s linear infinite;
+}
+.fpd-marquee-pause:hover .fpd-marquee {
+  animation-play-state: paused;
+}
