@@ -201,45 +201,47 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 1) TOP HEADER — navy band with logo (principal element) + date
   // ---------------------------------------------------------------------------
-  const HEADER_H = 300;
+  const HEADER_H = 310;
   ctx.fillStyle = COLORS.navy;
   ctx.fillRect(0, 0, W, HEADER_H);
   // bottom red accent
   ctx.fillStyle = COLORS.red;
   ctx.fillRect(0, HEADER_H - 6, W, 6);
 
-  // Logo — principal element, ~15% of art height (≈202px), perfectly centered
+  // Logo — protagonista do topo (~240px ≈ 18% da arte, +120% vs anterior)
   if (logo) {
-    const maxLogoH = 200; // ~15% of 1350
-    const maxLogoW = 960;
+    const maxLogoH = 240;
+    const maxLogoW = 980;
     const ratio = logo.width / logo.height;
     let lh = maxLogoH;
     let lw = lh * ratio;
     if (lw > maxLogoW) { lw = maxLogoW; lh = lw / ratio; }
-    // Center both horizontally and vertically inside the header (above red accent)
     const logoX = (W - lw) / 2;
-    const logoY = (HEADER_H - 6 - lh) / 2;
+    // Empurra a logo levemente pra cima pra deixar espaço pra data
+    const logoY = (HEADER_H - 6 - lh) / 2 - 14;
     ctx.drawImage(logo, logoX, logoY, lw, lh);
   } else {
     ctx.fillStyle = COLORS.white;
-    ctx.font = "900 54px system-ui, -apple-system, sans-serif";
+    ctx.font = "900 64px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, HEADER_H / 2);
+    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, HEADER_H / 2 - 18);
   }
 
-  // Date line only — NEVER show source/portal name (brand-only policy)
-  const dateStr = formatDate(opts.publishedAt);
+  // Data curta — formato 05 JUN 2026 — fonte discreta e elegante
+  const dateStr = formatShortDate(opts.publishedAt);
   if (dateStr) {
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.font = "600 22px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.82)";
+    ctx.font = "700 24px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(dateStr.toUpperCase(), W / 2, HEADER_H - 38);
+    // Pequeno tracking via espaços (canvas não tem letter-spacing nativo)
+    const spaced = dateStr.split("").join("\u2009");
+    ctx.fillText(spaced, W / 2, HEADER_H - 34);
   }
 
   // ---------------------------------------------------------------------------
-  // 2) URGENT / PLANTÃO tag
+  // 2) FAIXA DE CATEGORIA (ou URGENTE)
   // ---------------------------------------------------------------------------
   let yCursor = HEADER_H;
   if (opts.isUrgent) {
@@ -250,18 +252,19 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ctx.font = "900 38px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const label = "⚠  URGENTE — PLANTÃO";
-    ctx.fillText(label, W / 2, yCursor + tagH / 2 + 2);
+    ctx.fillText("⚠  URGENTE — PLANTÃO", W / 2, yCursor + tagH / 2 + 2);
     yCursor += tagH;
   } else if (opts.categoryName) {
-    const tagH = 52;
-    ctx.fillStyle = COLORS.red;
+    const tagH = 56;
+    const { bg, fg } = categoryColor(opts.categoryName);
+    ctx.fillStyle = bg;
     ctx.fillRect(0, yCursor, W, tagH);
-    ctx.fillStyle = COLORS.white;
-    ctx.font = "900 28px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = fg;
+    ctx.font = "900 30px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(opts.categoryName.toUpperCase(), W / 2, yCursor + tagH / 2 + 1);
+    const label = opts.categoryName.toUpperCase().split("").join("\u2009");
+    ctx.fillText(label, W / 2, yCursor + tagH / 2 + 1);
     yCursor += tagH;
   }
 
