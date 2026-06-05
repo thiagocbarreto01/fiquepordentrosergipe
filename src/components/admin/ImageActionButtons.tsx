@@ -17,9 +17,9 @@ const SUPABASE_PUBLIC_MEDIA_PREFIX = `https://${import.meta.env.VITE_SUPABASE_PR
 // Brand palette — TV Barretão / portal regional inspired
 // =============================================================================
 const COLORS = {
-  navy: "#041B4D",
-  navyDeep: "#02103A",
-  red: "#D90429",
+  navy: "#071B4D",
+  navyDeep: "#040F2E",
+  red: "#D9001B",
   yellow: "#FFD60A",
   white: "#FFFFFF",
   black: "#0A0A0A",
