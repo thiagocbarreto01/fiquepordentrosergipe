@@ -184,30 +184,33 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   ]);
 
   // ---------------------------------------------------------------------------
-  // 1) TOP HEADER — navy band with logo + date + source
+  // 1) TOP HEADER — navy band with logo (principal element) + date
   // ---------------------------------------------------------------------------
-  const HEADER_H = 170;
+  const HEADER_H = 300;
   ctx.fillStyle = COLORS.navy;
   ctx.fillRect(0, 0, W, HEADER_H);
   // bottom red accent
   ctx.fillStyle = COLORS.red;
   ctx.fillRect(0, HEADER_H - 6, W, 6);
 
-  // Logo centered
+  // Logo — principal element, ~15% of art height (≈202px), perfectly centered
   if (logo) {
-    const maxLogoH = 90;
-    const maxLogoW = 720;
+    const maxLogoH = 200; // ~15% of 1350
+    const maxLogoW = 960;
     const ratio = logo.width / logo.height;
     let lh = maxLogoH;
     let lw = lh * ratio;
     if (lw > maxLogoW) { lw = maxLogoW; lh = lw / ratio; }
-    ctx.drawImage(logo, (W - lw) / 2, 28, lw, lh);
+    // Center both horizontally and vertically inside the header (above red accent)
+    const logoX = (W - lw) / 2;
+    const logoY = (HEADER_H - 6 - lh) / 2;
+    ctx.drawImage(logo, logoX, logoY, lw, lh);
   } else {
     ctx.fillStyle = COLORS.white;
     ctx.font = "900 54px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, 70);
+    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, HEADER_H / 2);
   }
 
   // Date line only — NEVER show source/portal name (brand-only policy)
