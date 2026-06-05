@@ -4,11 +4,14 @@ import SiteLayout from "@/components/site/SiteLayout";
 import AdSlot from "@/components/site/AdSlot";
 import { getNoticiaBySlug, getMostReadNoticias, Post, subscribeToNoticiasFeed, timeAgo } from "@/lib/noticias";
 import { getPostImage, handleImgError } from "@/lib/postImage";
-import { Share2, Send, MessageCircle, Facebook, Twitter } from "lucide-react";
+import { Share2, Send, MessageCircle, Facebook, Twitter, Film } from "lucide-react";
 import { NewsListItem } from "@/components/site/NewsCards";
 import { SmartImage } from "@/components/site/SmartImage";
 import { VideoEmbed } from "@/components/site/VideoEmbed";
 import { parseVideoUrl } from "@/lib/videoEmbed";
+import { useAuth } from "@/hooks/useAuth";
+import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
+import { Button } from "@/components/ui/button";
 
 // Fonte/URL original NUNCA é exibida ao leitor (Fique Por Dentro Sergipe 2.0 — Etapa 1).
 
