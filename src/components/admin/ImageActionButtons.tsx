@@ -250,26 +250,24 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 5) FOOTER (compute first to know remaining space)
   // ---------------------------------------------------------------------------
-  const FOOTER_H = 130;
-  const SPONSORS_H = sponsors ? 90 : 0;
-  const footerY = H - FOOTER_H - SPONSORS_H;
+  const FOOTER_H = 160;
+  const footerY = H - FOOTER_H;
 
   // ---------------------------------------------------------------------------
-  // 3) IMAGE — ~45% of canvas height, smart cover-fit (no stretch)
+  // 3) IMAGE — ~60% of canvas height, smart cover-fit (no stretch)
   // ---------------------------------------------------------------------------
-  const IMG_H = Math.round(H * 0.45); // ~608px
+  const IMG_H = Math.round(H * 0.60); // ~810px
   const imgY = yCursor;
   ctx.fillStyle = COLORS.black;
   ctx.fillRect(0, imgY, W, IMG_H);
   if (cover) {
-    // cover-fit with face-priority offset toward top third
     const scale = Math.max(W / cover.width, IMG_H / cover.height);
     const dw = cover.width * scale;
     const dh = cover.height * scale;
     const dx = (W - dw) / 2;
-    // Bias upward so faces (usually top half) stay in frame
+    // Bias upward so faces stay in frame
     const overflow = dh - IMG_H;
-    const dy = imgY - overflow * 0.35;
+    const dy = imgY - overflow * 0.30;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, imgY, W, IMG_H);
@@ -283,17 +281,17 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ctx.textBaseline = "middle";
     ctx.fillText("SEM IMAGEM DISPONÍVEL", W / 2, imgY + IMG_H / 2);
   }
-  // subtle bottom gradient on image for visual seal
-  const grad = ctx.createLinearGradient(0, imgY + IMG_H - 80, 0, imgY + IMG_H);
-  grad.addColorStop(0, "rgba(4,27,77,0)");
-  grad.addColorStop(1, "rgba(4,27,77,0.85)");
+  // bottom gradient on image — smooth blend into navy title area
+  const grad = ctx.createLinearGradient(0, imgY + IMG_H - 120, 0, imgY + IMG_H);
+  grad.addColorStop(0, "rgba(7,27,77,0)");
+  grad.addColorStop(1, "rgba(7,27,77,1)");
   ctx.fillStyle = grad;
-  ctx.fillRect(0, imgY + IMG_H - 80, W, 80);
+  ctx.fillRect(0, imgY + IMG_H - 120, W, 120);
 
   yCursor = imgY + IMG_H;
 
   // ---------------------------------------------------------------------------
-  // 4) TITLE area (navy bg) + SUBTITLE — fills space between image and footer
+  // 4) TITLE area (navy bg) — fills space between image and footer
   // ---------------------------------------------------------------------------
   const textAreaY = yCursor;
   const textAreaH = footerY - textAreaY;
@@ -304,25 +302,21 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   const maxWidth = W - PAD_X * 2;
   const tokens = tokenizeTitle(opts.title);
 
-  // Auto-fit title: try sizes 86 → 48, max 4 lines
-  let fontSize = 86;
+  // Auto-fit title: 78 → 40, 3 to 5 lines
+  let fontSize = 78;
   let lines: TitleLine[] = [];
   let lineHeight = 0;
-  const subtitleText = (opts.subtitle || "").trim();
-  const subFont = 28;
-  const subLines = subtitleText ? subtitleText : "";
-  const subBlockH = subtitleText ? subFont * 1.3 * 2 + 24 : 0; // reserve ~2 lines
 
-  while (fontSize >= 44) {
+  while (fontSize >= 40) {
     ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
-    const spaceW = ctx.measureText(" ").width;
-    lines = wrapTokens(ctx, tokens, maxWidth, spaceW);
-    lineHeight = fontSize * 1.08;
+    const spaceW0 = ctx.measureText(" ").width;
+    lines = wrapTokens(ctx, tokens, maxWidth, spaceW0);
+    lineHeight = fontSize * 1.06;
     const titleH = lines.length * lineHeight;
-    if (lines.length <= 4 && titleH + subBlockH + 60 <= textAreaH) break;
+    if (lines.length <= 5 && titleH + 48 <= textAreaH) break;
     fontSize -= 3;
   }
-  if (lines.length > 4) lines = lines.slice(0, 4);
+  if (lines.length > 5) lines = lines.slice(0, 5);
 
   // Draw title with yellow highlights
   ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
