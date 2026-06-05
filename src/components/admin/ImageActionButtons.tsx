@@ -483,7 +483,6 @@ export function ImageActionButtons({
       title: headline,
       subtitle: sub,
       categoryName,
-      sourceName,
       isUrgent: urgent,
       publishedAt,
       showSponsors,
