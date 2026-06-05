@@ -135,12 +135,12 @@ export default function Index() {
       )}
 
       {/* Banner topo */}
-      <div className="container-news mt-6 md:mt-10">
+      <div className="container-news mt-4 md:mt-6">
         <AdSlot position="topo_home" />
       </div>
 
       {/* GRID PRINCIPAL: ÚLTIMAS + SIDEBAR */}
-      <section className="container-news mt-8 md:mt-12 grid lg:grid-cols-3 gap-8 lg:gap-10">
+      <section className="container-news mt-6 md:mt-8 grid lg:grid-cols-3 gap-6 lg:gap-8">
         <div className="lg:col-span-2">
           {latestFeed.length > 0 && (
             <>
@@ -154,8 +154,8 @@ export default function Index() {
           )}
 
           {/* SEÇÕES LOCAIS */}
-          <div className="mt-10 md:mt-14 space-y-12">
-            <div className="grid md:grid-cols-2 gap-8 md:gap-10">
+          <div className="mt-8 md:mt-10 space-y-8">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
               {sergipe.length > 0 && (
                 <div>
                   <SectionHeader title="Sergipe" colorClass="border-blue-600" link="/categoria/sergipe" />
@@ -174,7 +174,7 @@ export default function Index() {
               )}
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8 md:gap-10">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
               {policia.length > 0 && (
                 <div>
                   <SectionHeader title="Polícia" colorClass="border-red-700" link="/categoria/policia" />
@@ -194,7 +194,7 @@ export default function Index() {
             </div>
 
             {politica.length > 0 && municipios.length > 0 && (
-              <div className="grid md:grid-cols-2 gap-8 md:gap-10">
+              <div className="grid md:grid-cols-2 gap-6 md:gap-8">
                 <div>
                   <SectionHeader title="Política" colorClass="border-indigo-600" link="/categoria/politica" />
                   <div className="space-y-1 bg-white rounded-md border border-border/60 px-3">
@@ -213,7 +213,7 @@ export default function Index() {
         </div>
 
         {/* SIDEBAR */}
-        <aside className="space-y-8 lg:space-y-10">
+        <aside className="space-y-6 lg:space-y-8">
           {mostRead.length > 0 && (
             <div>
               <SectionHeader title="Mais Lidas — Últimas 24h" colorClass="border-urgent" icon={Flame} />
@@ -236,7 +236,7 @@ export default function Index() {
 
       {/* SEÇÃO 1 — MAIS LIDAS DA SEMANA */}
       {weekMostRead.length > 0 && (
-        <section className="container-news mt-10 md:mt-16">
+        <section className="container-news mt-8 md:mt-10">
           <SectionHeader title="Mais Lidas da Semana" colorClass="border-urgent" icon={Flame} link="/ultimas" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
             {weekMostRead.slice(0, 4).map((p, i) => {
@@ -277,7 +277,7 @@ export default function Index() {
 
       {/* SEÇÃO 2 — FIQUE POR DENTRO SERGIPE VÍDEOS */}
       {videos.length > 0 && (
-        <section className="container-news mt-10 md:mt-16">
+        <section className="container-news mt-8 md:mt-10">
           <SectionHeader title="Fique Por Dentro Sergipe Vídeos" colorClass="border-urgent" link="/categoria/videos" icon={Video} />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
             {videos.slice(0, 4).map((v) => <VideoCard key={v.id} post={v} />)}
@@ -287,7 +287,7 @@ export default function Index() {
 
       {/* SEÇÃO 3 — ÚLTIMAS NOTÍCIAS (compacto, 8) */}
       {latest.length > 0 && (
-        <section className="container-news mt-10 md:mt-16">
+        <section className="container-news mt-8 md:mt-10">
           <SectionHeader title="Últimas Notícias" link="/ultimas" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 bg-white rounded-md border border-border/60 px-3 md:px-4">
             {latest.slice(0, 8).map((p) => (
@@ -299,7 +299,7 @@ export default function Index() {
 
       {/* SEÇÃO 4 — DENÚNCIAS EM DESTAQUE */}
       {denunciasDestaque.length > 0 && (
-        <section className="container-news mt-10 md:mt-16">
+        <section className="container-news mt-8 md:mt-10">
           <SectionHeader title="Denúncias em Destaque" colorClass="border-urgent" icon={AlertTriangle} link="/denuncias" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
             {denunciasDestaque.slice(0, 4).map((p) => (
