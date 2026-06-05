@@ -253,13 +253,13 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 5) FOOTER (compute first to know remaining space)
   // ---------------------------------------------------------------------------
-  const FOOTER_H = 160;
+  const FOOTER_H = 140;
   const footerY = H - FOOTER_H;
 
   // ---------------------------------------------------------------------------
-  // 3) IMAGE — ~60% of canvas height, smart cover-fit (no stretch)
+  // 3) IMAGE — smart cover-fit (no stretch)
   // ---------------------------------------------------------------------------
-  const IMG_H = Math.round(H * 0.55); // ~743px
+  const IMG_H = Math.round(H * 0.50); // ~675px
   const imgY = yCursor;
   ctx.fillStyle = COLORS.black;
   ctx.fillRect(0, imgY, W, IMG_H);
