@@ -300,7 +300,7 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
 
   const PAD_X = 56;
   const maxWidth = W - PAD_X * 2;
-  const tokens = tokenizeTitle(opts.title);
+  const tokens = tokenizeTitle(opts.title).slice(0, 12); // máx 12 palavras
 
   // Auto-fit title: 78 → 40, 3 to 5 lines
   let fontSize = 78;
