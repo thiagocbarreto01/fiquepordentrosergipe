@@ -277,7 +277,7 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 3) IMAGE — smart cover-fit (no stretch)
   // ---------------------------------------------------------------------------
-  const IMG_H = Math.round(H * 0.50); // ~675px
+  const IMG_H = Math.round(H * 0.55); // ~743px — manchete + foto dominantes
   const imgY = yCursor;
   ctx.fillStyle = COLORS.black;
   ctx.fillRect(0, imgY, W, IMG_H);
