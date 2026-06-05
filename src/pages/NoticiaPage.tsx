@@ -18,9 +18,11 @@ import { Button } from "@/components/ui/button";
 
 export default function NoticiaPage() {
   const { slug = "" } = useParams();
+  const { isStaff } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [mostRead, setMostRead] = useState<Post[]>([]);
   const [notFound, setNotFound] = useState(false);
+  const [reelOpen, setReelOpen] = useState(false);
 
   useEffect(() => {
     setPost(null); setNotFound(false);
