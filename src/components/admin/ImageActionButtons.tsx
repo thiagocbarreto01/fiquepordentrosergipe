@@ -17,9 +17,9 @@ const SUPABASE_PUBLIC_MEDIA_PREFIX = `https://${import.meta.env.VITE_SUPABASE_PR
 // Brand palette — TV Barretão / portal regional inspired
 // =============================================================================
 const COLORS = {
-  navy: "#041B4D",
-  navyDeep: "#02103A",
-  red: "#D90429",
+  navy: "#071B4D",
+  navyDeep: "#040F2E",
+  red: "#D9001B",
   yellow: "#FFD60A",
   white: "#FFFFFF",
   black: "#0A0A0A",
@@ -159,11 +159,9 @@ function wrapPlain(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
 interface ArtOptions {
   imageUrl: string;
   title: string;
-  subtitle?: string;
   categoryName?: string;
   isUrgent?: boolean;
   publishedAt?: string;
-  showSponsors?: boolean;
 }
 
 async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
@@ -175,17 +173,14 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Background base (in case anything fails to render)
+  // Background base
   ctx.fillStyle = COLORS.navy;
   ctx.fillRect(0, 0, W, H);
 
   // Pre-load assets in parallel (resilient to individual failures)
-  const [logo, cover, sponsors] = await Promise.all([
+  const [logo, cover] = await Promise.all([
     loadImageForCanvas(logoFiquePorDentro).catch(() => null),
     opts.imageUrl ? loadImageForCanvas(opts.imageUrl).catch(() => null) : Promise.resolve(null),
-    opts.showSponsors === false
-      ? Promise.resolve(null)
-      : loadImageForCanvas(sponsorsStrip).catch(() => null),
   ]);
 
   // ---------------------------------------------------------------------------
@@ -255,26 +250,24 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 5) FOOTER (compute first to know remaining space)
   // ---------------------------------------------------------------------------
-  const FOOTER_H = 130;
-  const SPONSORS_H = sponsors ? 90 : 0;
-  const footerY = H - FOOTER_H - SPONSORS_H;
+  const FOOTER_H = 160;
+  const footerY = H - FOOTER_H;
 
   // ---------------------------------------------------------------------------
-  // 3) IMAGE — ~45% of canvas height, smart cover-fit (no stretch)
+  // 3) IMAGE — ~60% of canvas height, smart cover-fit (no stretch)
   // ---------------------------------------------------------------------------
-  const IMG_H = Math.round(H * 0.45); // ~608px
+  const IMG_H = Math.round(H * 0.60); // ~810px
   const imgY = yCursor;
   ctx.fillStyle = COLORS.black;
   ctx.fillRect(0, imgY, W, IMG_H);
   if (cover) {
-    // cover-fit with face-priority offset toward top third
     const scale = Math.max(W / cover.width, IMG_H / cover.height);
     const dw = cover.width * scale;
     const dh = cover.height * scale;
     const dx = (W - dw) / 2;
-    // Bias upward so faces (usually top half) stay in frame
+    // Bias upward so faces stay in frame
     const overflow = dh - IMG_H;
-    const dy = imgY - overflow * 0.35;
+    const dy = imgY - overflow * 0.30;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, imgY, W, IMG_H);
@@ -288,17 +281,17 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ctx.textBaseline = "middle";
     ctx.fillText("SEM IMAGEM DISPONÍVEL", W / 2, imgY + IMG_H / 2);
   }
-  // subtle bottom gradient on image for visual seal
-  const grad = ctx.createLinearGradient(0, imgY + IMG_H - 80, 0, imgY + IMG_H);
-  grad.addColorStop(0, "rgba(4,27,77,0)");
-  grad.addColorStop(1, "rgba(4,27,77,0.85)");
+  // bottom gradient on image — smooth blend into navy title area
+  const grad = ctx.createLinearGradient(0, imgY + IMG_H - 120, 0, imgY + IMG_H);
+  grad.addColorStop(0, "rgba(7,27,77,0)");
+  grad.addColorStop(1, "rgba(7,27,77,1)");
   ctx.fillStyle = grad;
-  ctx.fillRect(0, imgY + IMG_H - 80, W, 80);
+  ctx.fillRect(0, imgY + IMG_H - 120, W, 120);
 
   yCursor = imgY + IMG_H;
 
   // ---------------------------------------------------------------------------
-  // 4) TITLE area (navy bg) + SUBTITLE — fills space between image and footer
+  // 4) TITLE area (navy bg) — fills space between image and footer
   // ---------------------------------------------------------------------------
   const textAreaY = yCursor;
   const textAreaH = footerY - textAreaY;
@@ -309,25 +302,21 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   const maxWidth = W - PAD_X * 2;
   const tokens = tokenizeTitle(opts.title);
 
-  // Auto-fit title: try sizes 86 → 48, max 4 lines
-  let fontSize = 86;
+  // Auto-fit title: 78 → 40, 3 to 5 lines
+  let fontSize = 78;
   let lines: TitleLine[] = [];
   let lineHeight = 0;
-  const subtitleText = (opts.subtitle || "").trim();
-  const subFont = 28;
-  const subLines = subtitleText ? subtitleText : "";
-  const subBlockH = subtitleText ? subFont * 1.3 * 2 + 24 : 0; // reserve ~2 lines
 
-  while (fontSize >= 44) {
+  while (fontSize >= 40) {
     ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
-    const spaceW = ctx.measureText(" ").width;
-    lines = wrapTokens(ctx, tokens, maxWidth, spaceW);
-    lineHeight = fontSize * 1.08;
+    const spaceW0 = ctx.measureText(" ").width;
+    lines = wrapTokens(ctx, tokens, maxWidth, spaceW0);
+    lineHeight = fontSize * 1.06;
     const titleH = lines.length * lineHeight;
-    if (lines.length <= 4 && titleH + subBlockH + 60 <= textAreaH) break;
+    if (lines.length <= 5 && titleH + 48 <= textAreaH) break;
     fontSize -= 3;
   }
-  if (lines.length > 4) lines = lines.slice(0, 4);
+  if (lines.length > 5) lines = lines.slice(0, 5);
 
   // Draw title with yellow highlights
   ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
@@ -356,32 +345,20 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ty += lineHeight;
   }
 
-  // Subtitle
-  if (subtitleText) {
-    ctx.font = `500 ${subFont}px system-ui, -apple-system, sans-serif`;
-    const sublines = wrapPlain(ctx, subtitleText, maxWidth).slice(0, 2);
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    let sy = titleStartY + titleH + 24 + subFont;
-    for (const ln of sublines) {
-      ctx.fillText(ln, PAD_X, sy);
-      sy += subFont * 1.3;
-    }
-  }
+  // (Sem subtítulo / sem corpo da matéria — apenas título)
 
   // ---------------------------------------------------------------------------
-  // 6) FOOTER — deep navy band with handle + site
+  // 6) FOOTER — deep navy band: marca FIQUE POR DENTRO SERGIPE
   // ---------------------------------------------------------------------------
   ctx.fillStyle = COLORS.navyDeep;
   ctx.fillRect(0, footerY, W, FOOTER_H);
   ctx.fillStyle = COLORS.yellow;
   ctx.fillRect(0, footerY, W, 4);
 
-  // Logo no rodapé (esquerda) — reforça marca FIQUE POR DENTRO SERGIPE
+  // Logo + nome do portal (esquerda)
   let textLeftX = PAD_X;
   if (logo) {
-    const logoH = 64;
+    const logoH = 72;
     const ratio = logo.width / logo.height;
     const logoW = logoH * ratio;
     ctx.drawImage(logo, PAD_X, footerY + (FOOTER_H - logoH) / 2, logoW, logoH);
@@ -389,32 +366,26 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   }
 
   ctx.fillStyle = COLORS.white;
-  ctx.font = "900 28px system-ui, -apple-system, sans-serif";
+  ctx.font = "900 22px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 - 12);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("FIQUE POR DENTRO SERGIPE", textLeftX, footerY + FOOTER_H / 2 - 18);
 
-  ctx.font = "600 20px system-ui, -apple-system, sans-serif";
+  ctx.font = "700 22px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = COLORS.yellow;
+  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 + 12);
+
+  ctx.font = "600 18px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.fillText("fiquepordentrose.com.br", textLeftX, footerY + FOOTER_H / 2 + 18);
+  ctx.fillText("fiquepordentrosergipe.com.br", textLeftX, footerY + FOOTER_H / 2 + 40);
 
-  // Direita — CTA
+  // Direita — CTA institucional
   ctx.textAlign = "right";
-  ctx.font = "900 24px system-ui, -apple-system, sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.font = "900 22px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = COLORS.yellow;
   ctx.fillText("ACOMPANHE NO INSTAGRAM →", W - PAD_X, footerY + FOOTER_H / 2);
 
-  // Sponsors strip beneath footer (if available)
-  if (sponsors) {
-    const sy0 = H - SPONSORS_H;
-    ctx.fillStyle = COLORS.white;
-    ctx.fillRect(0, sy0, W, SPONSORS_H);
-    const ratio = sponsors.width / sponsors.height;
-    let sh = SPONSORS_H - 12;
-    let sw = sh * ratio;
-    if (sw > W - 24) { sw = W - 24; sh = sw / ratio; }
-    ctx.drawImage(sponsors, (W - sw) / 2, sy0 + (SPONSORS_H - sh) / 2, sw, sh);
-  }
 
   return new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
@@ -491,11 +462,9 @@ export function ImageActionButtons({
     return generateInstagramArt({
       imageUrl: safeUrl,
       title: headline,
-      subtitle: sub,
       categoryName,
       isUrgent: urgent,
       publishedAt,
-      showSponsors,
     });
   };
 
@@ -527,7 +496,7 @@ export function ImageActionButtons({
     debounceRef.current = setTimeout(() => { regenerate(); }, 350);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, headline, sub, urgent, showSponsors]);
+  }, [open, headline, urgent]);
 
   const openPreview = () => {
     setOpen(true);
@@ -644,17 +613,6 @@ export function ImageActionButtons({
                 </p>
               </div>
 
-              <div>
-                <Label className="text-xs">Subtítulo (até 2 linhas)</Label>
-                <Textarea
-                  value={sub}
-                  maxLength={180}
-                  rows={2}
-                  onChange={(e) => setSub(e.target.value)}
-                  placeholder="Resumo curto da matéria"
-                />
-              </div>
-
               <div className="flex items-center justify-between rounded-md border p-2">
                 <Label htmlFor="ig-urg" className="text-sm flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -663,15 +621,12 @@ export function ImageActionButtons({
                 <Switch id="ig-urg" checked={urgent} onCheckedChange={setUrgent} />
               </div>
 
-              <div className="flex items-center justify-between rounded-md border p-2">
-                <Label htmlFor="ig-spons" className="text-sm">Faixa de patrocinadores</Label>
-                <Switch id="ig-spons" checked={showSponsors} onCheckedChange={setShowSponsors} />
-              </div>
-
               <div className="text-[11px] text-muted-foreground rounded-md bg-secondary/50 p-2 space-y-0.5">
                 <div><strong>Formato:</strong> 1080×1350 (4:5) — fixo</div>
                 <div><strong>Categoria:</strong> {categoryName || "—"}</div>
-                <div><strong>Fonte:</strong> {sourceName || "—"}</div>
+                <div className="text-[10px] opacity-70 mt-1">
+                  A arte exibe apenas marca FIQUE POR DENTRO SERGIPE — sem fonte/portal externo.
+                </div>
               </div>
             </div>
           </div>
