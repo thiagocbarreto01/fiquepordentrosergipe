@@ -52,6 +52,7 @@ export default function AdminPostEditor() {
   const [sourceName, setSourceName] = useState<string | null>(null);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [genIgHeadline, setGenIgHeadline] = useState(false);
+  const [reelOpen, setReelOpen] = useState(false);
   const [form, setForm] = useState<any>({
     title: "",
     subtitle: "",
