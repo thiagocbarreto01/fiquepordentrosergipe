@@ -462,11 +462,9 @@ export function ImageActionButtons({
     return generateInstagramArt({
       imageUrl: safeUrl,
       title: headline,
-      subtitle: sub,
       categoryName,
       isUrgent: urgent,
       publishedAt,
-      showSponsors,
     });
   };
 
