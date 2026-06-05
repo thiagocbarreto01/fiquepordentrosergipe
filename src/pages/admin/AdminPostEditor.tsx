@@ -992,6 +992,10 @@ export default function AdminPostEditor() {
               slug={form.slug || "noticia"}
               title={form.title || ""}
               instagramHeadline={form.instagram_headline || ""}
+              subtitle={form.subtitle || form.excerpt || ""}
+              isUrgent={!!form.is_urgent}
+              sourceName={sourceName || ""}
+              publishedAt={(form as any).published_at || undefined}
               categoryName={cats.find((c) => c.id === form.category_id)?.name || ""}
             />
 

@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Download, ExternalLink, ImageIcon, Loader2, Eye } from "lucide-react";
+import { Download, ExternalLink, ImageIcon, Loader2, Eye, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import logoFiquePorDentro from "@/assets/logo-fique-por-dentro.png";
 import sponsorsStrip from "@/assets/sponsors-strip.jpg";
@@ -12,11 +13,34 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_PUBLIC_MEDIA_PREFIX = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/media/`;
 
-/**
- * If imageUrl is external (not already in our media bucket), call the
- * import-image-to-storage edge function to mirror it into Storage and return
- * a CORS-safe public URL. Throws with the real error if import fails.
- */
+// =============================================================================
+// Brand palette — TV Barretão / portal regional inspired
+// =============================================================================
+const COLORS = {
+  navy: "#041B4D",
+  navyDeep: "#02103A",
+  red: "#D90429",
+  yellow: "#FFD60A",
+  white: "#FFFFFF",
+  black: "#0A0A0A",
+};
+
+const HIGHLIGHT_WORDS = [
+  "MORTE", "MORTO", "MORTA", "MORREU",
+  "PRISÃO", "PRESO", "PRESA", "PRESOS",
+  "ACIDENTE", "ACIDENTES",
+  "POLÍCIA", "POLICIAL",
+  "SERGIPE",
+  "URGENTE", "PLANTÃO",
+  "INVESTIGAÇÃO", "INVESTIGA",
+  "ASSASSINATO", "ASSASSINADO",
+  "TIROTEIO", "TIROS",
+  "OPERAÇÃO",
+];
+
+// =============================================================================
+// Image fetch helpers
+// =============================================================================
 async function ensureStorageUrl(imageUrl: string, slug: string): Promise<string> {
   if (!imageUrl) throw new Error("Sem imagem de capa");
   if (imageUrl.startsWith(SUPABASE_PUBLIC_MEDIA_PREFIX)) return imageUrl;
@@ -25,7 +49,6 @@ async function ensureStorageUrl(imageUrl: string, slug: string): Promise<string>
     body: { url: imageUrl, slug },
   });
   if (error) {
-    // Try to surface the body error message from the edge function
     const ctx: any = (error as any).context;
     let detail = error.message;
     try {
@@ -33,51 +56,12 @@ async function ensureStorageUrl(imageUrl: string, slug: string): Promise<string>
         const j = await ctx.json();
         if (j?.error) detail = j.error;
       }
-    } catch {
-      /* ignore */
-    }
-    throw new Error(`${detail} (URL: ${imageUrl})`);
+    } catch { /* ignore */ }
+    console.error("[InstagramArt] import-image-to-storage falhou:", detail, "URL:", imageUrl);
+    throw new Error(`Falha ao importar imagem para storage: ${detail}`);
   }
   if (!data?.url) throw new Error(`Resposta inválida ao importar imagem (URL: ${imageUrl})`);
   return data.url as string;
-}
-
-
-type InstagramAspect = "4:5" | "1:1";
-
-interface Props {
-  imageUrl: string;
-  slug: string;
-  title: string;
-  categoryName: string;
-  instagramHeadline?: string;
-  showSponsors?: boolean;
-  artMode?: "portal" | "photo-bg";
-  aspect?: InstagramAspect;
-}
-
-
-
-async function downloadBlob(url: string, filename: string) {
-  let blobUrl: string | null = null;
-  try {
-    const res = await fetch(url, { mode: "cors" });
-    if (!res.ok) throw new Error(String(res.status));
-    const blob = await res.blob();
-    blobUrl = URL.createObjectURL(blob);
-  } catch {
-    blobUrl = url;
-  }
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = filename;
-  a.rel = "noopener";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  if (blobUrl && blobUrl.startsWith("blob:")) {
-    setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
-  }
 }
 
 function loadImageEl(src: string, crossOrigin: boolean): Promise<HTMLImageElement> {
@@ -85,19 +69,12 @@ function loadImageEl(src: string, crossOrigin: boolean): Promise<HTMLImageElemen
     const img = new Image();
     if (crossOrigin) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = (e) => reject(e);
+    img.onerror = (e) => reject(new Error(`Falha ao carregar imagem: ${src}`));
     img.src = src;
   });
 }
 
-/**
- * Robust loader for canvas use:
- * 1) Try fetch -> blob URL (gives us a tainted-free image if CORS allows)
- * 2) Fallback to <img crossOrigin="anonymous">
- * 3) Fallback to direct <img> (may taint canvas — last resort)
- */
 async function loadImageForCanvas(src: string): Promise<HTMLImageElement> {
-  // 1) fetch as blob
   try {
     const res = await fetch(src, { mode: "cors" });
     if (res.ok) {
@@ -107,541 +84,482 @@ async function loadImageForCanvas(src: string): Promise<HTMLImageElement> {
         const img = await loadImageEl(url, false);
         return img;
       } finally {
-        // keep URL alive until image drawn; revoke later
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       }
     }
-  } catch {
-    /* ignore */
-  }
-  // 2) crossOrigin anonymous
+  } catch { /* ignore */ }
   try {
     return await loadImageEl(src, true);
-  } catch {
-    /* ignore */
-  }
-  // 3) plain (may taint canvas — will fail toBlob later)
+  } catch { /* ignore */ }
   return loadImageEl(src, false);
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const words = text.split(/\s+/);
-  const lines: string[] = [];
-  let current = "";
-  for (const w of words) {
-    const test = current ? `${current} ${w}` : w;
-    if (ctx.measureText(test).width > maxWidth && current) {
+// =============================================================================
+// Text layout helpers
+// =============================================================================
+type TitleToken = { text: string; highlight: boolean };
+type TitleLine = TitleToken[];
+
+function tokenizeTitle(raw: string): TitleToken[] {
+  const upper = (raw || "").toUpperCase().replace(/\s+/g, " ").trim();
+  if (!upper) return [];
+  return upper.split(" ").map((word) => {
+    const bare = word.replace(/[^A-ZÀ-ÚÇÃÕÊÔÉÁÍÓÚÂ]/g, "");
+    return { text: word, highlight: HIGHLIGHT_WORDS.includes(bare) };
+  });
+}
+
+function measureToken(ctx: CanvasRenderingContext2D, t: string): number {
+  return ctx.measureText(t).width;
+}
+
+function wrapTokens(
+  ctx: CanvasRenderingContext2D,
+  tokens: TitleToken[],
+  maxWidth: number,
+  spaceW: number,
+): TitleLine[] {
+  const lines: TitleLine[] = [];
+  let current: TitleLine = [];
+  let currentW = 0;
+  for (const tok of tokens) {
+    const w = measureToken(ctx, tok.text);
+    const next = current.length === 0 ? w : currentW + spaceW + w;
+    if (next > maxWidth && current.length > 0) {
       lines.push(current);
-      current = w;
+      current = [tok];
+      currentW = w;
     } else {
-      current = test;
+      current.push(tok);
+      currentW = next;
     }
   }
-  if (current) lines.push(current);
+  if (current.length > 0) lines.push(current);
   return lines;
 }
 
-async function generateInstagramArt(opts: Props): Promise<Blob> {
-  const aspect: InstagramAspect = opts.aspect ?? "4:5";
+function wrapPlain(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w;
+    if (ctx.measureText(test).width > maxWidth && cur) {
+      lines.push(cur);
+      cur = w;
+    } else cur = test;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+// =============================================================================
+// Art generator — TV Barretão / portal regional style, 1080x1350 (4:5) only
+// =============================================================================
+interface ArtOptions {
+  imageUrl: string;
+  title: string;
+  subtitle?: string;
+  categoryName?: string;
+  sourceName?: string;
+  isUrgent?: boolean;
+  publishedAt?: string;
+  showSponsors?: boolean;
+}
+
+async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   const W = 1080;
-  const H = aspect === "1:1" ? 1080 : 1350;
-  const SIZE = W; // width-based scaling base (paddings, font sizes)
+  const H = 1350; // 4:5 — fixed, never anything else
+
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  const mode = opts.artMode ?? "portal";
-
-  // Instagram safe area — only applied to the 4:5 (1080x1350) format,
-  // which the in-app editor crops vertically. Push header down and sponsors up
-  // so logo/sponsors never touch the canvas edges.
-  const SAFE_TOP = aspect === "4:5" ? 100 : 0;
-  const SAFE_BOTTOM = aspect === "4:5" ? 200 : 0;
-
-  // Base background
-  ctx.fillStyle = "#0a0a0a";
+  // Background base (in case anything fails to render)
+  ctx.fillStyle = COLORS.navy;
   ctx.fillRect(0, 0, W, H);
 
-  // Sponsors strip — load up-front to reserve footer space.
-  let sponsors: HTMLImageElement | null = null;
-  let sponsorsBarH = 0; // full-width black institutional bar
-  let sponsorsH = 0;    // logos image height inside the bar
-  let sponsorsW = 0;    // logos image width inside the bar
-  let sponsorsX = 0;
-  let sponsorsY = 0;    // logos image Y (centered vertically in the bar)
-  let sponsorsBarY = 0; // bar Y (offset from bottom by SAFE_BOTTOM)
-  if (opts.showSponsors !== false) {
-    try {
-      sponsors = await loadImageForCanvas(sponsorsStrip);
-      // Institutional TV bar: logos span edge-to-edge with no internal max-width.
-      const ratio = sponsors.width / sponsors.height;
-      const vPad = Math.round(SIZE * 0.010);
-      // Full width — no side padding, no centered inner block.
-      sponsorsW = SIZE;
-      sponsorsH = sponsorsW / ratio;
-      // Allow bar to grow taller so logos appear ~30% larger than before.
-      const maxBarH = Math.round(H * (aspect === "1:1" ? 0.155 : 0.14));
-      if (sponsorsH + vPad * 2 > maxBarH) {
-        sponsorsH = maxBarH - vPad * 2;
-        // Keep width at 100% even if it means slight vertical compression.
-        sponsorsW = SIZE;
-      }
-      sponsorsBarH = Math.round(sponsorsH + vPad * 2);
-      sponsorsBarY = H - sponsorsBarH - SAFE_BOTTOM;
-      sponsorsX = 0;
-      sponsorsY = sponsorsBarY + (sponsorsBarH - sponsorsH) / 2;
-    } catch {
-      sponsors = null;
-    }
-  }
+  // Pre-load assets in parallel (resilient to individual failures)
+  const [logo, cover, sponsors] = await Promise.all([
+    loadImageForCanvas(logoFiquePorDentro).catch(() => null),
+    opts.imageUrl ? loadImageForCanvas(opts.imageUrl).catch(() => null) : Promise.resolve(null),
+    opts.showSponsors === false
+      ? Promise.resolve(null)
+      : loadImageForCanvas(sponsorsStrip).catch(() => null),
+  ]);
 
-  // News cover photo
-  let cover: HTMLImageElement | null = null;
-  if (opts.imageUrl) {
-    try {
-      cover = await loadImageForCanvas(opts.imageUrl);
-    } catch {
-      cover = null;
-    }
-  }
+  // ---------------------------------------------------------------------------
+  // 1) TOP HEADER — navy band with logo + date + source
+  // ---------------------------------------------------------------------------
+  const HEADER_H = 170;
+  ctx.fillStyle = COLORS.navy;
+  ctx.fillRect(0, 0, W, HEADER_H);
+  // bottom red accent
+  ctx.fillStyle = COLORS.red;
+  ctx.fillRect(0, HEADER_H - 6, W, 6);
 
-  // Logo
-  let logo: HTMLImageElement | null = null;
-  try {
-    logo = await loadImageForCanvas(logoFiquePorDentro);
-  } catch {
-    logo = null;
-  }
-
-  const titleText = ((opts.instagramHeadline || opts.title || "")).trim();
-
-  if (mode === "portal") {
-    // =========================================================
-    // PORTAL LAYOUT — stacked: header (logo) | headline | photo | sponsors
-    // =========================================================
-
-    // 1) BLUE TOP BAR — Fique Por Dentro Sergipe brand identity (offset by SAFE_TOP)
-    const blueBarH = 32;
-    ctx.fillStyle = "#0f2a5c"; // brand navy (hsl 220 70% 18%)
-    ctx.fillRect(0, SAFE_TOP, SIZE, blueBarH);
-
-    // 2) HEADER — black brand bar with centered logo
-    const headerTop = SAFE_TOP + blueBarH;
-    const headerH = 120; // reduced ~20% (was 150)
-    ctx.fillStyle = "#0a0a0a";
-    ctx.fillRect(0, headerTop, SIZE, headerH);
-    // thin red accent under header
-    ctx.fillStyle = "#dc2626";
-    ctx.fillRect(0, headerTop + headerH - 4, SIZE, 4);
-
-
-    if (logo) {
-      // Mirror sponsors bar: fit logo inside header with side/vertical padding,
-      // centered horizontally and vertically, never cropped.
-      const innerH = headerH - 4; // exclude red accent line
-      const sidePad = Math.round(SIZE * 0.04);
-      const vPad = Math.round(innerH * 0.08); // logo ~8% maior
-      const maxLogoW = SIZE - sidePad * 2;
-      const maxLogoH = innerH - vPad * 2;
-      const ratio = logo.width / logo.height;
-      let logoH = maxLogoH;
-      let logoW = logoH * ratio;
-      if (logoW > maxLogoW) {
-        logoW = maxLogoW;
-        logoH = logoW / ratio;
-      }
-      const lx = (SIZE - logoW) / 2;
-      const ly = headerTop + (innerH - logoH) / 2;
-      ctx.drawImage(logo, lx, ly, logoW, logoH);
-    } else {
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 56px system-ui, -apple-system, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("FIQUE POR DENTRO SERGIPE", SIZE / 2, headerTop + (headerH - 4) / 2);
-    }
-
-    const headerBottom = headerTop + headerH;
-
-    // 3) CATEGORY ROW — small, elegant strip above the headline
-    const hasCategory = !!opts.categoryName;
-    const categoryH = hasCategory ? 40 : 0;
-
-    // 4) HEADLINE band — white background, dark text, auto-fit
-    // 5) PHOTO area takes the remaining space between headline and sponsors
-    const photoGap = 6; // foto sobe, menos vazio entre manchete e imagem
-    const sponsorsGap = sponsors ? 12 : 0;
-    const reservedTop = headerBottom + 8 + categoryH; // menos respiro acima da manchete
-    const footerH = (sponsors ? sponsorsBarH + sponsorsGap : 0) + SAFE_BOTTOM;
-    const availableBelow = H - reservedTop - footerH - photoGap;
-
-
-    // Dynamic headline sizing — measure FIRST, then reserve exact height needed.
-    // Priority (REGRA 5): headline > photo. Photo may shrink so headline never crops.
-    const maxWidth = SIZE - 112;
-    const headlinePadY = 18; // faixa branca ~10% mais baixa
-    const minPhotoH = Math.round(H * (aspect === "1:1" ? 0.60 : 0.58)); // photo dominates
-    const maxHeadlineH = Math.max(140, availableBelow - minPhotoH);
-
-    const len = titleText.length;
-    // Tiered start font por char count — manchete ~12% maior.
-    let startFont: number;
-    let minFont: number;
-    if (len <= 60) { startFont = 97; minFont = 53; }
-    else if (len <= 90) { startFont = 77; minFont = 46; }
-    else if (len <= 120) { startFont = 60; minFont = 38; }
-    else { startFont = 54; minFont = 34; }
-
-
-    let fontSize = startFont;
-    let lines: string[] = [];
-    let lineHeight = 0;
-    let textBlockH = 0;
-    // Shrink until the wrapped block fits inside maxHeadlineH (REGRA 1 + 3: never crop)
-    while (true) {
-      ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
-      lines = titleText ? wrapText(ctx, titleText, maxWidth) : [];
-      lineHeight = fontSize * 1.15;
-      textBlockH = lines.length * lineHeight;
-      if (textBlockH + headlinePadY * 2 <= maxHeadlineH) break;
-      if (fontSize <= minFont) break;
-      fontSize -= 2;
-    }
-
-    let headlineH = Math.max(180, Math.min(maxHeadlineH, Math.round(textBlockH + headlinePadY * 2)));
-    const categoryY = headerBottom + 16;
-    const headlineY = reservedTop;
-    const photoY = reservedTop + headlineH + photoGap;
-    const photoH = availableBelow - headlineH;
-
-    // Category strip — small, elegant red label on white above the headline
-    if (hasCategory) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, categoryY, SIZE, categoryH);
-      ctx.fillStyle = "#dc2626";
-      ctx.fillRect(0, categoryY, 6, categoryH);
-      ctx.font = "800 18px system-ui, -apple-system, sans-serif";
-      ctx.fillStyle = "#dc2626";
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "left";
-      // letter-spacing approximation via uppercase + measured kerning
-      ctx.fillText(opts.categoryName.toUpperCase(), 28, categoryY + categoryH / 2 + 1);
-    }
-
-    // Headline background — white
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, headlineY, SIZE, headlineH);
-    // Left red accent bar
-    ctx.fillStyle = "#dc2626";
-    ctx.fillRect(0, headlineY, 12, headlineH);
-
-    if (titleText && lines.length > 0) {
-      ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
-      const startY = headlineY + (headlineH - textBlockH) / 2 + fontSize * 0.85;
-      ctx.fillStyle = "#0a0a0a";
-      ctx.textBaseline = "alphabetic";
-      ctx.textAlign = "left";
-      let y = startY;
-      for (const line of lines) {
-        ctx.fillText(line, 56, y);
-        y += lineHeight;
-      }
-    }
-
-    // 4) PHOTO — fills the photo area, cover-fit (no text overlay)
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, photoY, SIZE, photoH);
-    if (cover) {
-      const scale = Math.max(SIZE / cover.width, photoH / cover.height);
-      const w = cover.width * scale;
-      const h = cover.height * scale;
-      const dx = (SIZE - w) / 2;
-      const dy = photoY + (photoH - h) / 2;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, photoY, SIZE, photoH);
-      ctx.clip();
-      ctx.drawImage(cover, dx, dy, w, h);
-      ctx.restore();
-    }
-
-    // 5) SPONSORS — black footer band with centered logos
-    if (sponsors) {
-      ctx.fillStyle = "#0a0a0a";
-      ctx.fillRect(0, sponsorsBarY, SIZE, sponsorsBarH);
-      ctx.drawImage(sponsors, sponsorsX, sponsorsY, sponsorsW, sponsorsH);
-    }
+  // Logo centered
+  if (logo) {
+    const maxLogoH = 90;
+    const maxLogoW = 720;
+    const ratio = logo.width / logo.height;
+    let lh = maxLogoH;
+    let lw = lh * ratio;
+    if (lw > maxLogoW) { lw = maxLogoW; lh = lw / ratio; }
+    ctx.drawImage(logo, (W - lw) / 2, 28, lw, lh);
   } else {
-    // =========================================================
-    // PHOTO-BG LAYOUT (legacy) — photo fills canvas, overlays on top
-    // =========================================================
-    if (cover) {
-      const scale = Math.max(W / cover.width, H / cover.height);
-      const w = cover.width * scale;
-      const h = cover.height * scale;
-      const dx = (W - w) / 2;
-      const dy = (H - h) / 2;
-      ctx.drawImage(cover, dx, dy, w, h);
-
-      const topShade = ctx.createLinearGradient(0, 0, 0, 260);
-      topShade.addColorStop(0, "rgba(0,0,0,0.55)");
-      topShade.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = topShade;
-      ctx.fillRect(0, 0, W, 260);
-
-      const bottomShade = ctx.createLinearGradient(0, H * 0.45, 0, H);
-      bottomShade.addColorStop(0, "rgba(0,0,0,0)");
-      bottomShade.addColorStop(0.55, "rgba(0,0,0,0.55)");
-      bottomShade.addColorStop(1, "rgba(0,0,0,0.92)");
-      ctx.fillStyle = bottomShade;
-      ctx.fillRect(0, H * 0.45, W, H * 0.55);
-    } else {
-      const bg = ctx.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, "#1a1a1a");
-      bg.addColorStop(1, "#0a0a0a");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = "#dc2626";
-      ctx.fillRect(0, 0, 12, H);
-    }
-
-    if (logo) {
-      const logoH = 110;
-      const logoW = (logo.width / logo.height) * logoH;
-      ctx.shadowColor = "rgba(0,0,0,0.65)";
-      ctx.shadowBlur = 16;
-      ctx.shadowOffsetY = 3;
-      ctx.drawImage(logo, 56, 56, logoW, logoH);
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-    }
-
-    if (opts.categoryName) {
-      const label = opts.categoryName.toUpperCase();
-      ctx.font = "bold 32px system-ui, -apple-system, sans-serif";
-      const padX = 28;
-      const padY = 14;
-      const tw = ctx.measureText(label).width;
-      const bw = tw + padX * 2;
-      const bh = 32 + padY * 2;
-      const bx = SIZE - 56 - bw;
-      const by = 56;
-      ctx.shadowColor = "rgba(0,0,0,0.55)";
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetY = 2;
-      ctx.fillStyle = "#dc2626";
-      ctx.fillRect(bx, by, bw, bh);
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-      ctx.fillStyle = "#ffffff";
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "left";
-      ctx.fillText(label, bx + padX, by + bh / 2 + 1);
-    }
-
-    if (titleText) {
-      const maxWidth = SIZE - 112;
-      const MAX_LINES = 4;
-      let fontSize = 84;
-      let lines: string[] = [];
-      let fits = false;
-      while (fontSize >= 40) {
-        ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
-        lines = wrapText(ctx, titleText, maxWidth);
-        if (lines.length <= MAX_LINES) {
-          fits = true;
-          break;
-        }
-        fontSize -= 3;
-      }
-      if (!fits && lines.length > MAX_LINES) {
-        ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
-        const kept = lines.slice(0, MAX_LINES);
-        let last = kept[MAX_LINES - 1];
-        const ellipsis = "…";
-        while (last.length > 0 && ctx.measureText(last + ellipsis).width > maxWidth) {
-          const sp = last.lastIndexOf(" ");
-          last = sp <= 0 ? last.slice(0, Math.max(0, last.length - 1)) : last.slice(0, sp);
-        }
-        kept[MAX_LINES - 1] = (last.replace(/[.,;:!?\-–—]+$/g, "").trim() || "") + ellipsis;
-        lines = kept;
-      }
-
-      const lineHeight = fontSize * 1.12;
-      const totalH = lines.length * lineHeight;
-      const footerReserve = 60 + (sponsors ? sponsorsBarH + 24 : 70);
-      const bottomPad = footerReserve + 24;
-      const startY = H - bottomPad - totalH + fontSize;
-
-      ctx.shadowColor = "rgba(0,0,0,0.85)";
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetY = 2;
-      ctx.fillStyle = "#ffffff";
-      ctx.textBaseline = "alphabetic";
-      ctx.textAlign = "left";
-      let y = startY;
-      for (const line of lines) {
-        ctx.fillText(line, 56, y);
-        y += lineHeight;
-      }
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-    }
-
-    const brandBaselineY = sponsors ? sponsorsBarY - 22 : H - 40;
-    ctx.fillStyle = "#dc2626";
-    ctx.fillRect(56, brandBaselineY - 18, 80, 4);
-    ctx.font = "500 24px system-ui, -apple-system, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.fillStyle = COLORS.white;
+    ctx.font = "900 54px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.textAlign = "right";
-    ctx.fillText("fiquepordentrose.com.br", SIZE - 56, brandBaselineY);
+    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, 70);
+  }
 
-    if (sponsors) {
-      ctx.fillStyle = "#0a0a0a";
-      ctx.fillRect(0, sponsorsBarY, SIZE, sponsorsBarH);
-      ctx.drawImage(sponsors, sponsorsX, sponsorsY, sponsorsW, sponsorsH);
+  // Date + source line
+  const dateStr = formatDate(opts.publishedAt);
+  const srcStr = (opts.sourceName || "").trim();
+  const metaParts = [dateStr, srcStr].filter(Boolean);
+  if (metaParts.length > 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.font = "600 22px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(metaParts.join("  ·  ").toUpperCase(), W / 2, HEADER_H - 38);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2) URGENT / PLANTÃO tag
+  // ---------------------------------------------------------------------------
+  let yCursor = HEADER_H;
+  if (opts.isUrgent) {
+    const tagH = 64;
+    ctx.fillStyle = COLORS.red;
+    ctx.fillRect(0, yCursor, W, tagH);
+    ctx.fillStyle = COLORS.white;
+    ctx.font = "900 38px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const label = "⚠  URGENTE — PLANTÃO";
+    ctx.fillText(label, W / 2, yCursor + tagH / 2 + 2);
+    yCursor += tagH;
+  } else if (opts.categoryName) {
+    const tagH = 52;
+    ctx.fillStyle = COLORS.red;
+    ctx.fillRect(0, yCursor, W, tagH);
+    ctx.fillStyle = COLORS.white;
+    ctx.font = "900 28px system-ui, -apple-system, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(opts.categoryName.toUpperCase(), W / 2, yCursor + tagH / 2 + 1);
+    yCursor += tagH;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 5) FOOTER (compute first to know remaining space)
+  // ---------------------------------------------------------------------------
+  const FOOTER_H = 130;
+  const SPONSORS_H = sponsors ? 90 : 0;
+  const footerY = H - FOOTER_H - SPONSORS_H;
+
+  // ---------------------------------------------------------------------------
+  // 3) IMAGE — ~45% of canvas height, smart cover-fit (no stretch)
+  // ---------------------------------------------------------------------------
+  const IMG_H = Math.round(H * 0.45); // ~608px
+  const imgY = yCursor;
+  ctx.fillStyle = COLORS.black;
+  ctx.fillRect(0, imgY, W, IMG_H);
+  if (cover) {
+    // cover-fit with face-priority offset toward top third
+    const scale = Math.max(W / cover.width, IMG_H / cover.height);
+    const dw = cover.width * scale;
+    const dh = cover.height * scale;
+    const dx = (W - dw) / 2;
+    // Bias upward so faces (usually top half) stay in frame
+    const overflow = dh - IMG_H;
+    const dy = imgY - overflow * 0.35;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, imgY, W, IMG_H);
+    ctx.clip();
+    ctx.drawImage(cover, dx, dy, dw, dh);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.font = "700 24px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("SEM IMAGEM DISPONÍVEL", W / 2, imgY + IMG_H / 2);
+  }
+  // subtle bottom gradient on image for visual seal
+  const grad = ctx.createLinearGradient(0, imgY + IMG_H - 80, 0, imgY + IMG_H);
+  grad.addColorStop(0, "rgba(4,27,77,0)");
+  grad.addColorStop(1, "rgba(4,27,77,0.85)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, imgY + IMG_H - 80, W, 80);
+
+  yCursor = imgY + IMG_H;
+
+  // ---------------------------------------------------------------------------
+  // 4) TITLE area (navy bg) + SUBTITLE — fills space between image and footer
+  // ---------------------------------------------------------------------------
+  const textAreaY = yCursor;
+  const textAreaH = footerY - textAreaY;
+  ctx.fillStyle = COLORS.navy;
+  ctx.fillRect(0, textAreaY, W, textAreaH);
+
+  const PAD_X = 56;
+  const maxWidth = W - PAD_X * 2;
+  const tokens = tokenizeTitle(opts.title);
+
+  // Auto-fit title: try sizes 86 → 48, max 4 lines
+  let fontSize = 86;
+  let lines: TitleLine[] = [];
+  let lineHeight = 0;
+  const subtitleText = (opts.subtitle || "").trim();
+  const subFont = 28;
+  const subLines = subtitleText ? subtitleText : "";
+  const subBlockH = subtitleText ? subFont * 1.3 * 2 + 24 : 0; // reserve ~2 lines
+
+  while (fontSize >= 44) {
+    ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
+    const spaceW = ctx.measureText(" ").width;
+    lines = wrapTokens(ctx, tokens, maxWidth, spaceW);
+    lineHeight = fontSize * 1.08;
+    const titleH = lines.length * lineHeight;
+    if (lines.length <= 4 && titleH + subBlockH + 60 <= textAreaH) break;
+    fontSize -= 3;
+  }
+  if (lines.length > 4) lines = lines.slice(0, 4);
+
+  // Draw title with yellow highlights
+  ctx.font = `900 ${fontSize}px system-ui, -apple-system, sans-serif`;
+  const spaceW = ctx.measureText(" ").width;
+  const titleH = lines.length * lineHeight;
+  const titleStartY = textAreaY + 36 + fontSize * 0.85;
+
+  let ty = titleStartY;
+  for (const line of lines) {
+    // measure full line width
+    let lineW = 0;
+    line.forEach((tok, i) => {
+      lineW += measureToken(ctx, tok.text);
+      if (i < line.length - 1) lineW += spaceW;
+    });
+    let x = PAD_X; // left-align for jornalismo feel
+    for (let i = 0; i < line.length; i++) {
+      const tok = line[i];
+      ctx.fillStyle = tok.highlight ? COLORS.yellow : COLORS.white;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(tok.text, x, ty);
+      x += measureToken(ctx, tok.text);
+      if (i < line.length - 1) x += spaceW;
     }
+    ty += lineHeight;
+  }
+
+  // Subtitle
+  if (subtitleText) {
+    ctx.font = `500 ${subFont}px system-ui, -apple-system, sans-serif`;
+    const sublines = wrapPlain(ctx, subtitleText, maxWidth).slice(0, 2);
+    ctx.fillStyle = "rgba(255,255,255,0.88)";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    let sy = titleStartY + titleH + 24 + subFont;
+    for (const ln of sublines) {
+      ctx.fillText(ln, PAD_X, sy);
+      sy += subFont * 1.3;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6) FOOTER — deep navy band with handle + site
+  // ---------------------------------------------------------------------------
+  ctx.fillStyle = COLORS.navyDeep;
+  ctx.fillRect(0, footerY, W, FOOTER_H);
+  ctx.fillStyle = COLORS.yellow;
+  ctx.fillRect(0, footerY, W, 4);
+
+  ctx.fillStyle = COLORS.white;
+  ctx.font = "900 30px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("@fiquepordentrosergipe", PAD_X, footerY + FOOTER_H / 2 - 14);
+
+  ctx.font = "600 22px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.fillText("fiquepordentrose.com.br", PAD_X, footerY + FOOTER_H / 2 + 20);
+
+  // Right-side mini icons
+  ctx.textAlign = "right";
+  ctx.font = "900 26px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = COLORS.yellow;
+  ctx.fillText("ACOMPANHE NO INSTAGRAM →", W - PAD_X, footerY + FOOTER_H / 2);
+
+  // Sponsors strip beneath footer (if available)
+  if (sponsors) {
+    const sy0 = H - SPONSORS_H;
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(0, sy0, W, SPONSORS_H);
+    const ratio = sponsors.width / sponsors.height;
+    let sh = SPONSORS_H - 12;
+    let sw = sh * ratio;
+    if (sw > W - 24) { sw = W - 24; sh = sw / ratio; }
+    ctx.drawImage(sponsors, (W - sw) / 2, sy0 + (SPONSORS_H - sh) / 2, sw, sh);
   }
 
   return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png"),
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("Falha ao converter canvas em imagem (toBlob)"))),
+      "image/png",
+    ),
   );
 }
 
+function formatDate(iso?: string): string {
+  const d = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+}
 
-export function ImageActionButtons({ imageUrl, slug, title, categoryName, instagramHeadline }: Props) {
-  const [genArt, setGenArt] = useState(false);
+// =============================================================================
+// React component
+// =============================================================================
+interface Props {
+  imageUrl: string;
+  slug: string;
+  title: string;
+  categoryName: string;
+  instagramHeadline?: string;
+  subtitle?: string;
+  isUrgent?: boolean;
+  sourceName?: string;
+  publishedAt?: string;
+}
+
+export function ImageActionButtons({
+  imageUrl,
+  slug,
+  title,
+  categoryName,
+  instagramHeadline,
+  subtitle,
+  isUrgent,
+  sourceName,
+  publishedAt,
+}: Props) {
+  const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
-  const [headline, setHeadline] = useState<string>((instagramHeadline || "").trim());
-  const [showSponsors, setShowSponsors] = useState<boolean>(true);
-  const [artMode, setArtMode] = useState<"portal" | "photo-bg">("portal");
-  const [aspect, setAspect] = useState<InstagramAspect>("4:5");
+  const [generating, setGenerating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const [headline, setHeadline] = useState((instagramHeadline || title || "").trim());
+  const [sub, setSub] = useState((subtitle || "").trim());
+  const [urgent, setUrgent] = useState(!!isUrgent);
+  const [showSponsors, setShowSponsors] = useState(true);
+
   const hasImage = !!imageUrl;
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-
-  // Sync editable headline when the prop changes (post loaded / AI generated).
   useEffect(() => {
-    setHeadline((instagramHeadline || "").trim());
-  }, [instagramHeadline]);
+    setHeadline((instagramHeadline || title || "").trim());
+  }, [instagramHeadline, title]);
+  useEffect(() => { setSub((subtitle || "").trim()); }, [subtitle]);
+  useEffect(() => { setUrgent(!!isUrgent); }, [isUrgent]);
 
-
-
-  const effectiveHeadline = (headline || instagramHeadline || title || "").trim();
-
-  const handleDownload = async () => {
-    if (!hasImage) return;
-    setDownloading(true);
-    try {
-      await downloadBlob(imageUrl, `fiquepordentrose-${slug || "noticia"}.jpg`);
-    } catch {
-      toast.error("Falha ao baixar imagem");
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  /**
-   * For titles longer than 80 chars, auto-generate a short Instagram headline
-   * via the edge function. Returns the (possibly shortened) headline.
-   */
-  const ensureShortHeadline = async (raw: string): Promise<string> => {
-    const t = (raw || "").trim();
-    if (t.length <= 80) return t;
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-instagram-headline", {
-        body: { title: t },
-      });
-      if (error) throw error;
-      const h = (data?.headline || "").trim();
-      if (h) {
-        toast.success("Manchete resumida automaticamente para o Instagram");
-        return h;
-      }
-    } catch (e) {
-      toast.error(`Falha ao resumir manchete: ${(e as Error).message}`);
-    }
-    return t;
-  };
-
-  const buildArt = async (headlineText: string) => {
+  const buildArt = async (): Promise<Blob> => {
     let safeUrl = "";
     if (imageUrl) {
-      safeUrl = await ensureStorageUrl(imageUrl, slug);
+      try {
+        safeUrl = await ensureStorageUrl(imageUrl, slug);
+      } catch (e) {
+        console.error("[InstagramArt] storage url failed:", e);
+        // fall back to original; canvas will try direct load
+        safeUrl = imageUrl;
+      }
     }
     return generateInstagramArt({
       imageUrl: safeUrl,
-      slug,
-      title: headlineText,
+      title: headline,
+      subtitle: sub,
       categoryName,
+      sourceName,
+      isUrgent: urgent,
+      publishedAt,
       showSponsors,
-      artMode,
-      aspect,
     });
-
   };
 
-  const handlePreviewArt = async () => {
-    setGenArt(true);
+  const regenerate = async () => {
+    setGenerating(true);
+    setErrorMsg(null);
+    const startedAt = Date.now();
     try {
-      const initial = (instagramHeadline || title || "").trim();
-      const base = (headline || initial).trim();
-      const finalHeadline = await ensureShortHeadline(base);
-      if (finalHeadline !== headline) setHeadline(finalHeadline);
-      const blob = await buildArt(finalHeadline);
+      const blob = await buildArt();
       const url = URL.createObjectURL(blob);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewBlob(blob);
       setPreviewUrl(url);
+      console.log(`[InstagramArt] gerada em ${Date.now() - startedAt}ms — 1080x1350 (4:5)`);
     } catch (e) {
-      toast.error(`Falha ao gerar arte: ${(e as Error).message}`, { duration: 8000 });
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[InstagramArt] geração falhou:", e);
+      setErrorMsg(msg);
+      toast.error(`Falha ao gerar arte: ${msg}`, { duration: 9000 });
     } finally {
-      setGenArt(false);
+      setGenerating(false);
     }
   };
 
+  // Live preview: debounce on input changes while dialog is open
+  useEffect(() => {
+    if (!open) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { regenerate(); }, 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, headline, sub, urgent, showSponsors]);
 
-  const handleRegenerate = async () => {
-    setGenArt(true);
-    try {
-      const finalHeadline = await ensureShortHeadline(effectiveHeadline);
-      if (finalHeadline !== headline) setHeadline(finalHeadline);
-      const blob = await buildArt(finalHeadline);
-      const url = URL.createObjectURL(blob);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewBlob(blob);
-      setPreviewUrl(url);
-    } catch (e) {
-      toast.error(`Falha ao regenerar arte: ${(e as Error).message}`, { duration: 8000 });
-    } finally {
-      setGenArt(false);
-    }
-  };
-
-
-  const handleDownloadArt = () => {
-    if (!previewBlob) return;
-    const url = URL.createObjectURL(previewBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fiquepordentrose-${slug || "noticia"}-instagram.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast.success(`Arte ${aspect === "1:1" ? "1080x1080" : "1080x1350"} baixada`);
+  const openPreview = () => {
+    setOpen(true);
+    // first generate will fire from the effect
   };
 
   const closePreview = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setPreviewBlob(null);
+    setOpen(false);
+    setErrorMsg(null);
+  };
+
+  const handleDownload = async () => {
+    if (!hasImage) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(imageUrl, { mode: "cors" });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `fiquepordentrose-${slug}.jpg`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast.error("Falha ao baixar imagem");
+    } finally { setDownloading(false); }
+  };
+
+  const handleDownloadArt = () => {
+    if (!previewBlob) return;
+    const url = URL.createObjectURL(previewBlob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `fiquepordentrose-${slug || "noticia"}-instagram-1080x1350.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast.success("Arte 1080×1350 (4:5) baixada");
   };
 
   return (
@@ -652,157 +570,113 @@ export function ImageActionButtons({ imageUrl, slug, title, categoryName, instag
           Baixar Imagem
         </Button>
         <Button
-          type="button"
-          variant="outline"
-          size="sm"
+          type="button" variant="outline" size="sm"
           onClick={() => imageUrl && window.open(imageUrl, "_blank", "noopener,noreferrer")}
           disabled={!hasImage}
         >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Abrir Imagem Original
+          <ExternalLink className="h-4 w-4 mr-2" /> Abrir Original
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={handlePreviewArt} disabled={genArt}>
-          {genArt ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />}
-          Visualizar Arte
-        </Button>
-        <Button type="button" size="sm" onClick={handlePreviewArt} disabled={genArt}>
-          {genArt ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ImageIcon className="h-4 w-4 mr-2" />}
-          Gerar Arte Instagram
+        <Button type="button" size="sm" onClick={openPreview}>
+          <ImageIcon className="h-4 w-4 mr-2" /> Gerar Arte Instagram (4:5)
         </Button>
       </div>
 
-      <Dialog open={!!previewUrl} onOpenChange={(o) => !o && closePreview()}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={open} onOpenChange={(o) => !o && closePreview()}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Pré-visualização — Arte Instagram ({aspect === "1:1" ? "1080×1080" : "1080×1350"})</DialogTitle>
+            <DialogTitle>Arte Instagram — 1080×1350 (4:5) — Preview ao vivo</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-2">
-            <Label className="flex items-center justify-between">
-              <span>Manchete usada na arte</span>
-              <span
-                className={`text-[10px] font-mono ${
-                  effectiveHeadline.length > 80
-                    ? "text-destructive"
-                    : effectiveHeadline.length > 60
-                      ? "text-amber-500"
-                      : "text-muted-foreground"
-                }`}
-              >
-                {effectiveHeadline.length}/80 (ideal ≤60)
-              </span>
-            </Label>
-            <Input
-              value={headline}
-              maxLength={80}
-              placeholder={title || "Manchete curta para o Instagram"}
-              onChange={(e) => setHeadline(e.target.value)}
-            />
-            <p className="text-[10px] text-muted-foreground">
-              Edite e clique em <strong>Regenerar</strong> para atualizar a arte. Salve a notícia para
-              persistir esta manchete.
-            </p>
-          </div>
-
-          <div className="rounded-md border p-3 space-y-2">
-            <Label className="text-sm">Formato da Arte Instagram</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={aspect === "4:5" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setAspect("4:5")}
-              >
-                Feed 4:5 (1080×1350) — Padrão
-              </Button>
-              <Button
-                type="button"
-                variant={aspect === "1:1" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setAspect("1:1")}
-              >
-                Quadrado 1:1 (1080×1080)
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              O formato vertical 4:5 ocupa mais espaço no feed do Instagram. Clique em <strong>Regenerar</strong> após alterar.
-            </p>
-          </div>
-
-          <div className="rounded-md border p-3 space-y-2">
-            <Label className="text-sm">Modo da Arte Instagram</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={artMode === "portal" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setArtMode("portal")}
-              >
-                Layout Portal Fique Por Dentro Sergipe
-              </Button>
-              <Button
-                type="button"
-                variant={artMode === "photo-bg" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setArtMode("photo-bg")}
-              >
-                Foto como fundo
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              Padrão: <strong>Layout Portal</strong> — logo no topo, manchete em faixa branca,
-              foto limpa abaixo e patrocinadores no rodapé. Clique em <strong>Regenerar</strong> após alterar.
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between rounded-md border p-3">
-            <div>
-              <Label htmlFor="show-sponsors" className="text-sm">Mostrar patrocinadores na arte</Label>
-              <p className="text-[10px] text-muted-foreground">
-                Faixa de patrocinadores fica no rodapé da arte (≤12,5% da altura).
-              </p>
-            </div>
-            <Switch id="show-sponsors" checked={showSponsors} onCheckedChange={setShowSponsors} />
-          </div>
-
-
-          {previewUrl && (
-            <div className="flex flex-col items-center bg-muted rounded-md p-2 gap-2">
-              <div className="relative inline-block" style={{ maxHeight: "50vh" }}>
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* LIVE PREVIEW */}
+            <div className="bg-muted rounded-md p-2 flex items-center justify-center min-h-[400px] relative">
+              {generating && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10 rounded-md">
+                  <Loader2 className="h-8 w-8 animate-spin text-white" />
+                </div>
+              )}
+              {previewUrl ? (
                 <img
                   src={previewUrl}
-                  alt="Pré-visualização da arte Instagram"
-                  className="block max-w-full h-auto rounded"
-                  style={{ maxHeight: "50vh" }}
+                  alt="Preview arte Instagram 1080x1350"
+                  className="block h-auto rounded shadow-lg"
+                  style={{ width: "auto", maxHeight: "70vh", aspectRatio: "4 / 5" }}
                 />
-                {aspect === "4:5" && (
-                  <div
-                    className="pointer-events-none absolute inset-0 rounded"
-                    style={{
-                      // Safe area: top 120px / bottom 140px / sides 40px on a 1080x1350 canvas.
-                      boxShadow: "inset 0 0 0 1px hsl(var(--destructive) / 0.9)",
-                      clipPath:
-                        "polygon(3.7% 8.89%, 96.3% 8.89%, 96.3% 89.63%, 3.7% 89.63%)",
-                    }}
-                  />
-                )}
-              </div>
-              {aspect === "4:5" && (
-                <p className="text-[10px] text-muted-foreground text-center">
-                  Moldura vermelha = área segura do Instagram (topo 120px • base 140px • laterais 40px).
-                </p>
+              ) : (
+                <div className="text-xs text-muted-foreground">Gerando primeira prévia…</div>
               )}
             </div>
-          )}
+
+            {/* CONTROLS */}
+            <div className="space-y-3">
+              {errorMsg && (
+                <div className="border border-destructive/50 bg-destructive/10 text-destructive rounded-md p-2 text-xs flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Erro:</strong> {errorMsg}
+                    <div className="text-[10px] opacity-70 mt-1">Detalhes no console do navegador.</div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label className="text-xs flex justify-between">
+                  <span>Manchete (CAIXA ALTA na arte)</span>
+                  <span className={headline.length > 90 ? "text-destructive" : "text-muted-foreground"}>
+                    {headline.length}/100
+                  </span>
+                </Label>
+                <Textarea
+                  value={headline}
+                  maxLength={120}
+                  onChange={(e) => setHeadline(e.target.value)}
+                  rows={3}
+                  placeholder="Manchete impactante"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Palavras destacadas em amarelo: MORTE, PRISÃO, ACIDENTE, POLÍCIA, SERGIPE, URGENTE, INVESTIGAÇÃO, etc.
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-xs">Subtítulo (até 2 linhas)</Label>
+                <Textarea
+                  value={sub}
+                  maxLength={180}
+                  rows={2}
+                  onChange={(e) => setSub(e.target.value)}
+                  placeholder="Resumo curto da matéria"
+                />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-2">
+                <Label htmlFor="ig-urg" className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  Tarja URGENTE / PLANTÃO
+                </Label>
+                <Switch id="ig-urg" checked={urgent} onCheckedChange={setUrgent} />
+              </div>
+
+              <div className="flex items-center justify-between rounded-md border p-2">
+                <Label htmlFor="ig-spons" className="text-sm">Faixa de patrocinadores</Label>
+                <Switch id="ig-spons" checked={showSponsors} onCheckedChange={setShowSponsors} />
+              </div>
+
+              <div className="text-[11px] text-muted-foreground rounded-md bg-secondary/50 p-2 space-y-0.5">
+                <div><strong>Formato:</strong> 1080×1350 (4:5) — fixo</div>
+                <div><strong>Categoria:</strong> {categoryName || "—"}</div>
+                <div><strong>Fonte:</strong> {sourceName || "—"}</div>
+              </div>
+            </div>
+          </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleRegenerate} disabled={genArt}>
-              {genArt ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            <Button variant="outline" onClick={regenerate} disabled={generating}>
+              {generating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Regenerar
             </Button>
-            <Button onClick={handleDownloadArt} disabled={!previewBlob}>
-              <Download className="h-4 w-4 mr-2" />
-              Baixar PNG
+            <Button onClick={handleDownloadArt} disabled={!previewBlob || generating}>
+              <Download className="h-4 w-4 mr-2" /> Baixar PNG 1080×1350
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -810,4 +684,3 @@ export function ImageActionButtons({ imageUrl, slug, title, categoryName, instag
     </>
   );
 }
-
