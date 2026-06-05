@@ -496,6 +496,17 @@ export default function AdminPostEditor() {
         </div>
 
         <div className="flex items-center gap-2">
+          {!isNew && (
+            <Button
+              onClick={() => setReelOpen(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              title="Gerar Reel vertical 1080x1920 a partir desta notícia"
+            >
+              <Film className="h-4 w-4" /> Gerar Reel
+            </Button>
+          )}
           <Button onClick={() => save()} disabled={saving} variant="outline" size="sm">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Salvar rascunho
