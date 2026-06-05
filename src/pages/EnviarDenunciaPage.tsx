@@ -42,14 +42,16 @@ export default function EnviarDenunciaPage() {
       return;
     }
     setLoading(true);
+    const isAnonymous = parsed.data.is_anonymous;
     const { error } = await supabase.from("denuncias").insert({
       title: parsed.data.title,
       description: parsed.data.description,
       city: parsed.data.city || null,
-      contact_name: form.is_anonymous ? null : (parsed.data.contact_name || null),
-      contact_phone: form.is_anonymous ? null : (parsed.data.contact_phone || null),
-      contact_email: form.is_anonymous ? null : (parsed.data.contact_email || null),
-      is_anonymous: form.is_anonymous,
+      contact_name: isAnonymous ? null : (parsed.data.contact_name || null),
+      contact_phone: isAnonymous ? null : (parsed.data.contact_phone || null),
+      contact_email: isAnonymous ? null : (parsed.data.contact_email || null),
+      is_anonymous: isAnonymous,
+      submitter_id: isAnonymous ? null : user!.id,
       status: "nova",
     });
     setLoading(false);
