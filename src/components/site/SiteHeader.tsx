@@ -69,7 +69,7 @@ export default function SiteHeader() {
         </button>
 
         <Link to="/" className="flex items-center shrink-0" aria-label="Fique Por Dentro Sergipe - Início">
-          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-10 md:h-16 w-auto" />
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-12 md:h-20 w-auto" />
         </Link>
 
         <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center justify-center px-6">
