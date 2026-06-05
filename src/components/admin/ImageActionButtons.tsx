@@ -216,16 +216,14 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, 70);
   }
 
-  // Date + source line
+  // Date line only — NEVER show source/portal name (brand-only policy)
   const dateStr = formatDate(opts.publishedAt);
-  const srcStr = (opts.sourceName || "").trim();
-  const metaParts = [dateStr, srcStr].filter(Boolean);
-  if (metaParts.length > 0) {
+  if (dateStr) {
     ctx.fillStyle = "rgba(255,255,255,0.85)";
     ctx.font = "600 22px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(metaParts.join("  ·  ").toUpperCase(), W / 2, HEADER_H - 38);
+    ctx.fillText(dateStr.toUpperCase(), W / 2, HEADER_H - 38);
   }
 
   // ---------------------------------------------------------------------------
