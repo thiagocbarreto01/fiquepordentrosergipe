@@ -345,32 +345,20 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ty += lineHeight;
   }
 
-  // Subtitle
-  if (subtitleText) {
-    ctx.font = `500 ${subFont}px system-ui, -apple-system, sans-serif`;
-    const sublines = wrapPlain(ctx, subtitleText, maxWidth).slice(0, 2);
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    let sy = titleStartY + titleH + 24 + subFont;
-    for (const ln of sublines) {
-      ctx.fillText(ln, PAD_X, sy);
-      sy += subFont * 1.3;
-    }
-  }
+  // (Sem subtítulo / sem corpo da matéria — apenas título)
 
   // ---------------------------------------------------------------------------
-  // 6) FOOTER — deep navy band with handle + site
+  // 6) FOOTER — deep navy band: marca FIQUE POR DENTRO SERGIPE
   // ---------------------------------------------------------------------------
   ctx.fillStyle = COLORS.navyDeep;
   ctx.fillRect(0, footerY, W, FOOTER_H);
   ctx.fillStyle = COLORS.yellow;
   ctx.fillRect(0, footerY, W, 4);
 
-  // Logo no rodapé (esquerda) — reforça marca FIQUE POR DENTRO SERGIPE
+  // Logo + nome do portal (esquerda)
   let textLeftX = PAD_X;
   if (logo) {
-    const logoH = 64;
+    const logoH = 72;
     const ratio = logo.width / logo.height;
     const logoW = logoH * ratio;
     ctx.drawImage(logo, PAD_X, footerY + (FOOTER_H - logoH) / 2, logoW, logoH);
@@ -378,32 +366,26 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   }
 
   ctx.fillStyle = COLORS.white;
-  ctx.font = "900 28px system-ui, -apple-system, sans-serif";
+  ctx.font = "900 22px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 - 12);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("FIQUE POR DENTRO SERGIPE", textLeftX, footerY + FOOTER_H / 2 - 18);
 
-  ctx.font = "600 20px system-ui, -apple-system, sans-serif";
+  ctx.font = "700 22px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = COLORS.yellow;
+  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 + 12);
+
+  ctx.font = "600 18px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.fillText("fiquepordentrose.com.br", textLeftX, footerY + FOOTER_H / 2 + 18);
+  ctx.fillText("fiquepordentrosergipe.com.br", textLeftX, footerY + FOOTER_H / 2 + 40);
 
-  // Direita — CTA
+  // Direita — CTA institucional
   ctx.textAlign = "right";
-  ctx.font = "900 24px system-ui, -apple-system, sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.font = "900 22px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = COLORS.yellow;
   ctx.fillText("ACOMPANHE NO INSTAGRAM →", W - PAD_X, footerY + FOOTER_H / 2);
 
-  // Sponsors strip beneath footer (if available)
-  if (sponsors) {
-    const sy0 = H - SPONSORS_H;
-    ctx.fillStyle = COLORS.white;
-    ctx.fillRect(0, sy0, W, SPONSORS_H);
-    const ratio = sponsors.width / sponsors.height;
-    let sh = SPONSORS_H - 12;
-    let sw = sh * ratio;
-    if (sw > W - 24) { sw = W - 24; sh = sw / ratio; }
-    ctx.drawImage(sponsors, (W - sw) / 2, sy0 + (SPONSORS_H - sh) / 2, sw, sh);
-  }
 
   return new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
