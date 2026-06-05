@@ -613,17 +613,6 @@ export function ImageActionButtons({
                 </p>
               </div>
 
-              <div>
-                <Label className="text-xs">Subtítulo (até 2 linhas)</Label>
-                <Textarea
-                  value={sub}
-                  maxLength={180}
-                  rows={2}
-                  onChange={(e) => setSub(e.target.value)}
-                  placeholder="Resumo curto da matéria"
-                />
-              </div>
-
               <div className="flex items-center justify-between rounded-md border p-2">
                 <Label htmlFor="ig-urg" className="text-sm flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -632,15 +621,12 @@ export function ImageActionButtons({
                 <Switch id="ig-urg" checked={urgent} onCheckedChange={setUrgent} />
               </div>
 
-              <div className="flex items-center justify-between rounded-md border p-2">
-                <Label htmlFor="ig-spons" className="text-sm">Faixa de patrocinadores</Label>
-                <Switch id="ig-spons" checked={showSponsors} onCheckedChange={setShowSponsors} />
-              </div>
-
               <div className="text-[11px] text-muted-foreground rounded-md bg-secondary/50 p-2 space-y-0.5">
                 <div><strong>Formato:</strong> 1080×1350 (4:5) — fixo</div>
                 <div><strong>Categoria:</strong> {categoryName || "—"}</div>
-                <div><strong>Fonte:</strong> {sourceName || "—"}</div>
+                <div className="text-[10px] opacity-70 mt-1">
+                  A arte exibe apenas marca FIQUE POR DENTRO SERGIPE — sem fonte/portal externo.
+                </div>
               </div>
             </div>
           </div>
