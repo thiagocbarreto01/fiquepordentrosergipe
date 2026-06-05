@@ -17,25 +17,40 @@ const SUPABASE_PUBLIC_MEDIA_PREFIX = `https://${import.meta.env.VITE_SUPABASE_PR
 // Brand palette — TV Barretão / portal regional inspired
 // =============================================================================
 const COLORS = {
-  navy: "#071B4D",
-  navyDeep: "#040F2E",
-  red: "#D9001B",
+  navy: "#041B4D",
+  navyDeep: "#02102E",
+  red: "#E30613",
   yellow: "#FFD60A",
   white: "#FFFFFF",
   black: "#0A0A0A",
 };
 
+// Cor da faixa de categoria por editoria
+function categoryColor(name: string): { bg: string; fg: string } {
+  const n = (name || "").toLowerCase();
+  if (/pol[ií]cia|policial|crime/.test(n)) return { bg: "#E30613", fg: "#FFFFFF" };
+  if (/sergipe|aracaju/.test(n))           return { bg: "#0E8C3A", fg: "#FFFFFF" };
+  if (/pol[ií]tica/.test(n))               return { bg: "#1457C7", fg: "#FFFFFF" };
+  if (/brasil|nacional/.test(n))           return { bg: "#FFC700", fg: "#0A0A0A" };
+  if (/esporte|futebol/.test(n))           return { bg: "#84CC16", fg: "#0A0A0A" };
+  if (/economia|mercado|financ/.test(n))   return { bg: "#C99A2E", fg: "#0A0A0A" };
+  if (/entreten|cultur|celebr/.test(n))    return { bg: "#7C3AED", fg: "#FFFFFF" };
+  if (/mundo|internacional/.test(n))       return { bg: "#0F172A", fg: "#FFFFFF" };
+  return { bg: "#E30613", fg: "#FFFFFF" };
+}
+
 const HIGHLIGHT_WORDS = [
-  "MORTE", "MORTO", "MORTA", "MORREU",
+  "MORTE", "MORTO", "MORTA", "MORREU", "MORTOS", "MORTAS",
   "PRISÃO", "PRESO", "PRESA", "PRESOS",
-  "ACIDENTE", "ACIDENTES",
+  "ACIDENTE", "ACIDENTES", "FATAL", "FATAIS",
   "POLÍCIA", "POLICIAL",
-  "SERGIPE",
+  "SERGIPE", "ARACAJU",
   "URGENTE", "PLANTÃO",
   "INVESTIGAÇÃO", "INVESTIGA",
   "ASSASSINATO", "ASSASSINADO",
   "TIROTEIO", "TIROS",
   "OPERAÇÃO",
+  "MILHÕES", "MILHÃO", "BILHÕES", "BILHÃO",
 ];
 
 // =============================================================================
@@ -186,45 +201,47 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 1) TOP HEADER — navy band with logo (principal element) + date
   // ---------------------------------------------------------------------------
-  const HEADER_H = 300;
+  const HEADER_H = 310;
   ctx.fillStyle = COLORS.navy;
   ctx.fillRect(0, 0, W, HEADER_H);
   // bottom red accent
   ctx.fillStyle = COLORS.red;
   ctx.fillRect(0, HEADER_H - 6, W, 6);
 
-  // Logo — principal element, ~15% of art height (≈202px), perfectly centered
+  // Logo — protagonista do topo (~240px ≈ 18% da arte, +120% vs anterior)
   if (logo) {
-    const maxLogoH = 200; // ~15% of 1350
-    const maxLogoW = 960;
+    const maxLogoH = 240;
+    const maxLogoW = 980;
     const ratio = logo.width / logo.height;
     let lh = maxLogoH;
     let lw = lh * ratio;
     if (lw > maxLogoW) { lw = maxLogoW; lh = lw / ratio; }
-    // Center both horizontally and vertically inside the header (above red accent)
     const logoX = (W - lw) / 2;
-    const logoY = (HEADER_H - 6 - lh) / 2;
+    // Empurra a logo levemente pra cima pra deixar espaço pra data
+    const logoY = (HEADER_H - 6 - lh) / 2 - 14;
     ctx.drawImage(logo, logoX, logoY, lw, lh);
   } else {
     ctx.fillStyle = COLORS.white;
-    ctx.font = "900 54px system-ui, -apple-system, sans-serif";
+    ctx.font = "900 64px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, HEADER_H / 2);
+    ctx.fillText("FIQUE POR DENTRO SERGIPE", W / 2, HEADER_H / 2 - 18);
   }
 
-  // Date line only — NEVER show source/portal name (brand-only policy)
-  const dateStr = formatDate(opts.publishedAt);
+  // Data curta — formato 05 JUN 2026 — fonte discreta e elegante
+  const dateStr = formatShortDate(opts.publishedAt);
   if (dateStr) {
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    ctx.font = "600 22px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.82)";
+    ctx.font = "700 24px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(dateStr.toUpperCase(), W / 2, HEADER_H - 38);
+    // Pequeno tracking via espaços (canvas não tem letter-spacing nativo)
+    const spaced = dateStr.split("").join("\u2009");
+    ctx.fillText(spaced, W / 2, HEADER_H - 34);
   }
 
   // ---------------------------------------------------------------------------
-  // 2) URGENT / PLANTÃO tag
+  // 2) FAIXA DE CATEGORIA (ou URGENTE)
   // ---------------------------------------------------------------------------
   let yCursor = HEADER_H;
   if (opts.isUrgent) {
@@ -235,18 +252,19 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
     ctx.font = "900 38px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const label = "⚠  URGENTE — PLANTÃO";
-    ctx.fillText(label, W / 2, yCursor + tagH / 2 + 2);
+    ctx.fillText("⚠  URGENTE — PLANTÃO", W / 2, yCursor + tagH / 2 + 2);
     yCursor += tagH;
   } else if (opts.categoryName) {
-    const tagH = 52;
-    ctx.fillStyle = COLORS.red;
+    const tagH = 56;
+    const { bg, fg } = categoryColor(opts.categoryName);
+    ctx.fillStyle = bg;
     ctx.fillRect(0, yCursor, W, tagH);
-    ctx.fillStyle = COLORS.white;
-    ctx.font = "900 28px system-ui, -apple-system, sans-serif";
+    ctx.fillStyle = fg;
+    ctx.font = "900 30px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(opts.categoryName.toUpperCase(), W / 2, yCursor + tagH / 2 + 1);
+    const label = opts.categoryName.toUpperCase().split("").join("\u2009");
+    ctx.fillText(label, W / 2, yCursor + tagH / 2 + 1);
     yCursor += tagH;
   }
 
@@ -259,7 +277,7 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 3) IMAGE — smart cover-fit (no stretch)
   // ---------------------------------------------------------------------------
-  const IMG_H = Math.round(H * 0.50); // ~675px
+  const IMG_H = Math.round(H * 0.55); // ~743px — manchete + foto dominantes
   const imgY = yCursor;
   ctx.fillStyle = COLORS.black;
   ctx.fillRect(0, imgY, W, IMG_H);
@@ -369,18 +387,14 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   }
 
   ctx.fillStyle = COLORS.white;
-  ctx.font = "900 22px system-ui, -apple-system, sans-serif";
+  ctx.font = "900 24px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("FIQUE POR DENTRO SERGIPE", textLeftX, footerY + FOOTER_H / 2 - 18);
+  ctx.fillText("FIQUE POR DENTRO SERGIPE", textLeftX, footerY + FOOTER_H / 2 - 6);
 
   ctx.font = "700 22px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = COLORS.yellow;
-  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 + 12);
-
-  ctx.font = "600 18px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "rgba(255,255,255,0.78)";
-  ctx.fillText("fiquepordentrosergipe.com.br", textLeftX, footerY + FOOTER_H / 2 + 40);
+  ctx.fillText("@fiquepordentrosergipe", textLeftX, footerY + FOOTER_H / 2 + 28);
 
   // Direita — CTA institucional
   ctx.textAlign = "right";
@@ -396,6 +410,13 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
       "image/png",
     ),
   );
+}
+function formatShortDate(iso?: string): string {
+  const d = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(d.getTime())) return "";
+  const MONTHS = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${dd} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function formatDate(iso?: string): string {
