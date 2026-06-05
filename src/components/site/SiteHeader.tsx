@@ -59,7 +59,7 @@ export default function SiteHeader() {
       </div>
 
       {/* Main bar — compacta e premium */}
-      <div className="container-news flex items-center gap-4 h-14 md:h-20">
+      <div className="container-news flex items-center gap-4 h-16 md:h-28">
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden p-2 -ml-2 hover:bg-secondary/50 rounded-sm transition-colors"
@@ -69,16 +69,16 @@ export default function SiteHeader() {
         </button>
 
         <Link to="/" className="flex items-center shrink-0" aria-label="Fique Por Dentro Sergipe - Início">
-          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-12 md:h-20 w-auto" />
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-14 md:h-24 w-auto" />
         </Link>
 
-        <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center justify-center px-6">
-          <div className="relative w-full max-w-xl">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center justify-end px-6">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar notícias..."
-              className="w-full h-10 pl-10 pr-3 rounded-md border border-border bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              placeholder="Buscar..."
+              className="w-full h-8 pl-8 pr-3 rounded-sm border border-border/60 bg-secondary/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
             />
           </div>
         </form>
