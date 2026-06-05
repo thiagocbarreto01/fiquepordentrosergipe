@@ -87,6 +87,12 @@ Gere a manchete Instagram (≤80 caracteres, ideal ≤60).`;
 
     if (!resp.ok) {
       const txt = await resp.text();
+      if (resp.status === 402) {
+        return json({ error: "payment_required", message: "Créditos de IA esgotados no workspace Lovable AI." }, 402);
+      }
+      if (resp.status === 429) {
+        return json({ error: "rate_limited", message: "Limite de requisições do Lovable AI atingido. Tente novamente em instantes." }, 429);
+      }
       return json({ error: `Lovable AI ${resp.status}: ${txt}` }, 502);
     }
     const data = await resp.json();
