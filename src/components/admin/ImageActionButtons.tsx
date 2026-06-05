@@ -256,7 +256,7 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   // ---------------------------------------------------------------------------
   // 3) IMAGE — ~60% of canvas height, smart cover-fit (no stretch)
   // ---------------------------------------------------------------------------
-  const IMG_H = Math.round(H * 0.60); // ~810px
+  const IMG_H = Math.round(H * 0.55); // ~743px
   const imgY = yCursor;
   ctx.fillStyle = COLORS.black;
   ctx.fillRect(0, imgY, W, IMG_H);
@@ -300,7 +300,7 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
 
   const PAD_X = 56;
   const maxWidth = W - PAD_X * 2;
-  const tokens = tokenizeTitle(opts.title);
+  const tokens = tokenizeTitle(opts.title).slice(0, 12); // máx 12 palavras
 
   // Auto-fit title: 78 → 40, 3 to 5 lines
   let fontSize = 78;
@@ -384,7 +384,7 @@ async function generateInstagramArt(opts: ArtOptions): Promise<Blob> {
   ctx.textBaseline = "middle";
   ctx.font = "900 22px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = COLORS.yellow;
-  ctx.fillText("ACOMPANHE NO INSTAGRAM →", W - PAD_X, footerY + FOOTER_H / 2);
+  ctx.fillText("DETALHES NA LEGENDA ↓", W - PAD_X, footerY + FOOTER_H / 2);
 
 
   return new Promise<Blob>((resolve, reject) =>
