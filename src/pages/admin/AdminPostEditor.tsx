@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, History, AlertTriangle, ExternalLink, Sparkles, RotateCcw, Loader2, Globe, CheckCircle2, ArchiveRestore, BrainCircuit, ThumbsUp, ThumbsDown, Pin, PinOff } from "lucide-react";
+import { Upload, History, AlertTriangle, ExternalLink, Sparkles, RotateCcw, Loader2, Globe, CheckCircle2, ArchiveRestore, BrainCircuit, ThumbsUp, ThumbsDown, Pin, PinOff, Film } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ImageActionButtons } from "@/components/admin/ImageActionButtons";
+import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { RelevanceBadge, PLACEMENT_LABEL } from "@/components/admin/RelevanceBadge";
 import {
   STATUS_LABEL,
@@ -51,6 +52,7 @@ export default function AdminPostEditor() {
   const [sourceName, setSourceName] = useState<string | null>(null);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [genIgHeadline, setGenIgHeadline] = useState(false);
+  const [reelOpen, setReelOpen] = useState(false);
   const [form, setForm] = useState<any>({
     title: "",
     subtitle: "",
@@ -494,6 +496,17 @@ export default function AdminPostEditor() {
         </div>
 
         <div className="flex items-center gap-2">
+          {!isNew && (
+            <Button
+              onClick={() => setReelOpen(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              title="Gerar Reel vertical 1080x1920 a partir desta notícia"
+            >
+              <Film className="h-4 w-4" /> Gerar Reel
+            </Button>
+          )}
           <Button onClick={() => save()} disabled={saving} variant="outline" size="sm">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Salvar rascunho
@@ -527,6 +540,16 @@ export default function AdminPostEditor() {
           )}
         </div>
       </div>
+
+      {!isNew && (
+        <ReelGeneratorDialog
+          open={reelOpen}
+          onOpenChange={setReelOpen}
+          post={{ ...form, id } as any}
+        />
+      )}
+
+
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3 hidden">
         <h1 className="font-display text-3xl font-black">{isNew ? "Nova notícia" : "Editar notícia"}</h1>
