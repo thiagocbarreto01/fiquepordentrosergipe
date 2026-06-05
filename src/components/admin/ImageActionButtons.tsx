@@ -496,7 +496,7 @@ export function ImageActionButtons({
     debounceRef.current = setTimeout(() => { regenerate(); }, 350);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, headline, sub, urgent, showSponsors]);
+  }, [open, headline, urgent]);
 
   const openPreview = () => {
     setOpen(true);
