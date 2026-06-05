@@ -69,7 +69,20 @@ export default function NoticiaPage() {
                 {post.categories.name}
               </Link>
             )}
+            {isStaff && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto gap-2"
+                onClick={() => setReelOpen(true)}
+              >
+                <Film className="h-4 w-4" /> Gerar Reel
+              </Button>
+            )}
           </div>
+          {isStaff && (
+            <ReelGeneratorDialog open={reelOpen} onOpenChange={setReelOpen} post={post} />
+          )}
           <h1 className="font-display text-3xl md:text-5xl font-black leading-[1.1] text-balance text-headline" style={{ color: "hsl(var(--headline))" }}>
             {post.title}
           </h1>
