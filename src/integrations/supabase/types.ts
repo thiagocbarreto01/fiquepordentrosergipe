@@ -106,6 +106,7 @@ export type Database = {
           id: string
           is_anonymous: boolean
           status: Database["public"]["Enums"]["denuncia_status"]
+          submitter_id: string | null
           title: string
         }
         Insert: {
@@ -118,6 +119,7 @@ export type Database = {
           id?: string
           is_anonymous?: boolean
           status?: Database["public"]["Enums"]["denuncia_status"]
+          submitter_id?: string | null
           title: string
         }
         Update: {
@@ -130,6 +132,7 @@ export type Database = {
           id?: string
           is_anonymous?: boolean
           status?: Database["public"]["Enums"]["denuncia_status"]
+          submitter_id?: string | null
           title?: string
         }
         Relationships: []
