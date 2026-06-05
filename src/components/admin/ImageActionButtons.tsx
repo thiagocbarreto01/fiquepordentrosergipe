@@ -446,19 +446,56 @@ export function ImageActionButtons({
   const [generating, setGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const MAX_HEADLINE_CHARS = 70;
+
   const [headline, setHeadline] = useState((instagramHeadline || title || "").trim());
   const [sub, setSub] = useState((subtitle || "").trim());
   const [urgent, setUrgent] = useState(!!isUrgent);
   const [showSponsors, setShowSponsors] = useState(true);
+  const [summarizing, setSummarizing] = useState(false);
 
   const hasImage = !!imageUrl;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const summarizedFor = useRef<string>("");
 
   useEffect(() => {
     setHeadline((instagramHeadline || title || "").trim());
   }, [instagramHeadline, title]);
   useEffect(() => { setSub((subtitle || "").trim()); }, [subtitle]);
   useEffect(() => { setUrgent(!!isUrgent); }, [isUrgent]);
+
+  // Auto-resumir via IA se manchete > 70 caracteres
+  useEffect(() => {
+    if (!open) return;
+    const current = headline.trim();
+    if (current.length <= MAX_HEADLINE_CHARS) return;
+    if (summarizedFor.current === current) return;
+    summarizedFor.current = current;
+    (async () => {
+      setSummarizing(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-instagram-headline", {
+          body: { title: current, subtitle: sub },
+        });
+        if (error) throw error;
+        const short = (data?.headline || "").trim();
+        if (short && short.length <= 80) {
+          setHeadline(short);
+          toast.success("Manchete resumida automaticamente pela IA");
+        }
+      } catch (e) {
+        console.warn("[InstagramArt] auto-resumo falhou, usando truncamento local:", e);
+        // Fallback: corte local respeitando palavra
+        const cut = current.slice(0, MAX_HEADLINE_CHARS);
+        const ls = cut.lastIndexOf(" ");
+        setHeadline((ls > 30 ? cut.slice(0, ls) : cut).trim());
+      } finally {
+        setSummarizing(false);
+      }
+    })();
+  }, [open, headline, sub]);
+
+
 
   const buildArt = async (): Promise<Blob> => {
     let safeUrl = "";
