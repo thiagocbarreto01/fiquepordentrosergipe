@@ -855,6 +855,7 @@ export type Database = {
       is_main_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       restore_post: { Args: { _post_id: string }; Returns: undefined }
+      resync_posts_public: { Args: never; Returns: number }
     }
     Enums: {
       app_role: "admin" | "editor" | "redator"
