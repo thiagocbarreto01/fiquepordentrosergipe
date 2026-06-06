@@ -152,13 +152,12 @@ export async function getFeaturedPost() {
     .maybeSingle();
   if (main) return main as unknown as Post;
 
-  // Prioridade 3: Destaque editorial (apenas matérias da redação, não captadas automaticamente)
+  // Prioridade 3: Destaque marcado (qualquer notícia com is_featured nas últimas 24h)
   const { data: featured } = await applyHomeValidityFilter(
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
       .eq("is_featured", true)
-        .eq("is_editorial", true)
       .gte("published_at", yesterday.toISOString())
   )
     .order("published_at", { ascending: false })
@@ -167,18 +166,17 @@ export async function getFeaturedPost() {
     .maybeSingle();
   if (featured) return featured as unknown as Post;
 
-  // Prioridade 4: Última publicação editorial (criada pela redação)
-  const { data: editorial } = await applyHomeValidityFilter(
+  // Prioridade 4: Última notícia publicada (qualquer fonte) — garante que sempre haja manchete nova
+  const { data: latest } = await applyHomeValidityFilter(
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
-        .eq("is_editorial", true)
   )
     .order("published_at", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return (editorial ?? null) as unknown as Post | null;
+  return (latest ?? null) as unknown as Post | null;
 }
 
 export async function getHighlights(excludeId?: string, limit = 3) {
