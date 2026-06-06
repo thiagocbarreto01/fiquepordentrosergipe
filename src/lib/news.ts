@@ -180,12 +180,11 @@ export async function getFeaturedPost() {
 }
 
 export async function getHighlights(excludeId?: string, limit = 3) {
-  // Hero secundários: só podem ser Destaque Permanente, Destaque Principal ou Destaque marcado pela redação
+  // Hero secundários: destaques marcados + as notícias mais recentes para garantir conteúdo novo sempre
   const { data } = await applyHomeValidityFilter(
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
-      .or("is_evergreen.eq.true,is_main_featured.eq.true,and(is_featured.eq.true,is_editorial.eq.true)")
   )
     .order("is_evergreen", { ascending: false })
     .order("is_main_featured", { ascending: false })
