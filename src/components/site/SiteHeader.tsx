@@ -68,8 +68,8 @@ export default function SiteHeader() {
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        <Link to="/" className="flex items-center shrink-0 -my-1" aria-label="Fique Por Dentro Sergipe - Início">
-          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-20 md:h-36 w-auto" />
+        <Link to="/" className="flex items-center shrink-0 -my-2" aria-label="Fique Por Dentro Sergipe - Início">
+          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-24 md:h-44 w-auto" />
         </Link>
 
         <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center justify-end px-6">
