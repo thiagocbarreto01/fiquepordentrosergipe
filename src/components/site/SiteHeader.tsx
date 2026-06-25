@@ -37,76 +37,84 @@ export default function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-background border-b border-border shadow-sm">
-      {/* Top utility bar — escondida no mobile para enxugar */}
-      <div className="hidden md:block bg-navy-deep text-white">
+    <header className="sticky top-0 z-40 bg-background border-b border-border shadow-[var(--shadow-card)]">
+      {/* Top utility bar */}
+      <div className="hidden md:block bg-[hsl(var(--brand-navy-deep))] text-white/90 text-[11px]">
         <div className="container-news flex items-center justify-between h-8">
           <WeatherTime city="Aracaju" />
-          <div className="flex items-center gap-3">
-            {s.instagram_url && <a href={s.instagram_url} target="_blank" rel="noreferrer" className="hover:text-alert"><Instagram className="h-3.5 w-3.5" /></a>}
-            {s.facebook_url && <a href={s.facebook_url} target="_blank" rel="noreferrer" className="hover:text-alert"><Facebook className="h-3.5 w-3.5" /></a>}
-            {s.youtube_url && <a href={s.youtube_url} target="_blank" rel="noreferrer" className="hover:text-alert"><Youtube className="h-3.5 w-3.5" /></a>}
-            <span className="h-3 w-px bg-white/30 mx-1" />
+          <div className="flex items-center gap-4">
+            {s.instagram_url && <a href={s.instagram_url} target="_blank" rel="noreferrer" className="hover:text-[hsl(var(--alert))] transition-colors"><Instagram className="h-3.5 w-3.5" /></a>}
+            {s.facebook_url && <a href={s.facebook_url} target="_blank" rel="noreferrer" className="hover:text-[hsl(var(--alert))] transition-colors"><Facebook className="h-3.5 w-3.5" /></a>}
+            {s.youtube_url && <a href={s.youtube_url} target="_blank" rel="noreferrer" className="hover:text-[hsl(var(--alert))] transition-colors"><Youtube className="h-3.5 w-3.5" /></a>}
+            <span className="h-3 w-px bg-white/25" />
             {user ? (
-              <Link to="/admin" className="hover:text-alert text-xs font-semibold uppercase tracking-wider flex items-center gap-1">
+              <Link to="/admin" className="hover:text-[hsl(var(--alert))] font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors">
                 <LayoutDashboard className="h-3.5 w-3.5" /> Painel
               </Link>
             ) : (
-              <Link to="/auth" className="hover:text-alert text-xs font-semibold uppercase tracking-wider">Entrar</Link>
+              <Link to="/auth" className="hover:text-[hsl(var(--alert))] font-semibold uppercase tracking-wider transition-colors">Entrar</Link>
             )}
           </div>
         </div>
       </div>
 
-      {/* Main bar — compacta e premium */}
-      <div className="container-news flex items-center gap-4 h-20 md:h-32 py-1">
+      {/* Main bar — logo centralizada estilo jornal */}
+      <div className="container-news flex items-center gap-4 h-20 md:h-28 py-2">
         <button
           onClick={() => setOpen(!open)}
-          className="md:hidden p-2 -ml-2 hover:bg-secondary/50 rounded-sm transition-colors"
+          className="md:hidden p-2 -ml-2 hover:bg-secondary rounded-sm transition-colors"
           aria-label="Abrir menu"
         >
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        <Link to="/" className="flex items-center shrink-0 -my-2" aria-label="Fique Por Dentro Sergipe - Início">
-          <img src={logo} alt="Fique Por Dentro Sergipe" className="h-24 md:h-44 w-auto" />
+        {/* Espaço lateral esquerdo no desktop para centralizar visualmente */}
+        <div className="hidden md:flex flex-1 items-center">
+          <form onSubmit={submitSearch} className="w-full max-w-xs">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                value={q} onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar notícias..."
+                className="w-full h-9 pl-9 pr-3 rounded-sm border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+              />
+            </div>
+          </form>
+        </div>
+
+        <Link to="/" className="flex items-center shrink-0" aria-label="Fique Por Dentro Sergipe - Início">
+          <img
+            src={logo}
+            alt="Fique Por Dentro Sergipe"
+            className="h-20 md:h-32 w-auto select-none"
+            style={{ imageRendering: 'auto' }}
+            draggable={false}
+          />
         </Link>
 
-        <form onSubmit={submitSearch} className="flex-1 hidden md:flex items-center justify-end px-6">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              value={q} onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar..."
-              className="w-full h-8 pl-8 pr-3 rounded-sm border border-border/60 bg-secondary/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
-            />
-          </div>
-        </form>
-
-        <div className="hidden md:flex items-center gap-2 shrink-0">
+        <div className="hidden md:flex flex-1 items-center justify-end gap-2">
           {user && (
             <Button asChild variant="outline" className="rounded-sm font-bold uppercase tracking-wider text-xs h-9 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
               <Link to="/admin"><LayoutDashboard className="h-4 w-4" /> Painel</Link>
             </Button>
           )}
-          <Button asChild variant="default" className="bg-urgent hover:bg-urgent/90 text-urgent-foreground rounded-sm font-bold uppercase tracking-wider text-xs h-9 px-4">
+          <Button asChild className="bg-[hsl(var(--urgent))] hover:bg-[hsl(var(--urgent))]/90 text-[hsl(var(--urgent-foreground))] rounded-sm font-bold uppercase tracking-wider text-xs h-9 px-4 shadow-sm">
             <Link to="/denuncias/enviar">Enviar Denúncia</Link>
           </Button>
         </div>
 
-
-        {/* Mobile actions: busca em ícone + denúncia compacta */}
+        {/* Mobile actions */}
         <div className="md:hidden flex items-center gap-1 ml-auto">
           <button
             onClick={() => setSearchOpen((s) => !s)}
-            className="p-2 hover:bg-secondary/50 rounded-sm transition-colors"
+            className="p-2 hover:bg-secondary rounded-sm transition-colors"
             aria-label="Buscar"
           >
             <Search className="h-5 w-5" />
           </button>
           <Link
             to="/denuncias/enviar"
-            className="bg-urgent text-urgent-foreground text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-sm"
+            className="bg-[hsl(var(--urgent))] text-[hsl(var(--urgent-foreground))] text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-sm"
           >
             Denunciar
           </Link>
@@ -122,24 +130,30 @@ export default function SiteHeader() {
               autoFocus
               value={q} onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar notícias..."
-              className="w-full h-10 pl-10 pr-3 rounded-sm border border-border bg-secondary text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              className="w-full h-10 pl-10 pr-3 rounded-sm border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
           </div>
         </form>
       )}
 
-      {/* Nav */}
-      <nav className="bg-primary text-primary-foreground">
-        <div className="container-news hidden md:flex items-center gap-1 h-10 overflow-x-auto">
-          <Link to="/" className="px-3 py-2 text-sm font-bold uppercase tracking-wide hover:bg-white/10">Início</Link>
+      {/* Nav principal */}
+      <nav className="bg-primary text-primary-foreground border-y border-[hsl(var(--brand-navy-deep))]">
+        <div className="container-news hidden md:flex items-center h-11 overflow-x-auto">
+          <Link to="/" className="relative px-3.5 py-3 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-white/10 transition-colors after:absolute after:left-3.5 after:right-3.5 after:bottom-0 after:h-[2px] after:bg-[hsl(var(--alert))] after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform">
+            Início
+          </Link>
           {NAV.map((n) => (
-            <Link key={n.to} to={n.to} className="px-3 py-2 text-sm font-bold uppercase tracking-wide hover:bg-white/10 whitespace-nowrap">
+            <Link
+              key={n.to}
+              to={n.to}
+              className="relative px-3.5 py-3 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-white/10 whitespace-nowrap transition-colors after:absolute after:left-3.5 after:right-3.5 after:bottom-0 after:h-[2px] after:bg-[hsl(var(--alert))] after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform"
+            >
               {n.label}
             </Link>
           ))}
         </div>
-        {/* Nav horizontal scrollável no mobile */}
-        <div className="md:hidden flex items-center gap-0 h-9 overflow-x-auto scrollbar-none">
+        {/* Nav scrollável mobile */}
+        <div className="md:hidden flex items-center h-10 overflow-x-auto scrollbar-none">
           <Link to="/" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide hover:bg-white/10 whitespace-nowrap">Início</Link>
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide hover:bg-white/10 whitespace-nowrap">
@@ -157,15 +171,15 @@ export default function SiteHeader() {
               </Link>
             ))}
             {user ? (
-              <Link to="/admin" onClick={() => setOpen(false)} className="px-4 py-3 text-sm font-bold uppercase border-b border-white/10 bg-navy-deep flex items-center gap-2">
+              <Link to="/admin" onClick={() => setOpen(false)} className="px-4 py-3 text-sm font-bold uppercase border-b border-white/10 bg-[hsl(var(--brand-navy-deep))] flex items-center gap-2">
                 <LayoutDashboard className="h-4 w-4" /> Painel Administrativo
               </Link>
             ) : (
-              <Link to="/auth" onClick={() => setOpen(false)} className="px-4 py-3 text-sm font-bold uppercase border-b border-white/10 bg-navy-deep">
+              <Link to="/auth" onClick={() => setOpen(false)} className="px-4 py-3 text-sm font-bold uppercase border-b border-white/10 bg-[hsl(var(--brand-navy-deep))]">
                 Entrar
               </Link>
             )}
-            <Link to="/denuncias/enviar" onClick={() => setOpen(false)} className="px-4 py-3 text-sm font-bold uppercase bg-urgent">
+            <Link to="/denuncias/enviar" onClick={() => setOpen(false)} className="px-4 py-3 text-sm font-bold uppercase bg-[hsl(var(--urgent))]">
               Enviar Denúncia
             </Link>
           </div>
