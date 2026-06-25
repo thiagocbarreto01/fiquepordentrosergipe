@@ -286,9 +286,22 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
                     className={`flex gap-3 p-3 rounded-sm border transition ${
                       isCurrent
                         ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200"
-                        : "border-border bg-white hover:bg-secondary/30"
+                        : selected.has(r.id)
+                          ? "border-violet-400 bg-violet-50/60"
+                          : "border-border bg-white hover:bg-secondary/30"
                     }`}
                   >
+                    {isUnpublished(r) ? (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(r.id)}
+                        onChange={() => toggleSelect(r.id)}
+                        className="mt-1 h-4 w-4 accent-violet-600 shrink-0"
+                        title="Selecionar para ação em massa"
+                      />
+                    ) : (
+                      <div className="w-4 shrink-0" />
+                    )}
                     <div className="w-[88px] h-[60px] shrink-0 bg-secondary border border-border overflow-hidden rounded-sm">
                       <img
                         src={img}
@@ -338,17 +351,33 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
                             )}
                           </div>
                         </div>
-                        <Button
-                          asChild
-                          size="sm"
-                          variant="outline"
-                          className="shrink-0 h-8"
-                          onClick={() => onOpenChange(false)}
-                        >
-                          <Link to={`/admin/posts/${r.id}`}>
-                            <Edit className="h-3.5 w-3.5 mr-1" /> Editar
-                          </Link>
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-1.5 shrink-0">
+                          {s === "publicada" && r.slug && (
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                              title="Ver no portal"
+                            >
+                              <a href={`/noticia/${r.slug}`} target="_blank" rel="noreferrer">
+                                <Eye className="h-3.5 w-3.5 sm:mr-1" />
+                                <span className="hidden sm:inline">Portal</span>
+                              </a>
+                            </Button>
+                          )}
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            onClick={() => onOpenChange(false)}
+                          >
+                            <Link to={`/admin/posts/${r.id}`}>
+                              <Edit className="h-3.5 w-3.5 mr-1" /> Editar
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </li>
