@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,18 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, PlusCircle, RefreshCcw, Trash2, Edit, Rss, Zap, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Loader2,
+  PlusCircle,
+  RefreshCcw,
+  Trash2,
+  Edit,
+  Rss,
+  Zap,
+  CheckCircle2,
+  XCircle,
+  Search,
+} from "lucide-react";
 
 type RunLog = {
   source_id: string;
@@ -61,6 +72,19 @@ const EMPTY: Partial<Source> = {
   max_items_per_run: 10,
 };
 
+const UNCATEGORIZED = "__uncat__";
+
+function timeAgo(iso: string | null) {
+  if (!iso) return "nunca";
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "agora";
+  if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)} h`;
+  const days = Math.floor(diff / 86400);
+  if (days < 30) return `há ${days} d`;
+  return new Date(iso).toLocaleDateString("pt-BR");
+}
+
 export default function AdminFontes() {
   const [sources, setSources] = useState<Source[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -71,9 +95,14 @@ export default function AdminFontes() {
   const [lastRunLogs, setLastRunLogs] = useState<RunLog[] | null>(null);
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
 
+  // filtros
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+
   async function load() {
     const [{ data: s }, { data: c }] = await Promise.all([
-      supabase.from("news_sources").select("*").order("created_at", { ascending: false }),
+      supabase.from("news_sources").select("*").order("name", { ascending: true }),
       supabase.from("categories").select("id,name").order("position"),
     ]);
     setSources((s ?? []) as Source[]);
@@ -84,6 +113,37 @@ export default function AdminFontes() {
     document.title = "Fontes de captação — Painel";
     load();
   }, []);
+
+  const categoryMap = useMemo(() => {
+    const m = new Map<string, string>();
+    categories.forEach((c) => m.set(c.id, c.name));
+    return m;
+  }, [categories]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return sources.filter((s) => {
+      if (categoryFilter === UNCATEGORIZED && s.default_category_id) return false;
+      if (categoryFilter !== "all" && categoryFilter !== UNCATEGORIZED && s.default_category_id !== categoryFilter) return false;
+      if (statusFilter === "active" && !s.is_active) return false;
+      if (statusFilter === "inactive" && s.is_active) return false;
+      if (!q) return true;
+      return (
+        s.name.toLowerCase().includes(q) ||
+        (s.url ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [sources, search, categoryFilter, statusFilter]);
+
+  // contagem por categoria para o seletor
+  const countByCategory = useMemo(() => {
+    const m = new Map<string, number>();
+    sources.forEach((s) => {
+      const key = s.default_category_id ?? UNCATEGORIZED;
+      m.set(key, (m.get(key) ?? 0) + 1);
+    });
+    return m;
+  }, [sources]);
 
   function openNew() {
     setEditing(EMPTY);
@@ -144,18 +204,20 @@ export default function AdminFontes() {
       .update({ is_active: !s.is_active })
       .eq("id", s.id);
     if (error) toast.error(error.message);
-    else load();
+    else {
+      // otimista
+      setSources((prev) => prev.map((p) => (p.id === s.id ? { ...p, is_active: !s.is_active } : p)));
+    }
   }
 
   async function captureNow(s: Source) {
     setRunning(s.id);
     try {
-      const { data: summary, error: invokeError } = await supabase.functions.invoke(`capture-sources?source_id=${s.id}`, {
-        method: "POST",
-      });
-
+      const { data: summary, error: invokeError } = await supabase.functions.invoke(
+        `capture-sources?source_id=${s.id}`,
+        { method: "POST" }
+      );
       if (invokeError) throw new Error(invokeError.message || "Falha ao chamar função");
-      
       const run = summary?.runs?.[0]?.result;
       if (run) {
         toast.success(
@@ -174,21 +236,18 @@ export default function AdminFontes() {
 
   async function runAllNow() {
     const active = sources.filter((s) => s.is_active);
-    const inactive = sources.length - active.length;
     if (active.length === 0) {
-      toast.error("Nenhuma fonte ativa encontrada.", {
-        description: `Total: ${sources.length} cadastrada(s) · ${inactive} inativa(s)`,
-      });
+      toast.error("Nenhuma fonte ativa encontrada.");
       return;
     }
     setRunAllLoading(true);
     setLastRunLogs(null);
     toast.info(`Iniciando captação de ${active.length} fonte(s) ativa(s)…`);
     try {
-      const { data: summary, error: invokeError } = await supabase.functions.invoke("capture-sources?manual=1", {
-        method: "POST",
-      });
-
+      const { data: summary, error: invokeError } = await supabase.functions.invoke(
+        "capture-sources?manual=1",
+        { method: "POST" }
+      );
       if (invokeError) throw new Error(invokeError.message || "Falha ao chamar função");
 
       const logs: RunLog[] = (summary?.runs ?? []).map((run: any) => ({
@@ -203,18 +262,13 @@ export default function AdminFontes() {
       }));
       setLastRunLogs(logs);
       setLastRunAt(new Date());
-
       const totalCap = logs.reduce((a, l) => a + l.captured, 0);
       const totalDup = logs.reduce((a, l) => a + l.duplicates, 0);
       const failed = logs.filter((l) => !l.ok).length;
       if (failed > 0) {
-        toast.warning(
-          `Captação concluída em ${logs.length} fonte(s): ${totalCap} nova(s), ${totalDup} duplicata(s), ${failed} com erro`,
-        );
+        toast.warning(`Captação concluída: ${totalCap} nova(s), ${totalDup} dup., ${failed} com erro`);
       } else {
-        toast.success(
-          `Captação concluída: ${totalCap} notícia(s) nova(s), ${totalDup} duplicata(s) em ${logs.length} fonte(s)`,
-        );
+        toast.success(`Captação concluída: ${totalCap} nova(s), ${totalDup} duplicata(s)`);
       }
       load();
     } catch (e) {
@@ -224,6 +278,9 @@ export default function AdminFontes() {
     }
   }
 
+  const activeCount = sources.filter((s) => s.is_active).length;
+  const uncatCount = sources.filter((s) => !s.default_category_id).length;
+
   return (
     <AdminLayout>
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
@@ -232,13 +289,19 @@ export default function AdminFontes() {
             <Rss className="h-6 w-6" /> Fontes de captação
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Cadastre feeds RSS ou portais (HTML) para captar notícias automaticamente. Tudo entra como
-            <span className="font-semibold"> captada</span> e passa pelo fluxo editorial.
+            Cadastre feeds RSS ou portais e organize por editoria. Tudo entra como{" "}
+            <span className="font-semibold">captada</span> e passa pelo fluxo editorial.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             <span className="font-semibold">{sources.length}</span> cadastrada(s) ·{" "}
-            <span className="font-semibold text-emerald-700">{sources.filter(s => s.is_active).length}</span> ativa(s) ·{" "}
-            <span className="font-semibold text-muted-foreground">{sources.filter(s => !s.is_active).length}</span> inativa(s)
+            <span className="font-semibold text-emerald-700">{activeCount}</span> ativa(s) ·{" "}
+            <span className="font-semibold text-muted-foreground">{sources.length - activeCount}</span> inativa(s)
+            {uncatCount > 0 && (
+              <>
+                {" · "}
+                <span className="font-semibold text-amber-700">{uncatCount}</span> sem categoria
+              </>
+            )}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -265,110 +328,165 @@ export default function AdminFontes() {
               <DialogHeader>
                 <DialogTitle>{editing.id ? "Editar fonte" : "Nova fonte"}</DialogTitle>
               </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Nome</Label>
-                <Input
-                  value={editing.name ?? ""}
-                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                  placeholder="Ex: G1 Ribeirão Preto"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-4">
                 <div>
-                  <Label>Tipo</Label>
-                  <Select
-                    value={editing.source_type ?? "rss"}
-                    onValueChange={(v) =>
-                      setEditing({ ...editing, source_type: v as Source["source_type"] })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="rss">RSS / Atom</SelectItem>
-                      <SelectItem value="site">Site (manual)</SelectItem>
-                      <SelectItem value="manual">Manual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Categoria padrão</Label>
-                  <Select
-                    value={editing.default_category_id ?? "none"}
-                    onValueChange={(v) =>
-                      setEditing({
-                        ...editing,
-                        default_category_id: v === "none" ? null : v,
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem categoria</SelectItem>
-                      {categories.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label>URL do feed</Label>
-                <Input
-                  type="url"
-                  value={editing.url ?? ""}
-                  onChange={(e) => setEditing({ ...editing, url: e.target.value })}
-                  placeholder="https://exemplo.com/feed.xml"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Frequência (min)</Label>
+                  <Label>Nome</Label>
                   <Input
-                    type="number"
-                    min={5}
-                    value={editing.frequency_minutes ?? 60}
-                    onChange={(e) =>
-                      setEditing({ ...editing, frequency_minutes: Number(e.target.value) })
-                    }
+                    value={editing.name ?? ""}
+                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                    placeholder="Ex: G1 Sergipe"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Tipo</Label>
+                    <Select
+                      value={editing.source_type ?? "rss"}
+                      onValueChange={(v) =>
+                        setEditing({ ...editing, source_type: v as Source["source_type"] })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="rss">RSS / Atom</SelectItem>
+                        <SelectItem value="site">Site (manual)</SelectItem>
+                        <SelectItem value="manual">Manual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Editoria</Label>
+                    <Select
+                      value={editing.default_category_id ?? "none"}
+                      onValueChange={(v) =>
+                        setEditing({
+                          ...editing,
+                          default_category_id: v === "none" ? null : v,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem categoria</SelectItem>
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div>
-                  <Label>Máx. por execução</Label>
+                  <Label>URL do feed</Label>
                   <Input
-                    type="number"
-                    min={1}
-                    max={50}
-                    value={editing.max_items_per_run ?? 10}
-                    onChange={(e) =>
-                      setEditing({ ...editing, max_items_per_run: Number(e.target.value) })
-                    }
+                    type="url"
+                    value={editing.url ?? ""}
+                    onChange={(e) => setEditing({ ...editing, url: e.target.value })}
+                    placeholder="https://exemplo.com/feed.xml"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Frequência (min)</Label>
+                    <Input
+                      type="number"
+                      min={5}
+                      value={editing.frequency_minutes ?? 60}
+                      onChange={(e) =>
+                        setEditing({ ...editing, frequency_minutes: Number(e.target.value) })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Máx. por execução</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={editing.max_items_per_run ?? 10}
+                      onChange={(e) =>
+                        setEditing({ ...editing, max_items_per_run: Number(e.target.value) })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={editing.is_active ?? true}
+                    onCheckedChange={(v) => setEditing({ ...editing, is_active: v })}
+                  />
+                  <Label>Fonte ativa</Label>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={editing.is_active ?? true}
-                  onCheckedChange={(v) => setEditing({ ...editing, is_active: v })}
-                />
-                <Label>Fonte ativa</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={save}>Salvar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={save}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
+      </div>
+
+      {/* Barra de filtros */}
+      <div className="bg-card border border-border mb-4 p-3 flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nome ou URL…"
+            className="pl-9"
+          />
+        </div>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Editoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as editorias ({sources.length})</SelectItem>
+            <SelectItem value={UNCATEGORIZED}>
+              Sem categoria ({countByCategory.get(UNCATEGORIZED) ?? 0})
+            </SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name} ({countByCategory.get(c.id) ?? 0})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="active">Apenas ativas</SelectItem>
+            <SelectItem value="inactive">Apenas inativas</SelectItem>
+          </SelectContent>
+        </Select>
+        {(search || categoryFilter !== "all" || statusFilter !== "all") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearch("");
+              setCategoryFilter("all");
+              setStatusFilter("all");
+            }}
+          >
+            Limpar filtros
+          </Button>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {filtered.length} de {sources.length}
+        </span>
       </div>
 
       {lastRunLogs && (
@@ -432,81 +550,100 @@ export default function AdminFontes() {
           <thead className="bg-secondary text-xs uppercase tracking-wider">
             <tr>
               <th className="text-left p-3">Fonte</th>
+              <th className="text-left p-3">Editoria</th>
               <th className="text-left p-3">Tipo</th>
               <th className="text-left p-3">Frequência</th>
-              <th className="text-left p-3">Última execução</th>
-              <th className="text-left p-3">Total captado</th>
+              <th className="text-left p-3">Última atualização</th>
+              <th className="text-left p-3">Captado</th>
               <th className="text-left p-3">Ativa</th>
               <th className="text-right p-3">Ações</th>
             </tr>
           </thead>
           <tbody>
-            {sources.map((s) => (
-              <tr key={s.id} className="border-t border-border">
-                <td className="p-3">
-                  <div className="font-bold">{s.name}</div>
-                  {s.url && (
-                    <div className="text-xs text-muted-foreground truncate max-w-xs">
-                      {s.url}
-                    </div>
-                  )}
-                </td>
-                <td className="p-3 uppercase text-xs font-bold">{s.source_type}</td>
-                <td className="p-3">{s.frequency_minutes} min</td>
-                <td className="p-3 text-xs">
-                  {s.last_run_at ? (
-                    <>
-                      <div>{new Date(s.last_run_at).toLocaleString("pt-BR")}</div>
-                      {s.last_run_message && (
-                        <div className="text-muted-foreground">{s.last_run_message}</div>
-                      )}
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground">nunca</span>
-                  )}
-                </td>
-                <td className="p-3">{s.total_captured}</td>
-                <td className="p-3">
-                  <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s)} />
-                </td>
-                <td className="p-3 text-right">
-                  <div className="inline-flex gap-1">
-                    {s.source_type === "rss" && (
-                      <button
-                        onClick={() => captureNow(s)}
-                        disabled={running === s.id}
-                        className="p-2 hover:bg-secondary disabled:opacity-50"
-                        title="Captar agora"
+            {filtered.map((s) => {
+              const catName = s.default_category_id ? categoryMap.get(s.default_category_id) : null;
+              return (
+                <tr key={s.id} className="border-t border-border hover:bg-muted/30">
+                  <td className="p-3">
+                    <div className="font-bold">{s.name}</div>
+                    {s.url && (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-muted-foreground hover:text-primary truncate block max-w-xs"
                       >
-                        {running === s.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <RefreshCcw className="h-4 w-4" />
-                        )}
-                      </button>
+                        {s.url}
+                      </a>
                     )}
-                    <button
-                      onClick={() => openEdit(s)}
-                      className="p-2 hover:bg-secondary"
-                      title="Editar"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => remove(s.id)}
-                      className="p-2 hover:bg-urgent/10 text-urgent"
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {sources.length === 0 && (
+                  </td>
+                  <td className="p-3">
+                    {catName ? (
+                      <span className="inline-block text-xs font-bold uppercase tracking-wider bg-secondary px-2 py-1">
+                        {catName}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-amber-700 font-semibold">sem categoria</span>
+                    )}
+                  </td>
+                  <td className="p-3 uppercase text-xs font-bold">{s.source_type}</td>
+                  <td className="p-3 text-xs">{s.frequency_minutes} min</td>
+                  <td className="p-3 text-xs">
+                    <div className="font-semibold">{timeAgo(s.last_run_at)}</div>
+                    {s.last_run_at && (
+                      <div className="text-muted-foreground">
+                        {new Date(s.last_run_at).toLocaleString("pt-BR")}
+                      </div>
+                    )}
+                    {s.last_run_status === "error" && (
+                      <div className="text-urgent text-xs mt-0.5">erro</div>
+                    )}
+                  </td>
+                  <td className="p-3">{s.total_captured}</td>
+                  <td className="p-3">
+                    <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s)} />
+                  </td>
+                  <td className="p-3 text-right">
+                    <div className="inline-flex gap-1">
+                      {s.source_type === "rss" && (
+                        <button
+                          onClick={() => captureNow(s)}
+                          disabled={running === s.id}
+                          className="p-2 hover:bg-secondary disabled:opacity-50"
+                          title="Captar agora"
+                        >
+                          {running === s.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCcw className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => openEdit(s)}
+                        className="p-2 hover:bg-secondary"
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => remove(s.id)}
+                        className="p-2 hover:bg-urgent/10 text-urgent"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                  Nenhuma fonte cadastrada. Clique em "Nova fonte" para começar.
+                <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                  {sources.length === 0
+                    ? 'Nenhuma fonte cadastrada. Clique em "Nova fonte" para começar.'
+                    : "Nenhuma fonte encontrada com os filtros atuais."}
                 </td>
               </tr>
             )}
