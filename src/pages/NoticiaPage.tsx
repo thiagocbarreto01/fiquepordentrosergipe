@@ -226,6 +226,41 @@ export default function NoticiaPage() {
 
           
 
+          {related.length > 0 && (
+            <section className="mt-8 border-t border-border pt-6">
+              <h2 className="font-display font-black text-xl mb-4 uppercase tracking-tight">
+                Mais sobre este assunto
+              </h2>
+              <ul className="space-y-3">
+                {related.map((r) => (
+                  <li key={r.id}>
+                    <Link
+                      to={`/noticia/${r.slug}`}
+                      className="group flex gap-3 items-start hover:bg-secondary/30 -mx-2 px-2 py-2 rounded-sm"
+                    >
+                      {r.cover_image_url && (
+                        <img
+                          src={r.cover_image_url}
+                          alt=""
+                          className="w-20 h-16 object-cover rounded-sm shrink-0"
+                          loading="lazy"
+                        />
+                      )}
+                      <div>
+                        <h3 className="font-display font-bold text-sm leading-snug group-hover:text-primary">
+                          {r.title}
+                        </h3>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {timeAgo(r.published_at)}
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {post.tags && post.tags.length > 0 && (
             <div className="mt-6 flex flex-wrap gap-2">
               {post.tags.map((t) => (
