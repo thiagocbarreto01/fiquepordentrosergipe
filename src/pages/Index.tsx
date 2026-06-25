@@ -6,18 +6,19 @@ import { SectionBoundary } from "@/components/site/SectionBoundary";
 import EditorialSection from "@/components/site/EditorialSection";
 import HomeSidebar from "@/components/site/HomeSidebar";
 import {
-  getMostReadNoticias,
   getNoticiasByCategory,
   getPublishedNoticias,
+  invalidateNoticiasCache,
   Post,
   subscribeToNoticiasFeed,
 } from "@/lib/noticias";
+import { getTrending } from "@/lib/trending";
 import {
+  applyManualOverride,
+  editorialScore,
+  pickLatest,
   pickManchete,
   pickSecundarias,
-  pickTrending,
-  pickLatest,
-  editorialScore,
 } from "@/lib/editorialEngine";
 
 type CategoryDef = { slug: string; title: string; color: string };
@@ -46,28 +47,43 @@ const safe = async <T,>(p: Promise<T>, fallback: T): Promise<T> => {
 
 export default function Index() {
   const [latest, setLatest] = useState<Post[]>([]);
-  const [mostRead, setMostRead] = useState<Post[]>([]);
+  const [trending, setTrending] = useState<Post[]>([]);
   const [sections, setSections] = useState<Record<string, Post[]>>({});
+  const [hero, setHero] = useState<{ manchete: Post | null; secundarias: Post[] }>({
+    manchete: null,
+    secundarias: [],
+  });
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const load = async () => {
-      const [l, mr, ...sectionResults] = await Promise.all([
+      const [l, tr, ...sectionResults] = await Promise.all([
         safe(getPublishedNoticias(80), [] as Post[]),
-        safe(getMostReadNoticias(5), [] as Post[]),
+        safe(getTrending(5), [] as Post[]),
         ...SECTIONS.map((s) =>
           safe(getNoticiasByCategory(s.slug, 4), [] as Post[]),
         ),
       ]);
       setLatest(l);
-      setMostRead(mr);
+      setTrending(tr);
       const map: Record<string, Post[]> = {};
       SECTIONS.forEach((s, i) => (map[s.slug] = sectionResults[i]));
       setSections(map);
+
+      const auto = {
+        manchete: pickManchete(l),
+        secundarias: pickSecundarias(l, pickManchete(l), 3),
+      };
+      const final = await safe(applyManualOverride(auto), auto);
+      setHero(final);
       setLoaded(true);
     };
     load();
-    return subscribeToNoticiasFeed(load);
+    // Quando o realtime sinaliza mudanças, invalidamos cache antes do refetch.
+    return subscribeToNoticiasFeed(() => {
+      invalidateNoticiasCache();
+      load();
+    });
   }, []);
 
   useEffect(() => {
@@ -75,22 +91,20 @@ export default function Index() {
       "Fique Por Dentro Sergipe — Notícias, Política, Polícia, Brasil e Mundo";
   }, []);
 
-  // Motor editorial
-  const manchete = pickManchete(latest);
-  const secundarias = pickSecundarias(latest, manchete, 3);
-  const trending = pickTrending(latest, 5);
   const latestList = pickLatest(latest, 8);
 
   useEffect(() => {
-    if (!manchete) return;
-    const scored = editorialScore(manchete);
+    if (!hero.manchete) return;
+    const scored = editorialScore(hero.manchete);
     console.info("[Home] Manchete", {
-      title: manchete.title,
+      title: hero.manchete.title,
       score: scored.score,
-      editorialWeight: scored.editorialWeight,
       reasons: scored.reasons,
     });
-  }, [manchete?.id]);
+  }, [hero.manchete?.id]);
+
+  const manchete = hero.manchete;
+  const secundarias = hero.secundarias;
 
   return (
     <SiteLayout>
@@ -137,7 +151,7 @@ export default function Index() {
         </div>
 
         {/* SIDEBAR */}
-        <HomeSidebar mostRead={trending.length > 0 ? trending : mostRead} latest={latestList} />
+        <HomeSidebar mostRead={trending} latest={latestList} />
       </section>
     </SiteLayout>
   );

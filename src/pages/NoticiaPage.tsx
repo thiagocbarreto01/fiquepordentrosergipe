@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import SiteLayout from "@/components/site/SiteLayout";
 import AdSlot from "@/components/site/AdSlot";
 import { getNoticiaBySlug, getMostReadNoticias, Post, subscribeToNoticiasFeed, timeAgo } from "@/lib/noticias";
@@ -12,6 +13,8 @@ import { parseVideoUrl } from "@/lib/videoEmbed";
 import { useAuth } from "@/hooks/useAuth";
 import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { Button } from "@/components/ui/button";
+
+const SITE_URL = "https://fiquepordentrosergipe.lovable.app";
 
 // Fonte/URL original NUNCA é exibida ao leitor (Fique Por Dentro Sergipe 2.0 — Etapa 1).
 
@@ -57,8 +60,46 @@ export default function NoticiaPage() {
   const shareText = encodeURIComponent(post.title);
   const shareUrl = encodeURIComponent(url);
 
+  const canonical = `${SITE_URL}/noticia/${post.slug}`;
+  const metaTitle = `${post.meta_title || post.title} — Fique Por Dentro Sergipe`;
+  const metaDesc = post.meta_description || post.subtitle || post.excerpt || post.title;
+  const ogImage = getPostImage(post) || `${SITE_URL}/favicon.png`;
+  const newsArticleLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: post.title,
+    description: metaDesc,
+    image: [ogImage],
+    datePublished: post.published_at ?? post.created_at,
+    dateModified: post.updated_at ?? post.published_at ?? post.created_at,
+    articleSection: post.categories?.name ?? "Geral",
+    keywords: (post.tags ?? []).join(", "),
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+    author: { "@type": "Organization", name: post.profiles?.display_name || "Redação Fique Por Dentro Sergipe" },
+    publisher: {
+      "@type": "NewsMediaOrganization",
+      name: "Fique Por Dentro Sergipe",
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/favicon.png` },
+    },
+  };
+
   return (
     <SiteLayout>
+      <Helmet>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDesc} />
+        <link rel="canonical" href={canonical} />
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={post.meta_title || post.title} />
+        <meta property="og:description" content={metaDesc} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content={ogImage} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.meta_title || post.title} />
+        <meta name="twitter:description" content={metaDesc} />
+        <meta name="twitter:image" content={ogImage} />
+        <script type="application/ld+json">{JSON.stringify(newsArticleLd)}</script>
+      </Helmet>
       <div className="container-news"><AdSlot position="topo_home" /></div>
       <article className="container-news mt-4 grid lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2">

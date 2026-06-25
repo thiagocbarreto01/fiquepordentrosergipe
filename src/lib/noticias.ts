@@ -54,8 +54,12 @@ export function subscribeToNoticiasFeed(onChange: () => void) {
   };
 }
 
+import { withCache, TTL, invalidateCache } from "./cache";
+
 export async function getPublishedNoticias(limit = 20) {
-  return sortNoticias(await getPublishedPosts(limit));
+  return withCache(`published:${limit}`, TTL.home, async () =>
+    sortNoticias(await getPublishedPosts(limit)),
+  );
 }
 
 export async function getFeaturedNoticia() {
@@ -67,28 +71,21 @@ export async function getHighlightsNoticias(excludeId?: string, limit = 3) {
 }
 
 export async function getUrgentNoticias(limit = 6) {
-  return sortNoticias(await getUrgentPosts(limit));
-}
-
-// Cache leve em memória: evita refetch redundante das mesmas seções dentro de 60s.
-const TTL_MS = 60_000;
-const cache = new Map<string, { ts: number; data: Post[] }>();
-async function memo(key: string, loader: () => Promise<Post[]>): Promise<Post[]> {
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.ts < TTL_MS) return hit.data;
-  const data = await loader();
-  cache.set(key, { ts: Date.now(), data });
-  return data;
+  return withCache(`urgent:${limit}`, TTL.breaking, async () =>
+    sortNoticias(await getUrgentPosts(limit)),
+  );
 }
 
 export async function getNoticiasByCategory(slug: string, limit = 8) {
-  return memo(`cat:${slug}:${limit}`, async () =>
+  return withCache(`cat:${slug}:${limit}`, TTL.category, async () =>
     sortNoticias(await getPostsByCategory(slug, limit)),
   );
 }
 
 export async function getMostReadNoticias(limit = 5, hours = 24) {
-  return memo(`mr:${limit}:${hours}`, () => getMostRead(limit, hours));
+  return withCache(`mr:${limit}:${hours}`, TTL.trending, () =>
+    getMostRead(limit, hours),
+  );
 }
 
 export async function getNoticiaBySlug(slug: string) {
@@ -110,4 +107,9 @@ export async function getVideoNoticias(limit = 4) {
 }
 export async function getDenunciasDestaqueNoticias(limit = 4) {
   return getDenunciaPosts(limit);
+}
+
+// Limpa cache quando o realtime sinaliza mudança em posts/categories/home_audit
+export function invalidateNoticiasCache() {
+  invalidateCache();
 }

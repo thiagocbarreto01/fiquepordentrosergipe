@@ -1,95 +1,84 @@
 ## Objetivo
-Transformar a Home do "Fique por Dentro Sergipe" em um portal editorial nível G1, com motor de priorização, seções fixas, sidebar enriquecida, fallback resiliente e melhor performance/responsividade. Mantém-se a camada de dados atual (Supabase `posts_public` + `categories`), apenas reorganizando frontend + lógica editorial.
+Elevar o portal ao "G1 PRO": ranking ponderado, breaking news em tempo real, trending por engajamento, SEO estruturado, override editorial, cache em camadas e resiliência total. Reaproveita o que já existe (`editorialEngine`, `SectionBoundary`, `home_audit`, `posts_public`).
 
 ---
 
-## 1. Motor Editorial (`src/lib/editorialEngine.ts` — novo)
-- Função `pickManchete(posts)` com score:
-  - Peso de categoria: Polícia 5 · Política 4 · Brasil 3 · Sergipe/Aracaju 3 · Economia 2 · demais 1
-  - Recência: bônus decrescente por hora (até 48h)
-  - Palavras-chave de impacto: `morte, acidente, governo, crime, prisão, operação, eleição, escândalo, denúncia, tragédia` → +N
-  - Flags editoriais: `is_main_featured` (+10), `is_urgent` (+8), `is_evergreen` baixa prioridade
-- `pickSecundarias(posts, manchete, n)` — mesma categoria ou últimas 24h, dedup
-- `pickTrending(posts, n)` — por `views` (fallback recência)
-- `normalizePost(post)` — garante `title, summary, image, category, date, source`; categoria fallback = "Geral"
-- Substitui (ou complementa) o atual `buildHomeLayout`
-
-## 2. Proteção do Sistema (`src/components/site/SectionBoundary.tsx` — novo)
-- ErrorBoundary leve por seção + skeleton + mensagem "Sem notícias no momento"
-- Envolver cada bloco da home (hero, sidebar, cada categoria)
-- `useEffect` da home já usa `safe()` — manter e estender (cada categoria também isolada em try/catch)
-
-## 3. Estrutura da Home (`src/pages/Index.tsx` — refatorado)
-Layout fixo, em ordem:
-```text
-┌────────────────────────────────────────────┬──────────────┐
-│ HERO (manchete grande)  │  3 destaques sec │   SIDEBAR    │
-├──────────────────────────┴──────────────────┤   • Mais     │
-│ Faixa "Últimas Notícias" (chips horizontais)│     Lidas    │
-├─────────────────────────────────────────────┤   • Últimas  │
-│ SEÇÃO Sergipe   │  SEÇÃO Aracaju            │   • Tempo    │
-├─────────────────────────────────────────────┤     (Aracaju)│
-│ SEÇÃO Polícia   │  SEÇÃO Política           │   • Banner   │
-├─────────────────────────────────────────────┤     Lateral  │
-│ SEÇÃO Brasil    │  SEÇÃO Mundo              │              │
-├─────────────────────────────────────────────┤              │
-│ SEÇÃO Economia  │  SEÇÃO Esportes           │              │
-├─────────────────────────────────────────────┤              │
-│ SEÇÃO Entretenimento (full width)           │              │
-└─────────────────────────────────────────────┴──────────────┘
+## 1. Ranking Engine v2 — `src/lib/editorialEngine.ts` (refactor)
+Fórmula normalizada (0–1) em cada eixo, depois pesada:
 ```
-- Cada seção: cabeçalho colorido + 1 card grande + 3 thumbs
-- Componente reutilizável `EditorialSection` em `src/components/site/EditorialSection.tsx`
+finalScore = recency*0.35 + categoryWeight*0.25 + engagement*0.25 + entityImpact*0.15
+```
+- **recency**: `exp(-ageHours/24)` (queda exponencial; 0h=1, 24h≈0.37, 72h≈0.05)
+- **categoryWeight**: tabela de pesos (Polícia 1.0 · Política 0.9 · Brasil 0.75 · Sergipe/Aracaju 0.7 · Mundo/Economia 0.55 · Saúde/Educação 0.45 · Esportes 0.35 · Entretenimento 0.25 · default 0.3)
+- **engagement**: log-normalizado de `views` (`log10(views+1)/log10(maxViews+1)`)
+- **entityImpact**: detector de entidades (polícia, governo, acidente, morte, eleição, prisão, operação, denúncia, escândalo, crime, tragédia, ministro, prefeito, governador, STF) → contagem normalizada
+- **Boosts**: `is_urgent` +0.5 (após o cap), `is_main_featured` +0.3, `is_evergreen` recency=0.4 fixo
+- Expor: `rankPosts(posts)`, `pickManchete`, `pickSecundarias`, `pickTrending(posts, n)`, `pickBreaking(posts)` (urgentes da última hora ordenadas por recência)
+- Mantém wrappers atuais (`pickLatest`, `normalizePost`) para não quebrar `Index.tsx`.
 
-## 4. Novas Categorias / Dados
-- Verificar `categories`: criar `brasil`, `mundo`, `economia`, `entretenimento` se faltarem (migration somente se ausentes)
-- `getNoticiasByCategory(slug, n)` já existe — usar para todas
-- `normalizePost` garante `category = "Geral"` quando ausente
+## 2. Editorial Override — `applyManualOverride()`
+- Lê `getManualHomePosts()` (já existe via `home_audit`) — se houver `manchete` manual, ela vence o ranking.
+- Idem para `destaque_lateral_1/2/3` (secundárias).
+- Integrado no `Index.tsx` antes do render do hero.
 
-## 5. Sidebar (`src/components/site/HomeSidebar.tsx` — novo)
-- Mais Lidas (top 5 por views, 7d, fallback 90d)
-- Últimas Notícias (top 5 cronológico)
-- **Previsão do Tempo Aracaju**: widget client-side via Open-Meteo (sem chave) — `https://api.open-meteo.com/v1/forecast?latitude=-10.91&longitude=-37.07&current_weather=true&timezone=America/Fortaleza`
-- AdSlot `lateral`
-- Banner de Denúncia (componente atual)
+## 3. Breaking News System — `BreakingBar` (substitui `PlantaoBar` no header)
+- Componente novo `src/components/site/BreakingBar.tsx` (mantém visual atual do `PlantaoBar`).
+- Refetch a cada **45s** + revalida no `visibilitychange`.
+- Fonte: `pickBreaking()` sobre `posts_public` com `is_urgent=true` OR publicada nas últimas 60 min (limit 10).
+- Esconde se vazio. Marquee preservado.
+- `SiteHeader` passa a importar `BreakingBar`.
 
-## 6. Performance
-- `React.lazy` + `Suspense` para seções abaixo da dobra (Brasil, Mundo, Economia, Esportes, Entretenimento, Vídeos, Denúncias)
-- Cache em memória (`Map<string, {data, ts}>`) em `lib/noticias.ts` com TTL 60s para `getNoticiasByCategory`, `getMostReadNoticias`
-- `loading="lazy"` já presente em `SmartImage` — manter
-- Pré-carregar só imagem da manchete (`<link rel="preload">` já em index.html não — adicionar via React dinâmico apenas para manchete)
+## 4. Trending Engine — `src/lib/trending.ts`
+- "Mais Lidas" passa a usar **engagement score**: combina `views` + crescimento (delta de views nas últimas N horas, aproximado pelo `published_at` recente como bônus) + bônus por `is_urgent`.
+- Como não há tabela de cliques granulares, usamos `views` (já incrementado em `increment_post_views`) + janela 24h. Documentado como heurística.
+- Função: `rankTrending(posts, {windowHours: 24})`, fallback 7d se vazio.
+- Atualização real-time: refetch a cada 30s + canal `subscribeToNoticiasFeed` (já existe).
 
-## 7. Responsividade
-- Desktop ≥ lg: grid 3 colunas (conteúdo 2 / sidebar 1), seções em 2 colunas
-- Tablet md: 2 colunas conteúdo, sidebar abaixo
-- Mobile: 1 coluna, cards empilhados, hamburger já existe em `SiteHeader`
-- Sidebar sticky só em ≥ lg
+## 5. SEO Engine — Per-page meta com `react-helmet-async`
+- `bun add react-helmet-async`
+- Adicionar `<HelmetProvider>` em `src/main.tsx`.
+- Em `NoticiaPage.tsx`: bloco `<Helmet>` com title (`meta_title || title`), description, canonical (`/noticia/{slug}`), `og:title|description|image|url|type=article`, `twitter:card=summary_large_image`, JSON-LD `NewsArticle` (headline, datePublished, dateModified, author, image, publisher, mainEntityOfPage).
+- Remover canonical estático do `index.html` (cada rota cuida do seu).
+- Slug já é amigável e usado na rota.
 
-## 8. Arquivos a criar / modificar
-**Criar**
-- `src/lib/editorialEngine.ts`
-- `src/components/site/SectionBoundary.tsx`
-- `src/components/site/EditorialSection.tsx`
-- `src/components/site/HomeSidebar.tsx`
-- `src/components/site/WeatherWidget.tsx`
+## 6. Cache System — `src/lib/cache.ts`
+- Helper `withCache(key, ttlMs, loader)` em memória (`Map`), com:
+  - **TTLs**: breaking=10s · trending=30s · home=90s · category=120s
+  - **stale-while-error**: se loader rejeitar e existir cache (mesmo expirado), devolve stale e loga aviso
+  - **Persistência leve**: snapshot do último resultado em `sessionStorage` (`fpd:cache:<key>`) para recuperar render se API falhar no F5
+- `lib/noticias.ts` atualizado para usar `withCache` em `getNoticiasByCategory`, `getMostReadNoticias`, `getPublishedNoticias` (substitui o cache TTL atual).
+- Edge cases: chave inclui params; cache invalidado no callback do realtime (`subscribeToNoticiasFeed` → `cache.clear()`).
 
-**Modificar**
-- `src/pages/Index.tsx` (refator completo da home, mantém SiteLayout e SiteHeader)
-- `src/lib/noticias.ts` (cache TTL leve)
-- `src/lib/homeSlots.ts` (delegar score ao novo `editorialEngine`)
+## 7. Resiliência
+- Todas as seções já estão em `SectionBoundary` — manter.
+- Adicionar `try/catch` global em `Index.tsx` `load()` (já existe via `safe()`).
+- `cache.ts` garante render se API cair (stale snapshot).
+- `BreakingBar` retorna `null` em erro.
 
-**Não tocar**
-- Header, Footer, rotas, painel admin, edge functions, schema do banco (exceto categorias se faltarem)
-
-## 9. Verificação
-- Build TS
-- Playwright: abrir `/`, screenshot mobile + desktop, confirmar seções renderizadas e fallback quando categoria vazia
-- Console: validar logs do motor editorial (score da manchete)
+## 8. Verificação
+- `tsgo --noEmit`
+- Playwright: home + 1 artigo, screenshots, sem erros no console, verifica `<script type="application/ld+json">` na NoticiaPage.
 
 ---
+
+## Arquivos
+**Novos**
+- `src/lib/cache.ts`
+- `src/lib/trending.ts`
+- `src/components/site/BreakingBar.tsx`
+
+**Refator**
+- `src/lib/editorialEngine.ts` (fórmula 0.35/0.25/0.25/0.15, pickBreaking, applyManualOverride)
+- `src/lib/noticias.ts` (usa withCache)
+- `src/pages/Index.tsx` (override manual + breaking + trending real)
+- `src/pages/NoticiaPage.tsx` (Helmet + JSON-LD)
+- `src/main.tsx` (HelmetProvider)
+- `src/components/site/SiteHeader.tsx` (BreakingBar)
+- `index.html` (remove canonical fixo)
+
+**Intocado**
+- Schema do banco, admin, edge functions, demais páginas.
 
 ## Fora do escopo
-- Mudanças no admin / fluxo de publicação
-- Novos endpoints/edge functions
-- Sistema real de tracking de "trending" por sessão (usa `views` já existente)
-- Redesign do header (já alinhado em iteração anterior)
+- Tracking real de cliques/tempo de leitura (exigiria tabela `post_events` + cron). Usamos `views` como proxy de engagement e documentamos.
+- SSR para social crawlers (limitação conhecida do Helmet client-side).
