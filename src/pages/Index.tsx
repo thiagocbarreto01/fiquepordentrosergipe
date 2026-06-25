@@ -151,7 +151,7 @@ export default function Index() {
         </div>
 
         {/* SIDEBAR */}
-        <HomeSidebar mostRead={trending.length > 0 ? trending : mostRead} latest={latestList} />
+        <HomeSidebar mostRead={trending} latest={latestList} />
       </section>
     </SiteLayout>
   );
