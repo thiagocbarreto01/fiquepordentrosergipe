@@ -211,13 +211,11 @@ export async function getHighlights(excludeId?: string, limit = 3) {
 }
 
 export async function getUrgentPosts(limit = 6) {
-  const { data: flagged } = await applyRecentHomeFilter(
-    applyHomeValidityFilter(
+  const { data: flagged } = await applyHomeValidityFilter(
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
       .or("is_urgent.eq.true,is_featured.eq.true")
-    )
   )
     .order("is_urgent", { ascending: false })
     .order("published_at", { ascending: false })
