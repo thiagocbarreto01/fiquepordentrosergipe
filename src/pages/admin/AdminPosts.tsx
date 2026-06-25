@@ -454,6 +454,20 @@ export default function AdminPosts() {
             {STATUS_LABEL[s]}
           </button>
         ))}
+        <span className="mx-1 w-px self-stretch bg-border" />
+        <button
+          onClick={() => setTodayOnly((v) => !v)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase font-bold tracking-wider rounded-sm border transition ${
+            todayOnly
+              ? "bg-sky-600 text-white border-sky-700"
+              : "bg-white border-border hover:bg-secondary"
+          }`}
+          title="Mostrar apenas notícias captadas hoje"
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          Do Dia Atual
+          <span className="ml-1 font-mono opacity-80">({stats.today})</span>
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4 items-center">
