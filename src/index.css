@@ -109,22 +109,24 @@
 
 @layer base {
   * { @apply border-border; }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Source Sans 3', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, .font-display {
-    font-family: 'Playfair Display', 'Source Serif 4', Georgia, serif;
-    letter-spacing: -0.015em;
+    font-family: 'Archivo', 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.02em;
     font-weight: 800;
   }
   h4, h5, h6, .font-condensed {
-    font-family: 'Roboto Condensed', 'Source Sans 3', sans-serif;
+    font-family: 'Roboto Condensed', 'Archivo', sans-serif;
     letter-spacing: -0.01em;
+    font-weight: 700;
   }
   .font-serif-news {
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: 'Archivo', 'Inter', sans-serif;
   }
   img { image-rendering: -webkit-optimize-contrast; }
 }
