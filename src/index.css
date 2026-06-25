@@ -12,9 +12,9 @@
 
 @layer base {
   :root {
-    /* Surfaces — paper-like newsroom */
-    --background: 40 23% 96%;          /* #f5f3ee paper */
-    --foreground: 0 0% 10%;             /* #1a1a1a ink */
+    /* Surfaces — light newsroom (white / very light gray) */
+    --background: 0 0% 100%;            /* #ffffff */
+    --foreground: 220 25% 12%;          /* near-black ink with subtle navy */
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 10%;
