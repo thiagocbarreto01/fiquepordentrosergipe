@@ -272,6 +272,7 @@ export default function AdminFontes() {
         toast.success(`Captação concluída: ${totalCap} nova(s), ${totalDup} duplicata(s)`);
       }
       load();
+      window.dispatchEvent(new CustomEvent("posts:refresh"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao executar captação");
     } finally {
