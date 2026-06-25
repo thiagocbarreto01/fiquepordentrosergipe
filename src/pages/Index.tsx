@@ -20,6 +20,8 @@ import {
   pickManchete,
   pickSecundarias,
 } from "@/lib/editorialEngine";
+import { getActiveBreakingEvent, getEventScoresByPostIds } from "@/lib/events";
+import { withFailsafe } from "@/lib/failsafe";
 
 type CategoryDef = { slug: string; title: string; color: string };
 
@@ -58,10 +60,10 @@ export default function Index() {
   useEffect(() => {
     const load = async () => {
       const [l, tr, ...sectionResults] = await Promise.all([
-        safe(getPublishedNoticias(80), [] as Post[]),
-        safe(getTrending(5), [] as Post[]),
+        withFailsafe<Post[]>("home:latest", () => getPublishedNoticias(80), []),
+        withFailsafe<Post[]>("home:trending", () => getTrending(5), []),
         ...SECTIONS.map((s) =>
-          safe(getNoticiasByCategory(s.slug, 4), [] as Post[]),
+          withFailsafe<Post[]>(`home:cat:${s.slug}`, () => getNoticiasByCategory(s.slug, 4), []),
         ),
       ]);
       setLatest(l);
@@ -70,16 +72,33 @@ export default function Index() {
       SECTIONS.forEach((s, i) => (map[s.slug] = sectionResults[i]));
       setSections(map);
 
-      const auto = {
-        manchete: pickManchete(l),
-        secundarias: pickSecundarias(l, pickManchete(l), 3),
-      };
-      const final = await safe(applyManualOverride(auto), auto);
+      // Carrega event scores e breaking em paralelo
+      const ids = l.slice(0, 30).map((p) => p.id);
+      const [eventScores, breaking] = await Promise.all([
+        safe(getEventScoresByPostIds(ids), {} as Record<string, any>),
+        safe(getActiveBreakingEvent(), null),
+      ]);
+
+      const autoManchete = pickManchete(l, eventScores);
+      const autoSecundarias = pickSecundarias(l, autoManchete, 3, eventScores);
+
+      // Breaking news sobrescreve manchete (mas mantém slots manuais via override depois)
+      let manchete = autoManchete;
+      if (breaking) {
+        const breakingPost = l.find(
+          (p) => (p as any).event_id === breaking.id,
+        );
+        if (breakingPost) manchete = breakingPost;
+      }
+
+      const final = await safe(
+        applyManualOverride({ manchete, secundarias: autoSecundarias }),
+        { manchete, secundarias: autoSecundarias },
+      );
       setHero(final);
       setLoaded(true);
     };
     load();
-    // Quando o realtime sinaliza mudanças, invalidamos cache antes do refetch.
     return subscribeToNoticiasFeed(() => {
       invalidateNoticiasCache();
       load();

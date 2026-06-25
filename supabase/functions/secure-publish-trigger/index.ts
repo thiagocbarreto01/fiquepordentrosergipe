@@ -53,6 +53,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 1) Camada editorial IA (best-effort, não bloqueia o fluxo)
+    try {
+      await admin.functions.invoke("editorial-ai", {
+        body: { post_id: postId },
+        headers: { Authorization: `Bearer ${SERVICE_ROLE}` },
+      });
+    } catch (err) {
+      console.warn("[secure-publish-trigger] editorial-ai falhou:", err);
+    }
+
     const { data: existing } = await admin
       .from("instagram_posts")
       .select("id")

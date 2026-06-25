@@ -2,7 +2,8 @@ import { ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo-fique-por-dentro.png";
-import { LayoutDashboard, FileText, FolderTree, Megaphone, AlertTriangle, Users, LogOut, ExternalLink, PlusCircle, Rss, Instagram, Home, Settings } from "lucide-react";
+import { LayoutDashboard, FileText, FolderTree, Megaphone, AlertTriangle, Users, LogOut, ExternalLink, PlusCircle, Rss, Instagram, Home, Settings, RefreshCw } from "lucide-react";
+import { useAutoSync } from "@/hooks/useAutoSync";
 
 const ITEMS = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -15,11 +16,13 @@ const ITEMS = [
   { to: "/admin/instagram", label: "Instagram", icon: Instagram },
   { to: "/admin/importar-instagram", label: "Importar do Instagram", icon: Instagram },
   { to: "/admin/denuncias", label: "Denúncias", icon: AlertTriangle },
+  { to: "/admin/sync", label: "Auto Sync", icon: RefreshCw },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, adminOnly: true },
   { to: "/admin/usuarios", label: "Usuários", icon: Users, adminOnly: true },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  useAutoSync(60_000);
   const { signOut, isAdmin, user } = useAuth();
   const nav = useNavigate();
 
