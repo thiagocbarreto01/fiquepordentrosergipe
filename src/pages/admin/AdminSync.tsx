@@ -3,7 +3,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 type AuditRow = { missing_in_public: number; stale_in_public: number };
 type LogRow = {
