@@ -3,7 +3,8 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit, PlusCircle, Eye, CheckCircle2, Globe, ArchiveRestore, Archive, Clock, RotateCw, Flame, Pin, AlertCircle, Home, Check, GitMerge, AlertOctagon, ExternalLink } from "lucide-react";
+import { Trash2, Edit, PlusCircle, Eye, CheckCircle2, Globe, ArchiveRestore, Archive, Clock, RotateCw, Flame, Pin, AlertCircle, Home, Check, GitMerge, AlertOctagon, ExternalLink, CalendarDays } from "lucide-react";
+import DayPostsModal from "@/components/admin/DayPostsModal";
 import { toast } from "sonner";
 import {
   STATUS_ORDER,
@@ -85,6 +86,7 @@ export default function AdminPosts() {
   const [groupSort, setGroupSort] = useState<GroupSort>("count_desc");
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0 });
+  const [dayModalPost, setDayModalPost] = useState<any | null>(null);
 
   useEffect(() => {
     try { localStorage.setItem("admin:posts:viewMode", viewMode); } catch {}
@@ -804,6 +806,16 @@ export default function AdminPosts() {
                       <Button variant="ghost" size="icon" onClick={() => remove(p.id)} className="h-8 w-8 text-urgent hover:bg-urgent/10" title="Excluir">
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDayModalPost(p)}
+                        className="h-8 px-2 text-sky-700 border-sky-200 hover:bg-sky-50"
+                        title="Ver todas as notícias captadas neste mesmo dia"
+                      >
+                        <CalendarDays className="h-3.5 w-3.5 sm:mr-1" />
+                        <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest">Dia</span>
+                      </Button>
                       <label className="ml-1 inline-flex items-center cursor-pointer" title="Selecionar para ação em lote">
                         <input
                           type="checkbox"
@@ -825,6 +837,11 @@ export default function AdminPosts() {
       </div>
       )}
 
+      <DayPostsModal
+        open={!!dayModalPost}
+        onOpenChange={(o) => !o && setDayModalPost(null)}
+        referencePost={dayModalPost}
+      />
     </AdminLayout>
   );
 }
