@@ -12,76 +12,76 @@
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 0 0% 100%;
-    --foreground: 221 75% 12%;
+    /* Surfaces — paper-like newsroom */
+    --background: 40 23% 96%;          /* #f5f3ee paper */
+    --foreground: 0 0% 10%;             /* #1a1a1a ink */
 
     --card: 0 0% 100%;
-    --card-foreground: 221 75% 12%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 221 75% 12%;
+    --popover-foreground: 0 0% 10%;
 
-    /* Brand — azul institucional */
-    --primary: 214 72% 42%;            /* #1E5BB8 — azul destaque (botões, links, CTAs) */
-    --primary-foreground: 0 0% 100%;
+    /* Brand — navy institucional clássico */
+    --primary: 220 74% 15%;             /* #0a1f44 navy */
+    --primary-foreground: 40 23% 96%;
 
-    --primary-glow: 217 74% 28%;       /* #123A7A — azul institucional */
-    --brand-navy: 220 81% 16%;         /* #081F4D — azul-marinho premium */
-    --brand-navy-deep: 219 80% 13%;    /* #071A3D — navio institucional */
+    --primary-glow: 220 60% 24%;
+    --brand-navy: 220 74% 15%;          /* #0a1f44 */
+    --brand-navy-deep: 220 78% 10%;     /* #050f24 */
 
-    /* Urgência / Breaking — vermelho APENAS aqui */
-    --urgent: 358 78% 48%;
+    /* Urgência / Breaking — vermelho jornal */
+    --urgent: 352 86% 42%;              /* #c8102e */
     --urgent-foreground: 0 0% 100%;
 
-    /* Alerta / Atenção — dourado */
-    --alert: 44 100% 48%;              /* #F5B400 */
-    --alert-foreground: 221 75% 12%;
+    /* Alerta — dourado mantido para destaques pontuais */
+    --alert: 44 100% 48%;
+    --alert-foreground: 0 0% 10%;
 
-    --secondary: 214 30% 96%;
-    --secondary-foreground: 221 75% 12%;
+    --secondary: 40 18% 92%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 214 25% 95%;
-    --muted-foreground: 217 15% 40%;
+    --muted: 40 15% 90%;
+    --muted-foreground: 0 0% 32%;
 
-    --accent: 214 30% 94%;
-    --accent-foreground: 221 75% 12%;
+    --accent: 40 18% 90%;
+    --accent-foreground: 0 0% 10%;
 
-    --destructive: 358 78% 48%;
+    --destructive: 352 86% 42%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 25% 88%;
-    --input: 214 25% 88%;
-    --ring: 214 72% 42%;
+    --border: 30 12% 82%;
+    --input: 30 12% 82%;
+    --ring: 220 74% 15%;
 
-    --radius: 0.375rem;
+    --radius: 0.25rem;
 
     /* Editorial helpers */
-    --headline: 221 75% 10%;
-    --byline: 217 15% 40%;
-    --rule: 214 25% 85%;
+    --headline: 0 0% 8%;
+    --byline: 0 0% 38%;
+    --rule: 30 12% 78%;
 
     /* Gradients */
-    --gradient-overlay: linear-gradient(180deg, hsl(221 75% 8% / 0) 0%, hsl(221 75% 8% / 0.88) 100%);
-    --gradient-urgent: linear-gradient(90deg, hsl(358 78% 42%), hsl(358 82% 55%));
+    --gradient-overlay: linear-gradient(180deg, hsl(220 78% 6% / 0) 0%, hsl(220 78% 6% / 0.9) 100%);
+    --gradient-urgent: linear-gradient(90deg, hsl(352 86% 38%), hsl(352 86% 48%));
     --gradient-navy: linear-gradient(180deg, hsl(var(--brand-navy)), hsl(var(--brand-navy-deep)));
     --gradient-premium: linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--primary-glow)) 100%);
 
-    /* Shadows — refinadas e suaves */
-    --shadow-card: 0 1px 2px hsl(221 50% 10% / 0.04), 0 2px 8px hsl(221 50% 10% / 0.05);
-    --shadow-elevated: 0 4px 12px hsl(221 50% 10% / 0.06), 0 12px 32px hsl(221 50% 10% / 0.08);
-    --shadow-hero: 0 24px 64px -24px hsl(221 75% 10% / 0.45);
+    /* Shadows */
+    --shadow-card: 0 1px 2px hsl(220 50% 8% / 0.05), 0 2px 6px hsl(220 50% 8% / 0.04);
+    --shadow-elevated: 0 4px 12px hsl(220 50% 8% / 0.07), 0 12px 28px hsl(220 50% 8% / 0.08);
+    --shadow-hero: 0 24px 64px -24px hsl(220 78% 8% / 0.45);
     --shadow-gold: 0 4px 14px hsl(44 100% 48% / 0.25);
 
-    /* Sidebar (admin) — mesmo azul institucional */
-    --sidebar-background: 221 75% 12%;
-    --sidebar-foreground: 0 0% 95%;
+    /* Sidebar (admin) */
+    --sidebar-background: 220 74% 15%;
+    --sidebar-foreground: 40 23% 96%;
     --sidebar-primary: 44 100% 48%;
-    --sidebar-primary-foreground: 221 75% 12%;
-    --sidebar-accent: 217 50% 22%;
+    --sidebar-primary-foreground: 220 74% 15%;
+    --sidebar-accent: 220 50% 22%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 217 40% 22%;
-    --sidebar-ring: 214 72% 50%;
+    --sidebar-border: 220 40% 22%;
+    --sidebar-ring: 220 74% 30%;
   }
 
   .dark {
