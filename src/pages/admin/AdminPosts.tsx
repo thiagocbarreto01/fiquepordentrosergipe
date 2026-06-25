@@ -163,7 +163,11 @@ export default function AdminPosts() {
       q = q.eq("source_id", sourceFilter);
     }
 
-    const { data } = await q;
+    const { data, error } = await q;
+    if (error) {
+      console.error("[AdminPosts] Falha ao carregar lista:", error);
+      toast.error(`Erro ao carregar notícias: ${error.message}`);
+    }
     const list = data ?? [];
 
     // Buscar títulos/datas dos posts referenciados (similar_to ou duplicate_of)
