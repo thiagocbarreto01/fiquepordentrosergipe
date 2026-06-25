@@ -58,8 +58,8 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {/* Main bar — logo centralizada estilo jornal */}
-      <div className="container-news flex items-center gap-4 h-20 md:h-28 py-2">
+      {/* Main bar — logo à esquerda, busca centralizada, botões à direita */}
+      <div className="container-news flex items-center gap-3 md:gap-5 h-16 md:h-20 py-2">
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden p-2 -ml-2 hover:bg-secondary rounded-sm transition-colors"
@@ -68,37 +68,34 @@ export default function SiteHeader() {
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        {/* Espaço lateral esquerdo no desktop para centralizar visualmente */}
-        <div className="hidden md:flex flex-1 items-center">
-          <form onSubmit={submitSearch} className="w-full max-w-xs">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                value={q} onChange={(e) => setQ(e.target.value)}
-                placeholder="Buscar notícias..."
-                className="w-full h-9 pl-9 pr-3 rounded-sm border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
-              />
-            </div>
-          </form>
-        </div>
-
         <Link to="/" className="flex items-center shrink-0" aria-label="Fique Por Dentro Sergipe - Início">
           <img
             src={logo}
             alt="Fique Por Dentro Sergipe"
-            className="h-20 md:h-32 w-auto select-none"
-            style={{ imageRendering: 'auto' }}
+            className="h-10 md:h-14 w-auto select-none"
             draggable={false}
           />
         </Link>
 
-        <div className="hidden md:flex flex-1 items-center justify-end gap-2">
+        {/* Busca grande centralizada (desktop) */}
+        <form onSubmit={submitSearch} className="hidden md:flex flex-1 max-w-2xl mx-auto">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar notícias..."
+              className="w-full h-11 pl-10 pr-3 rounded-md border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+            />
+          </div>
+        </form>
+
+        <div className="hidden md:flex items-center gap-2 shrink-0">
           {user && (
-            <Button asChild variant="outline" className="rounded-sm font-bold uppercase tracking-wider text-xs h-9 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+            <Button asChild variant="outline" className="rounded-md font-bold uppercase tracking-wider text-xs h-10 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
               <Link to="/admin"><LayoutDashboard className="h-4 w-4" /> Painel</Link>
             </Button>
           )}
-          <Button asChild className="bg-[hsl(var(--urgent))] hover:bg-[hsl(var(--urgent))]/90 text-[hsl(var(--urgent-foreground))] rounded-sm font-bold uppercase tracking-wider text-xs h-9 px-4 shadow-sm">
+          <Button asChild className="bg-[hsl(var(--urgent))] hover:bg-[hsl(var(--urgent))]/90 text-[hsl(var(--urgent-foreground))] rounded-md font-bold uppercase tracking-wider text-xs h-10 px-4 shadow-sm">
             <Link to="/denuncias/enviar">Enviar Denúncia</Link>
           </Button>
         </div>
