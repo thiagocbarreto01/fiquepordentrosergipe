@@ -99,23 +99,37 @@ function applyRecentHomeFilter(q: any, days = HOME_RECENT_DAYS) {
 }
 
 export async function getPublishedPosts(limit = 20) {
-  const { data, error } = await applyArchiveFilter(
-    applyRecentHomeFilter(
-      applyHomeValidityFilter(
-      supabase
-        .from("posts_public" as any)
-        .select(POST_SELECT)
-      )
-    )
-  )
+  const baseOrder = (q: any) => q
     .order("is_evergreen", { ascending: false })
     .order("is_main_featured", { ascending: false })
     .order("is_featured", { ascending: false })
     .order("published_at", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  const { data, error } = await baseOrder(
+    applyArchiveFilter(
+      applyRecentHomeFilter(
+        applyHomeValidityFilter(
+          supabase.from("posts_public" as any).select(POST_SELECT)
+        )
+      )
+    )
+  );
   if (error) throw error;
-  return (data ?? []) as unknown as Post[];
+  if (data && data.length > 0) return data as unknown as Post[];
+
+  // Fallback: quando não há nada nos últimos HOME_RECENT_DAYS dias,
+  // devolve as mais recentes dentro da janela de arquivamento (90 dias).
+  const { data: fallback, error: fbErr } = await baseOrder(
+    applyArchiveFilter(
+      applyHomeValidityFilter(
+        supabase.from("posts_public" as any).select(POST_SELECT)
+      )
+    )
+  );
+  if (fbErr) throw fbErr;
+  return (fallback ?? []) as unknown as Post[];
 }
 
 /**
