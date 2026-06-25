@@ -211,13 +211,11 @@ export async function getHighlights(excludeId?: string, limit = 3) {
 }
 
 export async function getUrgentPosts(limit = 6) {
-  const { data: flagged } = await applyRecentHomeFilter(
-    applyHomeValidityFilter(
+  const { data: flagged } = await applyHomeValidityFilter(
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
       .or("is_urgent.eq.true,is_featured.eq.true")
-    )
   )
     .order("is_urgent", { ascending: false })
     .order("published_at", { ascending: false })
@@ -258,19 +256,30 @@ export async function getMostRead(limit = 5, hours = 24) {
   const since = new Date();
   since.setHours(since.getHours() - hours);
 
-  const { data: windowed } = await applyRecentHomeFilter(
-    applyHomeValidityFilter(
+  const { data: windowed } = await applyHomeValidityFilter(
     supabase
       .from("posts_public" as any)
       .select(POST_SELECT)
       .gte("published_at", since.toISOString())
       .gt("views", 0)
-    )
   )
     .order("views", { ascending: false })
     .limit(limit);
 
-  return (windowed ?? []) as unknown as Post[];
+  if (windowed && windowed.length > 0) return windowed as unknown as Post[];
+
+  // Fallback: mais lidas dentro da janela de arquivamento (90d)
+  const { data: fallback } = await applyArchiveFilter(
+    applyHomeValidityFilter(
+      supabase
+        .from("posts_public" as any)
+        .select(POST_SELECT)
+        .gt("views", 0)
+    )
+  )
+    .order("views", { ascending: false })
+    .limit(limit);
+  return (fallback ?? []) as unknown as Post[];
 }
 
 
