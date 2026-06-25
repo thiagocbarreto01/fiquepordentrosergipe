@@ -851,7 +851,7 @@ export default function AdminPosts() {
                         size="sm"
                         onClick={() => setDayModalPost(p)}
                         className="h-8 px-2 text-sky-700 border-sky-200 hover:bg-sky-50"
-                        title="Ver todas as notícias captadas neste mesmo dia"
+                        title="Ver todas as notícias captadas neste dia"
                       >
                         <CalendarDays className="h-3.5 w-3.5 sm:mr-1" />
                         <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest">Dia</span>
