@@ -138,25 +138,16 @@ export default function SiteHeader() {
 
       {/* Nav principal */}
       <nav className="bg-primary text-primary-foreground border-y border-[hsl(var(--brand-navy-deep))]">
-        <div className="container-news hidden md:flex items-center h-11 overflow-x-auto">
-          <Link to="/" className="relative px-3.5 py-3 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-white/10 transition-colors after:absolute after:left-3.5 after:right-3.5 after:bottom-0 after:h-[2px] after:bg-[hsl(var(--alert))] after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform">
+        <div className="container-news hidden md:flex items-center flex-wrap h-auto min-h-11">
+          <Link to="/" className="relative px-3 py-3 text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-white/10 transition-colors after:absolute after:left-3 after:right-3 after:bottom-0 after:h-[2px] after:bg-[hsl(var(--alert))] after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform">
             Início
           </Link>
           {NAV.map((n) => (
             <Link
               key={n.to}
               to={n.to}
-              className="relative px-3.5 py-3 text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-white/10 whitespace-nowrap transition-colors after:absolute after:left-3.5 after:right-3.5 after:bottom-0 after:h-[2px] after:bg-[hsl(var(--alert))] after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform"
+              className="relative px-3 py-3 text-[12px] font-bold uppercase tracking-[0.06em] hover:bg-white/10 whitespace-nowrap transition-colors after:absolute after:left-3 after:right-3 after:bottom-0 after:h-[2px] after:bg-[hsl(var(--alert))] after:scale-x-0 hover:after:scale-x-100 after:origin-left after:transition-transform"
             >
-              {n.label}
-            </Link>
-          ))}
-        </div>
-        {/* Nav scrollável mobile */}
-        <div className="md:hidden flex items-center h-10 overflow-x-auto scrollbar-none">
-          <Link to="/" className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide hover:bg-white/10 whitespace-nowrap">Início</Link>
-          {NAV.map((n) => (
-            <Link key={n.to} to={n.to} className="px-3 py-2 text-[11px] font-bold uppercase tracking-wide hover:bg-white/10 whitespace-nowrap">
               {n.label}
             </Link>
           ))}
