@@ -66,7 +66,7 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
         const { data, error } = await supabase
           .from("posts")
           .select(
-            "id,title,slug,status,source_id,source_url,cover_image_url,manual_image_url,cover_image_original,created_at,captured_at,published_at,categories(name,default_cover_image_url)",
+            "id,title,slug,status,source_id,source_url,cover_image_url,manual_image_url,cover_image_original,created_at,captured_at,published_at,categories!posts_category_id_fkey(name,default_cover_image_url)",
           )
           .gte("created_at", start)
           .lte("created_at", end)
