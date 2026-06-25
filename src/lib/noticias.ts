@@ -70,12 +70,25 @@ export async function getUrgentNoticias(limit = 6) {
   return sortNoticias(await getUrgentPosts(limit));
 }
 
+// Cache leve em memória: evita refetch redundante das mesmas seções dentro de 60s.
+const TTL_MS = 60_000;
+const cache = new Map<string, { ts: number; data: Post[] }>();
+async function memo(key: string, loader: () => Promise<Post[]>): Promise<Post[]> {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.ts < TTL_MS) return hit.data;
+  const data = await loader();
+  cache.set(key, { ts: Date.now(), data });
+  return data;
+}
+
 export async function getNoticiasByCategory(slug: string, limit = 8) {
-  return sortNoticias(await getPostsByCategory(slug, limit));
+  return memo(`cat:${slug}:${limit}`, async () =>
+    sortNoticias(await getPostsByCategory(slug, limit)),
+  );
 }
 
 export async function getMostReadNoticias(limit = 5, hours = 24) {
-  return getMostRead(limit, hours);
+  return memo(`mr:${limit}:${hours}`, () => getMostRead(limit, hours));
 }
 
 export async function getNoticiaBySlug(slug: string) {
