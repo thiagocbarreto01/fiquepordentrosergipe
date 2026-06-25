@@ -11,10 +11,11 @@ import { getManualHomePosts } from "./homeSlots";
  */
 
 export const WEIGHTS = {
-  recency: 0.35,
-  category: 0.25,
+  recency: 0.30,
+  category: 0.10, // peso reduzido; categoria contribui via entity também
   engagement: 0.25,
   entity: 0.15,
+  event: 0.20,
 } as const;
 
 const CATEGORY_WEIGHT: Record<string, number> = {
@@ -84,26 +85,36 @@ function entityScore(post: Post): number {
 export type Ranked = {
   post: Post;
   score: number;
-  axes: { recency: number; category: number; engagement: number; entity: number };
+  axes: { recency: number; category: number; engagement: number; entity: number; event: number };
   boosts: string[];
 };
 
-export function rankPosts(posts: Post[]): Ranked[] {
+export type EventScoreMap = Record<string, { event_id: string; impact_score: number; is_breaking: boolean }>;
+
+export function rankPosts(posts: Post[], eventScores: EventScoreMap = {}): Ranked[] {
   const maxViews = posts.reduce((m, p) => Math.max(m, p.views ?? 0), 0);
   return posts
     .map<Ranked>((post) => {
+      const ev = eventScores[post.id];
+      const eventAxis = ev ? Math.min(1, (ev.impact_score || 0) / 100) : 0;
       const axes = {
         recency: recencyScore(post),
         category: categoryScore(post),
         engagement: engagementScore(post, maxViews),
         entity: entityScore(post),
+        event: eventAxis,
       };
       let score =
         axes.recency * WEIGHTS.recency +
         axes.category * WEIGHTS.category +
         axes.engagement * WEIGHTS.engagement +
-        axes.entity * WEIGHTS.entity;
+        axes.entity * WEIGHTS.entity +
+        axes.event * WEIGHTS.event;
       const boosts: string[] = [];
+      if (ev?.is_breaking) {
+        score += 0.4;
+        boosts.push("breaking+0.4");
+      }
       if (post.is_urgent) {
         score += 0.5;
         boosts.push("urgent+0.5");
@@ -123,12 +134,13 @@ export function editorialScore(post: Post) {
   return {
     post: r.post,
     score: Math.round(r.score * 100) / 100,
-    editorialWeight: Math.round((r.axes.category + r.axes.entity) * 100) / 100,
+    editorialWeight: Math.round((r.axes.category + r.axes.entity + r.axes.event) * 100) / 100,
     reasons: [
       `recency=${r.axes.recency.toFixed(2)}`,
       `category=${r.axes.category.toFixed(2)}`,
       `engagement=${r.axes.engagement.toFixed(2)}`,
       `entity=${r.axes.entity.toFixed(2)}`,
+      `event=${r.axes.event.toFixed(2)}`,
       ...r.boosts,
     ],
   };
@@ -136,12 +148,17 @@ export function editorialScore(post: Post) {
 
 /* ============ Pickers ============ */
 
-export function pickManchete(posts: Post[]): Post | null {
+export function pickManchete(posts: Post[], eventScores: EventScoreMap = {}): Post | null {
   if (!posts.length) return null;
-  return rankPosts(posts)[0]?.post ?? null;
+  return rankPosts(posts, eventScores)[0]?.post ?? null;
 }
 
-export function pickSecundarias(posts: Post[], manchete: Post | null, n = 3): Post[] {
+export function pickSecundarias(
+  posts: Post[],
+  manchete: Post | null,
+  n = 3,
+  eventScores: EventScoreMap = {},
+): Post[] {
   if (!manchete) return posts.slice(0, n);
   const cat = manchete.categories?.slug ?? null;
   const cutoff = Date.now() - 24 * 3600 * 1000;
@@ -151,10 +168,11 @@ export function pickSecundarias(posts: Post[], manchete: Post | null, n = 3): Po
     const t = new Date(p.published_at ?? p.created_at).getTime();
     return t >= cutoff;
   });
-  const ranked = rankPosts(pool).map((r) => r.post);
+  const ranked = rankPosts(pool, eventScores).map((r) => r.post);
   if (ranked.length >= n) return ranked.slice(0, n);
   const fillers = rankPosts(
     posts.filter((p) => p.id !== manchete.id && !ranked.some((x) => x.id === p.id)),
+    eventScores,
   ).map((r) => r.post);
   return [...ranked, ...fillers].slice(0, n);
 }

@@ -10,6 +10,7 @@ export const TTL = {
   trending: 30_000,
   home: 90_000,
   category: 120_000,
+  events: 60_000,
 } as const;
 
 type Entry<T> = { data: T; ts: number };

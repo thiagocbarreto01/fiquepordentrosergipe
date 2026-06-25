@@ -33,6 +33,10 @@ export type Post = {
   home_expires_at?: string | null;
   main_featured_expires_at?: string | null;
   is_evergreen?: boolean;
+  event_id?: string | null;
+  ai_seo_title?: string | null;
+  ai_summary?: string | null;
+  ai_entities?: string[] | null;
   categories?: { name: string; slug: string; color: string | null; default_cover_image_url?: string | null } | null;
   profiles?: { display_name: string | null } | null;
 };
@@ -50,6 +54,7 @@ const POST_SELECT = `
   id, title, subtitle, excerpt, slug, cover_image_url, manual_image_url, category_id, author_id,
   is_featured, is_main_featured, is_urgent, is_denuncia, views, published_at, created_at, tags, video_url_principal,
   home_expires_at, main_featured_expires_at, is_evergreen, is_editorial,
+  event_id, ai_seo_title, ai_summary,
   categories ( name, slug, color, default_cover_image_url )
 `;
 

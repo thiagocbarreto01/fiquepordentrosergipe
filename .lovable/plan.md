@@ -1,84 +1,134 @@
-## Objetivo
-Elevar o portal ao "G1 PRO": ranking ponderado, breaking news em tempo real, trending por engajamento, SEO estruturado, override editorial, cache em camadas e resiliência total. Reaproveita o que já existe (`editorialEngine`, `SectionBoundary`, `home_audit`, `posts_public`).
+# G1 PRO MAX — Plano de Upgrade
+
+Arquitetura jornalística baseada em **eventos** (clusters de notícias relacionadas), com IA editorial, breaking automático, scoring v2, failsafe total, auto-sync de espelho e SEO de portal.
 
 ---
 
-## 1. Ranking Engine v2 — `src/lib/editorialEngine.ts` (refactor)
-Fórmula normalizada (0–1) em cada eixo, depois pesada:
-```
-finalScore = recency*0.35 + categoryWeight*0.25 + engagement*0.25 + entityImpact*0.15
-```
-- **recency**: `exp(-ageHours/24)` (queda exponencial; 0h=1, 24h≈0.37, 72h≈0.05)
-- **categoryWeight**: tabela de pesos (Polícia 1.0 · Política 0.9 · Brasil 0.75 · Sergipe/Aracaju 0.7 · Mundo/Economia 0.55 · Saúde/Educação 0.45 · Esportes 0.35 · Entretenimento 0.25 · default 0.3)
-- **engagement**: log-normalizado de `views` (`log10(views+1)/log10(maxViews+1)`)
-- **entityImpact**: detector de entidades (polícia, governo, acidente, morte, eleição, prisão, operação, denúncia, escândalo, crime, tragédia, ministro, prefeito, governador, STF) → contagem normalizada
-- **Boosts**: `is_urgent` +0.5 (após o cap), `is_main_featured` +0.3, `is_evergreen` recency=0.4 fixo
-- Expor: `rankPosts(posts)`, `pickManchete`, `pickSecundarias`, `pickTrending(posts, n)`, `pickBreaking(posts)` (urgentes da última hora ordenadas por recência)
-- Mantém wrappers atuais (`pickLatest`, `normalizePost`) para não quebrar `Index.tsx`.
+## 1. Banco de dados (migration)
 
-## 2. Editorial Override — `applyManualOverride()`
-- Lê `getManualHomePosts()` (já existe via `home_audit`) — se houver `manchete` manual, ela vence o ranking.
-- Idem para `destaque_lateral_1/2/3` (secundárias).
-- Integrado no `Index.tsx` antes do render do hero.
+Novas estruturas em `public`:
 
-## 3. Breaking News System — `BreakingBar` (substitui `PlantaoBar` no header)
-- Componente novo `src/components/site/BreakingBar.tsx` (mantém visual atual do `PlantaoBar`).
-- Refetch a cada **45s** + revalida no `visibilitychange`.
-- Fonte: `pickBreaking()` sobre `posts_public` com `is_urgent=true` OR publicada nas últimas 60 min (limit 10).
-- Esconde se vazio. Marquee preservado.
-- `SiteHeader` passa a importar `BreakingBar`.
-
-## 4. Trending Engine — `src/lib/trending.ts`
-- "Mais Lidas" passa a usar **engagement score**: combina `views` + crescimento (delta de views nas últimas N horas, aproximado pelo `published_at` recente como bônus) + bônus por `is_urgent`.
-- Como não há tabela de cliques granulares, usamos `views` (já incrementado em `increment_post_views`) + janela 24h. Documentado como heurística.
-- Função: `rankTrending(posts, {windowHours: 24})`, fallback 7d se vazio.
-- Atualização real-time: refetch a cada 30s + canal `subscribeToNoticiasFeed` (já existe).
-
-## 5. SEO Engine — Per-page meta com `react-helmet-async`
-- `bun add react-helmet-async`
-- Adicionar `<HelmetProvider>` em `src/main.tsx`.
-- Em `NoticiaPage.tsx`: bloco `<Helmet>` com title (`meta_title || title`), description, canonical (`/noticia/{slug}`), `og:title|description|image|url|type=article`, `twitter:card=summary_large_image`, JSON-LD `NewsArticle` (headline, datePublished, dateModified, author, image, publisher, mainEntityOfPage).
-- Remover canonical estático do `index.html` (cada rota cuida do seu).
-- Slug já é amigável e usado na rota.
-
-## 6. Cache System — `src/lib/cache.ts`
-- Helper `withCache(key, ttlMs, loader)` em memória (`Map`), com:
-  - **TTLs**: breaking=10s · trending=30s · home=90s · category=120s
-  - **stale-while-error**: se loader rejeitar e existir cache (mesmo expirado), devolve stale e loga aviso
-  - **Persistência leve**: snapshot do último resultado em `sessionStorage` (`fpd:cache:<key>`) para recuperar render se API falhar no F5
-- `lib/noticias.ts` atualizado para usar `withCache` em `getNoticiasByCategory`, `getMostReadNoticias`, `getPublishedNoticias` (substitui o cache TTL atual).
-- Edge cases: chave inclui params; cache invalidado no callback do realtime (`subscribeToNoticiasFeed` → `cache.clear()`).
-
-## 7. Resiliência
-- Todas as seções já estão em `SectionBoundary` — manter.
-- Adicionar `try/catch` global em `Index.tsx` `load()` (já existe via `safe()`).
-- `cache.ts` garante render se API cair (stale snapshot).
-- `BreakingBar` retorna `null` em erro.
-
-## 8. Verificação
-- `tsgo --noEmit`
-- Playwright: home + 1 artigo, screenshots, sem erros no console, verifica `<script type="application/ld+json">` na NoticiaPage.
+- `news_events` — cluster editorial
+  - `id uuid pk`, `slug text unique`, `title text`, `summary text`
+  - `category_id uuid`, `entities text[]`, `keywords text[]`
+  - `impact_score numeric` (0–100), `is_breaking bool`, `breaking_until timestamptz`
+  - `first_seen_at`, `last_updated_at`, `post_count int`
+- `posts.event_id uuid` (FK → news_events) + `posts_public.event_id`
+- `posts.ai_seo_title text`, `posts.ai_summary text`, `posts.ai_clickbait_score numeric`, `posts.ai_suggested_category uuid`
+- `sync_audit_log` — `id, event_type, post_id, status, error, created_at` (drift/retry/log)
+- RPCs:
+  - `cluster_post_into_event(_post_id uuid)` — calcula similaridade (trigram em título+tags+entities) e atribui `event_id` (cria novo se nenhum match ≥ 0.55)
+  - `detect_breaking_events()` — marca `is_breaking=true` em eventos com `impact_score ≥ 80` nas últimas 2h, define `breaking_until = now()+90min`
+  - `expire_breaking_events()` — limpa `is_breaking` quando `breaking_until < now()`
+  - `audit_posts_public_drift()` — retorna ids divergentes
+  - `auto_repair_posts_public()` — corrige drift + grava em `sync_audit_log`
+- Trigger `posts AFTER INSERT/UPDATE` → chama `cluster_post_into_event` + atualiza `news_events.last_updated_at`/`post_count`.
+- GRANTs em todas as novas tabelas; RLS: leitura pública de `news_events`, escrita restrita a staff.
 
 ---
 
-## Arquivos
-**Novos**
-- `src/lib/cache.ts`
-- `src/lib/trending.ts`
-- `src/components/site/BreakingBar.tsx`
+## 2. Edge Function `editorial-ai`
 
-**Refator**
-- `src/lib/editorialEngine.ts` (fórmula 0.35/0.25/0.25/0.15, pickBreaking, applyManualOverride)
-- `src/lib/noticias.ts` (usa withCache)
-- `src/pages/Index.tsx` (override manual + breaking + trending real)
-- `src/pages/NoticiaPage.tsx` (Helmet + JSON-LD)
-- `src/main.tsx` (HelmetProvider)
-- `src/components/site/SiteHeader.tsx` (BreakingBar)
-- `index.html` (remove canonical fixo)
+Nova função Supabase (`supabase/functions/editorial-ai/index.ts`) usando **Lovable AI Gateway** (`google/gemini-3-flash-preview`):
 
-**Intocado**
-- Schema do banco, admin, edge functions, demais páginas.
+- Input: `{ post_id }`
+- Ações sequenciais com `Output.object` (Zod):
+  - SEO title (≤ 60 chars, sem clickbait)
+  - Summary jornalístico (2–3 frases, lead invertido)
+  - Clickbait score (0–1)
+  - Categoria sugerida (id entre categorias existentes)
+  - Entidades extraídas (pessoas/lugares/orgs)
+- Persiste em `posts.ai_*` + atualiza `entities` do evento.
+- Trigger automático: chamada via `secure-publish-trigger` ao publicar.
 
-## Fora do escopo
-- Tracking real de cliques/tempo de leitura (exigiria tabela `post_events` + cron). Usamos `views` como proxy de engagement e documentamos.
-- SSR para social crawlers (limitação conhecida do Helmet client-side).
+---
+
+## 3. Impact Scoring v2 (frontend)
+
+Refatorar `src/lib/editorialEngine.ts`:
+
+```
+finalScore = 0.30·recency + 0.25·engagement + 0.25·entityImpact + 0.20·eventImportance
+```
+
+- `eventImportance` = `news_events.impact_score` normalizado + bonus se `is_breaking`.
+- `entityImpact` reusa keywords + entidades extraídas pela IA.
+- Mantém override manual de `home_audit`.
+
+---
+
+## 4. Failsafe System
+
+Novo módulo `src/lib/failsafe.ts`:
+
+1. Tenta fetch normal (`posts_public` + cache de memória).
+2. Em erro → cache `sessionStorage` (`lkg:home`).
+3. Em erro → `localStorage` snapshot persistente (last known good).
+4. Em erro total → placeholder estático mínimo (3 cards genéricos) — nunca tela vazia.
+5. Toda render bem-sucedida grava o snapshot.
+
+Aplicado em `Index.tsx`, `CategoriaPage`, `UltimasPage`.
+
+---
+
+## 5. Auto-Sync Engine
+
+- Hook `useAutoSync` em `AdminLayout` que a cada 60s chama `audit_posts_public_drift`; se houver drift, dispara `auto_repair_posts_public()` e mostra toast com contagem.
+- Edge function `sync-watchdog` agendada (cron 5 min) faz o mesmo no servidor.
+- Página `/admin/sync` mostra `sync_audit_log` (últimos 50 eventos).
+
+---
+
+## 6. Breaking News Engine
+
+- `BreakingBar` consulta `news_events where is_breaking=true order by impact_score desc limit 1`.
+- Quando ativo: substitui manchete em `PortalHero` por evento breaking (post mais recente do cluster) com badge "URGENTE".
+- Expira automaticamente via `expire_breaking_events()` (rodado no fetch).
+
+---
+
+## 7. SEO Engine
+
+Em `NoticiaPage.tsx`:
+
+- URL canônica `/{categoria}/{slug}`.
+- `<Helmet>`: title = `ai_seo_title || title`, description = `ai_summary || excerpt`, JSON-LD `NewsArticle` completo (headline, datePublished, author, image, articleSection, keywords).
+- **Internal linking**: bloco "Mais sobre este assunto" listando outros posts do mesmo `event_id`.
+- Slug normalizado server-side (trigger já existente; garantir unicidade).
+
+---
+
+## 8. Home Structure (Index.tsx)
+
+Ordem fixa:
+
+1. `BreakingBar` (auto)
+2. `PortalHero` — manchete por evento + 2 secundárias do mesmo cluster
+3. Faixa "3 Destaques" (próximos eventos por impact_score)
+4. Grid editorial por categoria (existente, agora alimentado por scoring v2)
+5. Sidebar: Trending por evento (eventos com mais posts em 24h) + Mais Lidas (views reais de `posts_public`)
+
+---
+
+## Detalhes técnicos
+
+- Migrations idempotentes (`IF NOT EXISTS`).
+- Realtime: subscribe em `news_events` além de `posts`.
+- Cache: `src/lib/cache.ts` ganha namespace `events:*` com TTL 60s.
+- Backfill: script SQL roda `cluster_post_into_event` para todos os posts publicados existentes.
+- IA: chamada apenas em publicação (não em rascunho) para economizar créditos; fallback silencioso se 402/429.
+- Sem mudanças em `src/integrations/supabase/client.ts` e secrets existentes.
+
+---
+
+## Ordem de execução
+
+1. Migration (tabelas, colunas, RPCs, triggers, GRANTs, RLS)
+2. Backfill de clusters
+3. Edge function `editorial-ai` + integração no `secure-publish-trigger`
+4. Edge function `sync-watchdog` + cron
+5. Frontend: `failsafe.ts`, `editorialEngine.ts` v2, `BreakingBar`, `PortalHero`, `Index.tsx`, `NoticiaPage.tsx`, `useAutoSync`
+6. Página `/admin/sync`
+7. Validação: home, breaking, evento com 2+ posts, drift forçado
+
+Confirma para eu executar?
