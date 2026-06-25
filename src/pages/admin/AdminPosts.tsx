@@ -225,7 +225,17 @@ export default function AdminPosts() {
   useEffect(() => {
     load();
     loadStats();
-  }, [filter, homeFilter, sourceFilter, archivedFilter]);
+  }, [filter, homeFilter, sourceFilter, archivedFilter, todayOnly]);
+
+  // Refresh suave quando a captação termina (ou bulk update no modal)
+  useEffect(() => {
+    const handler = () => {
+      load();
+      loadStats();
+    };
+    window.addEventListener("posts:refresh", handler);
+    return () => window.removeEventListener("posts:refresh", handler);
+  }, [filter, homeFilter, sourceFilter, archivedFilter, todayOnly]);
 
   async function archiveNow(p: any) {
     if (!confirm(`Arquivar "${p.title}"?`)) return;
