@@ -114,13 +114,19 @@
     font-family: 'Source Sans 3', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4, .font-display {
+  h1, h2, h3, .font-display {
+    font-family: 'Playfair Display', 'Source Serif 4', Georgia, serif;
+    letter-spacing: -0.015em;
+    font-weight: 800;
+  }
+  h4, h5, h6, .font-condensed {
     font-family: 'Roboto Condensed', 'Source Sans 3', sans-serif;
     letter-spacing: -0.01em;
   }
   .font-serif-news {
     font-family: 'Source Serif 4', Georgia, serif;
   }
+  img { image-rendering: -webkit-optimize-contrast; }
 }
 
 @layer components {
