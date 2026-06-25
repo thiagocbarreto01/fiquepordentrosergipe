@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Search, Menu, X, Facebook, Instagram, Youtube, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo-fique-por-dentro.png";
-import PlantaoBar from "./PlantaoBar";
+import BreakingBar from "./BreakingBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Button } from "@/components/ui/button";
@@ -173,7 +173,7 @@ export default function SiteHeader() {
           </div>
         )}
       </nav>
-      <PlantaoBar />
+      <BreakingBar />
     </header>
   );
 }

@@ -28,7 +28,7 @@ export async function getTrending(limit = 5): Promise<Post[]> {
       .order("views", { ascending: false })
       .limit(limit * 4);
 
-    let pool = ((d24 ?? []) as unknown as Post[]) ?? [];
+    let pool = ((d24 ?? []) as unknown as Post[]);
     if (pool.length < limit) {
       const since7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
       const { data: d7 } = await supabase
@@ -38,7 +38,7 @@ export async function getTrending(limit = 5): Promise<Post[]> {
         .gt("views", 0)
         .order("views", { ascending: false })
         .limit(limit * 4);
-      pool = ((d7 ?? []) as unknown as Post[]) ?? [];
+      pool = ((d7 ?? []) as unknown as Post[]);
     }
     return pickTrending(pool, limit);
   });
