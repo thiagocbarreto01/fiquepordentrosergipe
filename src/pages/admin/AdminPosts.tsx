@@ -95,7 +95,9 @@ export default function AdminPosts() {
 
   async function loadStats() {
     const now = new Date().toISOString();
-    const [activeRes, expiredRes, evergreenRes, urgentRes, archivedRes] = await Promise.all([
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const [activeRes, expiredRes, evergreenRes, urgentRes, archivedRes, todayRes] = await Promise.all([
       supabase.from("posts").select("id", { count: "exact", head: true })
         .eq("status", "publicada")
         .or(`is_evergreen.eq.true,home_expires_at.is.null,home_expires_at.gt.${now}`),
@@ -107,12 +109,15 @@ export default function AdminPosts() {
         .eq("status", "publicada").eq("is_urgent", true)
         .or(`is_evergreen.eq.true,home_expires_at.is.null,home_expires_at.gt.${now}`),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("status", "arquivada"),
+      supabase.from("posts").select("id", { count: "exact", head: true })
+        .gte("created_at", startOfDay.toISOString()),
     ]);
     setStats({
       activeHome: activeRes.count ?? 0,
       expired: expiredRes.count ?? 0,
       evergreen: evergreenRes.count ?? 0,
       urgent: urgentRes.count ?? 0,
+      today: todayRes.count ?? 0,
     });
     setArchivedCount(archivedRes.count ?? 0);
   }
