@@ -28,7 +28,7 @@ const EVENT_SELECT =
 export async function getActiveBreakingEvent(): Promise<NewsEvent | null> {
   return withCache("evt:breaking", TTL.breaking, async () => {
     // Limpa flags expiradas de forma idempotente.
-    await supabase.rpc("expire_breaking_events" as any).catch(() => null);
+    try { await supabase.rpc("expire_breaking_events" as any); } catch { /* noop */ }
     const { data, error } = await supabase
       .from("news_events" as any)
       .select(EVENT_SELECT)
