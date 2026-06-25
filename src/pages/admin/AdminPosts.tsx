@@ -169,6 +169,12 @@ export default function AdminPosts() {
       q = q.eq("source_id", sourceFilter);
     }
 
+    if (todayOnly) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      q = q.gte("created_at", startOfDay.toISOString());
+    }
+
     const { data, error } = await q;
     if (error) {
       console.error("[AdminPosts] Falha ao carregar lista:", error);
