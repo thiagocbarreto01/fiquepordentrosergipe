@@ -51,8 +51,10 @@ export default function Index() {
     return subscribeToNoticiasFeed(load);
   }, []);
 
-  // Layout único da Home: pontuação editorial + recência + imagem válida + sem repetição
-  const layout = buildHomeLayout({ published: filterEligibleHomePosts(latest) });
+  // Layout único da Home: passamos TODAS as publicadas — o buildHomeLayout
+  // tem fallback interno (eligible → todas publicadas) para evitar Home vazia
+  // quando não há notícias dos últimos 7 dias.
+  const layout = buildHomeLayout({ published: latest });
   const heroMain = layout.manchetePrincipal.post;
   const heroSecondaries = [
     layout.destaqueLateral1.post,
@@ -69,9 +71,9 @@ export default function Index() {
     ...heroRecent.map(p => p.id),
     ...highlightGrid.map(p => p.id),
   ].filter(Boolean) as string[]);
-  // "Últimas Notícias": feed estritamente cronológico por published_at DESC,
-  // independente de categoria, destaque, plantão ou inteligência da Home.
-  const latestFeed = [...filterEligibleHomePosts(latest)].sort((a, b) => {
+  // "Últimas Notícias": feed cronológico puro sobre TODAS as publicadas
+  // (sem corte de 7 dias), para nunca exibir a coluna em branco.
+  const latestFeed = [...latest].sort((a, b) => {
     const ta = new Date(a.published_at ?? a.created_at).getTime();
     const tb = new Date(b.published_at ?? b.created_at).getTime();
     return tb - ta;
