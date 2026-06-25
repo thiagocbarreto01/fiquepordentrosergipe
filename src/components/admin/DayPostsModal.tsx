@@ -121,6 +121,61 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
     return { total: rows.length, pub, nao, dup };
   }, [rows]);
 
+  // Reset selection when modal closes or filter changes
+  useEffect(() => {
+    setSelected(new Set());
+  }, [open, filter]);
+
+  const isUnpublished = (r: any) => {
+    const s = normalizeStatus(r.status) as EditorialStatus;
+    return s !== "publicada" && s !== "duplicada" && s !== "arquivada";
+  };
+
+  const unpublishedRows = useMemo(() => filtered.filter(isUnpublished), [filtered]);
+  const allUnpubSelected =
+    unpublishedRows.length > 0 && unpublishedRows.every((r) => selected.has(r.id));
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllUnpublished() {
+    if (allUnpubSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(unpublishedRows.map((r) => r.id)));
+    }
+  }
+
+  async function moveSelectedToReview() {
+    const ids = Array.from(selected);
+    if (!ids.length) return;
+    setBulkLoading(true);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ status: "pronta_para_revisao" })
+        .in("id", ids);
+      if (error) throw error;
+      toast.success(`${ids.length} notícia${ids.length === 1 ? "" : "s"} movida${ids.length === 1 ? "" : "s"} para Pronta para Revisão`);
+      setRows((prev) =>
+        prev.map((r) => (selected.has(r.id) ? { ...r, status: "pronta_para_revisao" } : r)),
+      );
+      setSelected(new Set());
+      // Avisa a listagem para recarregar
+      window.dispatchEvent(new CustomEvent("posts:refresh"));
+    } catch (err: any) {
+      toast.error(err.message ?? "Falha ao mover notícias");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
