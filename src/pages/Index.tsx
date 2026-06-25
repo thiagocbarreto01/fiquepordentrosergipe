@@ -225,12 +225,30 @@ export default function Index() {
         </div>
 
         {/* SIDEBAR */}
-        <aside className="space-y-6 lg:space-y-8">
-          <div className="lg:sticky lg:top-24">
+        <aside className="space-y-6 lg:space-y-7">
+          <div className="lg:sticky lg:top-24 space-y-6">
+            {mostRead.length > 0 && (
+              <div>
+                <SectionHeader title="Mais Lidas" colorClass="border-urgent" icon={Flame} link="/ultimas" />
+                <div className="bg-white border border-border/60 rounded-md px-3 py-1">
+                  {mostRead.slice(0, 5).map((p, i) => (
+                    <MostReadItem key={`side-mr-${p.id}`} post={p} index={i} />
+                  ))}
+                </div>
+              </div>
+            )}
             <AdSlot position="lateral" />
-            <div className="mt-8">
-              <DenunciaBanner />
-            </div>
+            {latestFeed.length > 0 && (
+              <div>
+                <SectionHeader title="Últimas Notícias" link="/ultimas" />
+                <div className="bg-white rounded-md border border-border/60 px-3 divide-y divide-border">
+                  {latestFeed.slice(0, 5).map((p) => (
+                    <NewsThumbItem key={`side-lt-${p.id}`} post={p} />
+                  ))}
+                </div>
+              </div>
+            )}
+            <DenunciaBanner />
           </div>
         </aside>
       </section>
