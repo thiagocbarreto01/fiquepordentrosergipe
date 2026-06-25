@@ -47,6 +47,8 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState<DayFilter>("all");
   const [sourcesMap, setSourcesMap] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const anchorIso = referencePost?.captured_at || referencePost?.created_at || null;
   const { start, end, dayLabel } = useMemo(
