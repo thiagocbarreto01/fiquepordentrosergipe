@@ -9,7 +9,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Edit, ExternalLink, Loader2 } from "lucide-react";
+import { Edit, ExternalLink, Loader2, CheckSquare, Square, ArrowRightCircle, Eye } from "lucide-react";
+import { toast } from "sonner";
 import { STATUS_LABEL, STATUS_COLOR, normalizeStatus, type EditorialStatus } from "@/lib/statusFlow";
 import { getPostImage, handleImgError } from "@/lib/postImage";
 
@@ -46,6 +47,8 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState<DayFilter>("all");
   const [sourcesMap, setSourcesMap] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const anchorIso = referencePost?.captured_at || referencePost?.created_at || null;
   const { start, end, dayLabel } = useMemo(
@@ -118,6 +121,61 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
     return { total: rows.length, pub, nao, dup };
   }, [rows]);
 
+  // Reset selection when modal closes or filter changes
+  useEffect(() => {
+    setSelected(new Set());
+  }, [open, filter]);
+
+  const isUnpublished = (r: any) => {
+    const s = normalizeStatus(r.status) as EditorialStatus;
+    return s !== "publicada" && s !== "duplicada" && s !== "arquivada";
+  };
+
+  const unpublishedRows = useMemo(() => filtered.filter(isUnpublished), [filtered]);
+  const allUnpubSelected =
+    unpublishedRows.length > 0 && unpublishedRows.every((r) => selected.has(r.id));
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllUnpublished() {
+    if (allUnpubSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(unpublishedRows.map((r) => r.id)));
+    }
+  }
+
+  async function moveSelectedToReview() {
+    const ids = Array.from(selected);
+    if (!ids.length) return;
+    setBulkLoading(true);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ status: "pronta_para_revisao" })
+        .in("id", ids);
+      if (error) throw error;
+      toast.success(`${ids.length} notícia${ids.length === 1 ? "" : "s"} movida${ids.length === 1 ? "" : "s"} para Pronta para Revisão`);
+      setRows((prev) =>
+        prev.map((r) => (selected.has(r.id) ? { ...r, status: "pronta_para_revisao" } : r)),
+      );
+      setSelected(new Set());
+      // Avisa a listagem para recarregar
+      window.dispatchEvent(new CustomEvent("posts:refresh"));
+    } catch (err: any) {
+      toast.error(err.message ?? "Falha ao mover notícias");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0 flex flex-col">
@@ -161,6 +219,43 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
           ))}
         </div>
 
+        {/* Barra de ações em massa */}
+        <div className="px-6 py-2 border-b bg-white flex flex-wrap gap-2 items-center text-xs">
+          <button
+            type="button"
+            onClick={selectAllUnpublished}
+            disabled={unpublishedRows.length === 0}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-border hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed font-bold uppercase tracking-wider text-[10px]"
+          >
+            {allUnpubSelected ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+            Selecionar todas Não Publicadas ({unpublishedRows.length})
+          </button>
+          <span className="text-muted-foreground">·</span>
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {selected.size} selecionada{selected.size === 1 ? "" : "s"}
+          </span>
+          <div className="ml-auto flex gap-2">
+            {selected.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelected(new Set())}
+                className="px-2.5 py-1.5 rounded-sm border border-border hover:bg-secondary font-bold uppercase tracking-wider text-[10px]"
+              >
+                Limpar
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={moveSelectedToReview}
+              disabled={selected.size === 0 || bulkLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-violet-600 hover:bg-violet-700 text-white font-bold uppercase tracking-wider text-[10px] disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRightCircle className="h-3.5 w-3.5" />}
+              Mover para Pronta para Revisão
+            </button>
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
@@ -191,9 +286,22 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
                     className={`flex gap-3 p-3 rounded-sm border transition ${
                       isCurrent
                         ? "border-sky-500 bg-sky-50 ring-2 ring-sky-200"
-                        : "border-border bg-white hover:bg-secondary/30"
+                        : selected.has(r.id)
+                          ? "border-violet-400 bg-violet-50/60"
+                          : "border-border bg-white hover:bg-secondary/30"
                     }`}
                   >
+                    {isUnpublished(r) ? (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(r.id)}
+                        onChange={() => toggleSelect(r.id)}
+                        className="mt-1 h-4 w-4 accent-violet-600 shrink-0"
+                        title="Selecionar para ação em massa"
+                      />
+                    ) : (
+                      <div className="w-4 shrink-0" />
+                    )}
                     <div className="w-[88px] h-[60px] shrink-0 bg-secondary border border-border overflow-hidden rounded-sm">
                       <img
                         src={img}
@@ -243,17 +351,33 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
                             )}
                           </div>
                         </div>
-                        <Button
-                          asChild
-                          size="sm"
-                          variant="outline"
-                          className="shrink-0 h-8"
-                          onClick={() => onOpenChange(false)}
-                        >
-                          <Link to={`/admin/posts/${r.id}`}>
-                            <Edit className="h-3.5 w-3.5 mr-1" /> Editar
-                          </Link>
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-1.5 shrink-0">
+                          {s === "publicada" && r.slug && (
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                              title="Ver no portal"
+                            >
+                              <a href={`/noticia/${r.slug}`} target="_blank" rel="noreferrer">
+                                <Eye className="h-3.5 w-3.5 sm:mr-1" />
+                                <span className="hidden sm:inline">Portal</span>
+                              </a>
+                            </Button>
+                          )}
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            onClick={() => onOpenChange(false)}
+                          >
+                            <Link to={`/admin/posts/${r.id}`}>
+                              <Edit className="h-3.5 w-3.5 mr-1" /> Editar
+                            </Link>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </li>

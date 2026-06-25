@@ -85,7 +85,8 @@ export default function AdminPosts() {
   });
   const [groupSort, setGroupSort] = useState<GroupSort>("count_desc");
   const [search, setSearch] = useState("");
-  const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0 });
+  const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0, today: 0 });
+  const [todayOnly, setTodayOnly] = useState(false);
   const [dayModalPost, setDayModalPost] = useState<any | null>(null);
 
   useEffect(() => {
@@ -94,7 +95,9 @@ export default function AdminPosts() {
 
   async function loadStats() {
     const now = new Date().toISOString();
-    const [activeRes, expiredRes, evergreenRes, urgentRes, archivedRes] = await Promise.all([
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const [activeRes, expiredRes, evergreenRes, urgentRes, archivedRes, todayRes] = await Promise.all([
       supabase.from("posts").select("id", { count: "exact", head: true })
         .eq("status", "publicada")
         .or(`is_evergreen.eq.true,home_expires_at.is.null,home_expires_at.gt.${now}`),
@@ -106,12 +109,15 @@ export default function AdminPosts() {
         .eq("status", "publicada").eq("is_urgent", true)
         .or(`is_evergreen.eq.true,home_expires_at.is.null,home_expires_at.gt.${now}`),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("status", "arquivada"),
+      supabase.from("posts").select("id", { count: "exact", head: true })
+        .gte("created_at", startOfDay.toISOString()),
     ]);
     setStats({
       activeHome: activeRes.count ?? 0,
       expired: expiredRes.count ?? 0,
       evergreen: evergreenRes.count ?? 0,
       urgent: urgentRes.count ?? 0,
+      today: todayRes.count ?? 0,
     });
     setArchivedCount(archivedRes.count ?? 0);
   }
@@ -161,6 +167,12 @@ export default function AdminPosts() {
       q = q.is("source_id", null).ilike("source_url", "%instagram.com%");
     } else if (sourceFilter !== "all") {
       q = q.eq("source_id", sourceFilter);
+    }
+
+    if (todayOnly) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      q = q.gte("created_at", startOfDay.toISOString());
     }
 
     const { data, error } = await q;
@@ -213,7 +225,17 @@ export default function AdminPosts() {
   useEffect(() => {
     load();
     loadStats();
-  }, [filter, homeFilter, sourceFilter, archivedFilter]);
+  }, [filter, homeFilter, sourceFilter, archivedFilter, todayOnly]);
+
+  // Refresh suave quando a captação termina (ou bulk update no modal)
+  useEffect(() => {
+    const handler = () => {
+      load();
+      loadStats();
+    };
+    window.addEventListener("posts:refresh", handler);
+    return () => window.removeEventListener("posts:refresh", handler);
+  }, [filter, homeFilter, sourceFilter, archivedFilter, todayOnly]);
 
   async function archiveNow(p: any) {
     if (!confirm(`Arquivar "${p.title}"?`)) return;
@@ -432,6 +454,20 @@ export default function AdminPosts() {
             {STATUS_LABEL[s]}
           </button>
         ))}
+        <span className="mx-1 w-px self-stretch bg-border" />
+        <button
+          onClick={() => setTodayOnly((v) => !v)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase font-bold tracking-wider rounded-sm border transition ${
+            todayOnly
+              ? "bg-sky-600 text-white border-sky-700"
+              : "bg-white border-border hover:bg-secondary"
+          }`}
+          title="Mostrar apenas notícias captadas hoje"
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          Do Dia Atual
+          <span className="ml-1 font-mono opacity-80">({stats.today})</span>
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4 items-center">
