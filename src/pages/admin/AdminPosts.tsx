@@ -85,7 +85,8 @@ export default function AdminPosts() {
   });
   const [groupSort, setGroupSort] = useState<GroupSort>("count_desc");
   const [search, setSearch] = useState("");
-  const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0 });
+  const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0, today: 0 });
+  const [todayOnly, setTodayOnly] = useState(false);
   const [dayModalPost, setDayModalPost] = useState<any | null>(null);
 
   useEffect(() => {
