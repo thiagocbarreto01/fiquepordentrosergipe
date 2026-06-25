@@ -264,6 +264,8 @@ export type Database = {
           breaking_until: string | null
           category_id: string | null
           created_at: string
+          embedding: string | null
+          embedding_updated_at: string | null
           entities: string[]
           first_seen_at: string
           id: string
@@ -281,6 +283,8 @@ export type Database = {
           breaking_until?: string | null
           category_id?: string | null
           created_at?: string
+          embedding?: string | null
+          embedding_updated_at?: string | null
           entities?: string[]
           first_seen_at?: string
           id?: string
@@ -298,6 +302,8 @@ export type Database = {
           breaking_until?: string | null
           category_id?: string | null
           created_at?: string
+          embedding?: string | null
+          embedding_updated_at?: string | null
           entities?: string[]
           first_seen_at?: string
           id?: string
@@ -446,6 +452,7 @@ export type Database = {
           created_at: string
           duplicate_match_reason: string | null
           duplicate_of: string | null
+          embedding: string | null
           event_id: string | null
           excerpt: string | null
           external_id: string | null
@@ -515,6 +522,7 @@ export type Database = {
           created_at?: string
           duplicate_match_reason?: string | null
           duplicate_of?: string | null
+          embedding?: string | null
           event_id?: string | null
           excerpt?: string | null
           external_id?: string | null
@@ -584,6 +592,7 @@ export type Database = {
           created_at?: string
           duplicate_match_reason?: string | null
           duplicate_of?: string | null
+          embedding?: string | null
           event_id?: string | null
           excerpt?: string | null
           external_id?: string | null
@@ -954,6 +963,10 @@ export type Database = {
         Args: { _post_id: string; _reason?: string }
         Returns: undefined
       }
+      attach_post_to_event_with_embedding: {
+        Args: { _embedding: string; _post_id: string; _threshold?: number }
+        Returns: string
+      }
       audit_posts_public_drift: {
         Args: never
         Returns: {
@@ -1011,6 +1024,14 @@ export type Database = {
       increment_post_views: { Args: { _post_id: string }; Returns: undefined }
       is_main_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      match_event_by_embedding: {
+        Args: { _embedding: string; _threshold?: number; _window?: string }
+        Returns: {
+          event_id: string
+          similarity: number
+        }[]
+      }
+      recluster_all_posts: { Args: { _force?: boolean }; Returns: number }
       restore_post: { Args: { _post_id: string }; Returns: undefined }
       resync_posts_public: { Args: never; Returns: number }
     }

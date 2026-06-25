@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertTriangle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 type AuditRow = { missing_in_public: number; stale_in_public: number };
@@ -53,22 +53,43 @@ export default function AdminSync() {
     }
   }
 
+  async function runRecluster() {
+    if (!confirm("Recluster vai apagar os eventos atuais e reprocessar todas as matérias publicadas usando embeddings. Continuar?")) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("recluster_all_posts" as any, { _force: true });
+      if (error) throw error;
+      toast(`Reclusterização enfileirada: ${data} matéria(s). Aguarde ~1min.`);
+      await loadAll();
+    } catch (err: any) {
+      toast(`Erro: ${err.message ?? err}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const drift = (audit?.missing_in_public ?? 0) + (audit?.stale_in_public ?? 0);
 
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="font-display text-2xl font-black">Auto Sync</h1>
+            <h1 className="font-display text-2xl font-black">Auto Sync & Clustering</h1>
             <p className="text-sm text-muted-foreground">
-              Diagnóstico de espelho público de notícias.
+              Diagnóstico de espelho público e reclusterização semântica por embeddings.
             </p>
           </div>
-          <Button onClick={runRepair} disabled={busy} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
-            Ressincronizar agora
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={runRecluster} disabled={busy} variant="outline" className="gap-2">
+              <Sparkles className={`h-4 w-4 ${busy ? "animate-pulse" : ""}`} />
+              Reclusterizar (embeddings)
+            </Button>
+            <Button onClick={runRepair} disabled={busy} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
+              Ressincronizar agora
+            </Button>
+          </div>
         </header>
 
         <div className="grid sm:grid-cols-3 gap-4">
