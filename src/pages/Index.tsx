@@ -28,19 +28,24 @@ export default function Index() {
   const [denunciasDestaque, setDenunciasDestaque] = useState<Post[]>([]);
 
   useEffect(() => {
+    const safe = <T,>(p: Promise<T>, fallback: T) =>
+      p.catch((err) => {
+        console.error("[Home] fetch error:", err);
+        return fallback;
+      });
     const load = async () => {
       const [l, pol, plc, mun, esp, arc, ser, mr, wmr, vd, dd] = await Promise.all([
-        getPublishedNoticias(60),
-        getNoticiasByCategory("politica", 3),
-        getNoticiasByCategory("policia", 3),
-        getNoticiasByCategory("municipios", 3),
-        getNoticiasByCategory("esporte", 3),
-        getNoticiasByCategory("aracaju", 3),
-        getNoticiasByCategory("sergipe", 3),
-        getMostReadNoticias(5),
-        getMostReadNoticias(4, 24 * 7),
-        getVideoNoticias(4),
-        getDenunciasDestaqueNoticias(4),
+        safe(getPublishedNoticias(60), [] as Post[]),
+        safe(getNoticiasByCategory("politica", 3), [] as Post[]),
+        safe(getNoticiasByCategory("policia", 3), [] as Post[]),
+        safe(getNoticiasByCategory("municipios", 3), [] as Post[]),
+        safe(getNoticiasByCategory("esporte", 3), [] as Post[]),
+        safe(getNoticiasByCategory("aracaju", 3), [] as Post[]),
+        safe(getNoticiasByCategory("sergipe", 3), [] as Post[]),
+        safe(getMostReadNoticias(5), [] as Post[]),
+        safe(getMostReadNoticias(4, 24 * 7), [] as Post[]),
+        safe(getVideoNoticias(4), [] as Post[]),
+        safe(getDenunciasDestaqueNoticias(4), [] as Post[]),
       ]);
       setLatest(l);
       setPolitica(pol); setPolicia(plc); setMunicipios(mun);
