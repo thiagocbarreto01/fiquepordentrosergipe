@@ -259,6 +259,68 @@ export type Database = {
           },
         ]
       }
+      news_events: {
+        Row: {
+          breaking_until: string | null
+          category_id: string | null
+          created_at: string
+          entities: string[]
+          first_seen_at: string
+          id: string
+          impact_score: number
+          is_breaking: boolean
+          keywords: string[]
+          last_updated_at: string
+          post_count: number
+          slug: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          breaking_until?: string | null
+          category_id?: string | null
+          created_at?: string
+          entities?: string[]
+          first_seen_at?: string
+          id?: string
+          impact_score?: number
+          is_breaking?: boolean
+          keywords?: string[]
+          last_updated_at?: string
+          post_count?: number
+          slug?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          breaking_until?: string | null
+          category_id?: string | null
+          created_at?: string
+          entities?: string[]
+          first_seen_at?: string
+          id?: string
+          impact_score?: number
+          is_breaking?: boolean
+          keywords?: string[]
+          last_updated_at?: string
+          post_count?: number
+          slug?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_sources: {
         Row: {
           created_at: string
@@ -358,13 +420,18 @@ export type Database = {
       }
       posts: {
         Row: {
+          ai_clickbait_score: number | null
+          ai_entities: string[] | null
           ai_review_status: string
           ai_rewrite_quality: string
           ai_rewritten_at: string | null
+          ai_seo_title: string | null
+          ai_suggested_category: string | null
           ai_suggested_placement: string | null
           ai_suggestion_decided_at: string | null
           ai_suggestion_decided_by: string | null
           ai_suggestion_status: string
+          ai_summary: string | null
           ai_version_used: string
           archived_at: string | null
           archived_reason: string | null
@@ -379,6 +446,7 @@ export type Database = {
           created_at: string
           duplicate_match_reason: string | null
           duplicate_of: string | null
+          event_id: string | null
           excerpt: string | null
           external_id: string | null
           home_expires_at: string | null
@@ -421,13 +489,18 @@ export type Database = {
           views: number
         }
         Insert: {
+          ai_clickbait_score?: number | null
+          ai_entities?: string[] | null
           ai_review_status?: string
           ai_rewrite_quality?: string
           ai_rewritten_at?: string | null
+          ai_seo_title?: string | null
+          ai_suggested_category?: string | null
           ai_suggested_placement?: string | null
           ai_suggestion_decided_at?: string | null
           ai_suggestion_decided_by?: string | null
           ai_suggestion_status?: string
+          ai_summary?: string | null
           ai_version_used?: string
           archived_at?: string | null
           archived_reason?: string | null
@@ -442,6 +515,7 @@ export type Database = {
           created_at?: string
           duplicate_match_reason?: string | null
           duplicate_of?: string | null
+          event_id?: string | null
           excerpt?: string | null
           external_id?: string | null
           home_expires_at?: string | null
@@ -484,13 +558,18 @@ export type Database = {
           views?: number
         }
         Update: {
+          ai_clickbait_score?: number | null
+          ai_entities?: string[] | null
           ai_review_status?: string
           ai_rewrite_quality?: string
           ai_rewritten_at?: string | null
+          ai_seo_title?: string | null
+          ai_suggested_category?: string | null
           ai_suggested_placement?: string | null
           ai_suggestion_decided_at?: string | null
           ai_suggestion_decided_by?: string | null
           ai_suggestion_status?: string
+          ai_summary?: string | null
           ai_version_used?: string
           archived_at?: string | null
           archived_reason?: string | null
@@ -505,6 +584,7 @@ export type Database = {
           created_at?: string
           duplicate_match_reason?: string | null
           duplicate_of?: string | null
+          event_id?: string | null
           excerpt?: string | null
           external_id?: string | null
           home_expires_at?: string | null
@@ -548,6 +628,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "posts_ai_suggested_category_fkey"
+            columns: ["ai_suggested_category"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "posts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -562,6 +649,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "posts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "news_events"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "posts_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
@@ -572,11 +666,15 @@ export type Database = {
       }
       posts_public: {
         Row: {
+          ai_entities: string[] | null
+          ai_seo_title: string | null
+          ai_summary: string | null
           author_id: string | null
           category_id: string | null
           content: string
           cover_image_url: string | null
           created_at: string
+          event_id: string | null
           excerpt: string | null
           home_expires_at: string | null
           id: string
@@ -602,11 +700,15 @@ export type Database = {
           views: number
         }
         Insert: {
+          ai_entities?: string[] | null
+          ai_seo_title?: string | null
+          ai_summary?: string | null
           author_id?: string | null
           category_id?: string | null
           content: string
           cover_image_url?: string | null
           created_at: string
+          event_id?: string | null
           excerpt?: string | null
           home_expires_at?: string | null
           id: string
@@ -632,11 +734,15 @@ export type Database = {
           views?: number
         }
         Update: {
+          ai_entities?: string[] | null
+          ai_seo_title?: string | null
+          ai_summary?: string | null
           author_id?: string | null
           category_id?: string | null
           content?: string
           cover_image_url?: string | null
           created_at?: string
+          event_id?: string | null
           excerpt?: string | null
           home_expires_at?: string | null
           id?: string
@@ -765,6 +871,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_audit_log: {
+        Row: {
+          created_at: string
+          details: Json | null
+          error: string | null
+          event_type: string
+          id: string
+          post_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          error?: string | null
+          event_type: string
+          id?: string
+          post_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          post_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -818,13 +954,24 @@ export type Database = {
         Args: { _post_id: string; _reason?: string }
         Returns: undefined
       }
+      audit_posts_public_drift: {
+        Args: never
+        Returns: {
+          missing_in_public: number
+          stale_in_public: number
+        }[]
+      }
       auto_archive_posts: {
         Args: never
         Returns: {
           archived_count: number
         }[]
       }
+      auto_repair_posts_public: { Args: never; Returns: number }
       can_approve_publish: { Args: { _user_id: string }; Returns: boolean }
+      cluster_post_into_event: { Args: { _post_id: string }; Returns: string }
+      detect_breaking_events: { Args: never; Returns: number }
+      expire_breaking_events: { Args: never; Returns: number }
       find_duplicate_post: {
         Args: {
           _exclude_id?: string
@@ -839,6 +986,16 @@ export type Database = {
           slug: string
           source_url: string
           status: Database["public"]["Enums"]["post_status"]
+          title: string
+        }[]
+      }
+      get_event_related_posts: {
+        Args: { _limit?: number; _post_id: string }
+        Returns: {
+          cover_image_url: string
+          id: string
+          published_at: string
+          slug: string
           title: string
         }[]
       }
