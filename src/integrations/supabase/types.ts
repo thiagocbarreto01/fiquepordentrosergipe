@@ -442,6 +442,7 @@ export type Database = {
           archived_at: string | null
           archived_reason: string | null
           author_id: string | null
+          captured_at: string | null
           category_id: string | null
           content: string
           conteudo_gerado: string | null
@@ -514,6 +515,7 @@ export type Database = {
           archived_at?: string | null
           archived_reason?: string | null
           author_id?: string | null
+          captured_at?: string | null
           category_id?: string | null
           content: string
           conteudo_gerado?: string | null
@@ -586,6 +588,7 @@ export type Database = {
           archived_at?: string | null
           archived_reason?: string | null
           author_id?: string | null
+          captured_at?: string | null
           category_id?: string | null
           content?: string
           conteudo_gerado?: string | null
