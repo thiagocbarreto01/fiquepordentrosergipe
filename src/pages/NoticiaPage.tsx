@@ -63,7 +63,7 @@ export default function NoticiaPage() {
   }
 
   const url = typeof window !== "undefined" ? window.location.href : "";
-  const shareUrl = `${SITE_URL}/noticia/${post.slug}`;
+  const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}`;
   const shareText = encodeURIComponent(post.title);
   const shareUrlEnc = encodeURIComponent(shareUrl);
 
@@ -72,7 +72,12 @@ export default function NoticiaPage() {
   const aiSummary = (post as any).ai_summary || post.meta_description || post.subtitle || post.excerpt || post.title;
   const metaTitle = `${aiTitle} — Fique Por Dentro Sergipe`;
   const metaDesc = aiSummary;
-  const ogImage = getPostImage(post) || `${SITE_URL}/favicon.png`;
+  const rawImage = getPostImage(post);
+  const ogImage = rawImage && /^https?:\/\//i.test(rawImage)
+    ? rawImage.replace(/^http:\/\//i, "https://")
+    : rawImage && rawImage.startsWith("/")
+      ? `${SITE_URL}${rawImage}`
+      : null;
   const newsArticleLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -102,11 +107,12 @@ export default function NoticiaPage() {
         <meta property="og:title" content={post.meta_title || post.title} />
         <meta property="og:description" content={metaDesc} />
         <meta property="og:url" content={canonical} />
-        <meta property="og:image" content={ogImage} />
+        {ogImage && <meta property="og:image" content={ogImage} />}
+        {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.meta_title || post.title} />
         <meta name="twitter:description" content={metaDesc} />
-        <meta name="twitter:image" content={ogImage} />
+        {ogImage && <meta name="twitter:image" content={ogImage} />}
         <script type="application/ld+json">{JSON.stringify(newsArticleLd)}</script>
       </Helmet>
       <div className="container-news"><AdSlot position="topo_home" /></div>
