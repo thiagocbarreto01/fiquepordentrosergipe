@@ -457,12 +457,25 @@ export default function AdminPosts() {
         <span className="mx-1 w-px self-stretch bg-border" />
         <button
           onClick={() => setTodayOnly((v) => !v)}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm uppercase font-black tracking-widest rounded-sm border-2 transition shadow-sm ${
+            todayOnly
+              ? "bg-red-600 text-white border-red-700 ring-2 ring-red-300"
+              : "bg-amber-50 border-red-300 text-red-700 hover:bg-red-50"
+          }`}
+          title="Mostrar apenas notícias cuja captura foi feita hoje"
+        >
+          <CalendarDays className="h-4 w-4" />
+          Captadas Hoje
+          <span className="ml-1 font-mono text-xs opacity-90">({stats.today})</span>
+        </button>
+        <button
+          onClick={() => setTodayOnly((v) => !v)}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase font-bold tracking-wider rounded-sm border transition ${
             todayOnly
               ? "bg-sky-600 text-white border-sky-700"
               : "bg-white border-border hover:bg-secondary"
           }`}
-          title="Mostrar apenas notícias captadas hoje"
+          title="Mostrar apenas notícias captadas hoje (alias)"
         >
           <CalendarDays className="h-3.5 w-3.5" />
           Do Dia Atual
