@@ -37,12 +37,12 @@ export default function EditorialSection({ title, slug, color, posts }: Props) {
   return (
     <section>
       <Header title={title} slug={slug} accent={accent} />
-      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 bg-white border border-border/60 rounded-md p-3">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 bg-white border border-border/60 rounded-md p-3 h-full">
         <Link
           to={`/noticia/${headline.slug}`}
-          className="sm:col-span-3 group flex flex-col"
+          className="xl:col-span-3 group flex flex-col min-w-0"
         >
-          <div className="relative aspect-[16/10] overflow-hidden bg-muted rounded-md">
+          <div className="relative aspect-[16/9] overflow-hidden bg-muted rounded-md">
             <SmartImage
               src={getPostImage(headline)}
               fallbackUrl={headline.categories?.default_cover_image_url}
@@ -54,11 +54,11 @@ export default function EditorialSection({ title, slug, color, posts }: Props) {
               onError={(e) => handleImgError(e, headline)}
             />
           </div>
-          <h3 className="font-display text-base md:text-lg font-bold leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-3 mt-2">
+          <h3 className="font-display text-base md:text-lg font-bold leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-3 mt-2 break-words [word-break:normal] [overflow-wrap:break-word] hyphens-none">
             {headline.title}
           </h3>
           {headline.subtitle && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+            <p className="text-xs text-muted-foreground line-clamp-2 mt-1 break-words [word-break:normal] [overflow-wrap:break-word]">
               {headline.subtitle}
             </p>
           )}
@@ -66,7 +66,7 @@ export default function EditorialSection({ title, slug, color, posts }: Props) {
             {timeAgo(headline.published_at ?? headline.created_at)}
           </span>
         </Link>
-        <div className="sm:col-span-2 flex flex-col divide-y divide-border">
+        <div className="xl:col-span-2 flex flex-col divide-y divide-border min-w-0">
           {rest.length > 0 ? (
             rest.map((p) => <NewsThumbItem key={p.id} post={p} />)
           ) : (
