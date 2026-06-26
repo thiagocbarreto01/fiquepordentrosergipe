@@ -35,7 +35,7 @@ export default function EditorialSection({ title, slug, color, posts }: Props) {
   }
 
   return (
-    <section>
+    <section className="flex flex-col h-full">
       <Header title={title} slug={slug} accent={accent} />
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 bg-white border border-border/60 rounded-md p-3 h-full">
         <Link
