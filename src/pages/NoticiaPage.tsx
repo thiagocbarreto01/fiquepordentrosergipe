@@ -112,7 +112,7 @@ export default function NoticiaPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.meta_title || post.title} />
         <meta name="twitter:description" content={metaDesc} />
-        <meta name="twitter:image" content={ogImage} />
+        {ogImage && <meta name="twitter:image" content={ogImage} />}
         <script type="application/ld+json">{JSON.stringify(newsArticleLd)}</script>
       </Helmet>
       <div className="container-news"><AdSlot position="topo_home" /></div>
