@@ -63,7 +63,7 @@ export default function NoticiaPage() {
   }
 
   const url = typeof window !== "undefined" ? window.location.href : "";
-  const shareUrl = `${SITE_URL}/noticia/${post.slug}`;
+  const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}`;
   const shareText = encodeURIComponent(post.title);
   const shareUrlEnc = encodeURIComponent(shareUrl);
 
