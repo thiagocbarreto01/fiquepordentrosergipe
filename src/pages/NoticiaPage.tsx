@@ -63,8 +63,9 @@ export default function NoticiaPage() {
   }
 
   const url = typeof window !== "undefined" ? window.location.href : "";
+  const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}`;
   const shareText = encodeURIComponent(post.title);
-  const shareUrl = encodeURIComponent(url);
+  const shareUrlEnc = encodeURIComponent(shareUrl);
 
   const canonical = `${SITE_URL}/noticia/${post.slug}`;
   const aiTitle = (post as any).ai_seo_title || post.meta_title || post.title;
