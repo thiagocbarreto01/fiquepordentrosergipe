@@ -93,10 +93,27 @@ export default function AdminPosts() {
     try { localStorage.setItem("admin:posts:viewMode", viewMode); } catch {}
   }, [viewMode]);
 
+  // Bounds do "dia de hoje" no fuso America/Sao_Paulo (UTC-3, sem horário de verão).
+  // Retorna ISO em UTC equivalentes a 00:00:00.000 e 23:59:59.999 de SP.
+  function saoPauloTodayBoundsIso() {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const y = Number(parts.find((p) => p.type === "year")!.value);
+    const m = Number(parts.find((p) => p.type === "month")!.value);
+    const d = Number(parts.find((p) => p.type === "day")!.value);
+    // 00:00 SP = 03:00 UTC; 23:59:59.999 SP = 02:59:59.999 UTC do dia seguinte
+    const startIso = new Date(Date.UTC(y, m - 1, d, 3, 0, 0, 0)).toISOString();
+    const endIso = new Date(Date.UTC(y, m - 1, d + 1, 2, 59, 59, 999)).toISOString();
+    return { startIso, endIso };
+  }
+
   async function loadStats() {
     const now = new Date().toISOString();
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const { startIso: dayStart, endIso: dayEnd } = saoPauloTodayBoundsIso();
     const [activeRes, expiredRes, evergreenRes, urgentRes, archivedRes, todayRes] = await Promise.all([
       supabase.from("posts").select("id", { count: "exact", head: true })
         .eq("status", "publicada")
@@ -109,8 +126,10 @@ export default function AdminPosts() {
         .eq("status", "publicada").eq("is_urgent", true)
         .or(`is_evergreen.eq.true,home_expires_at.is.null,home_expires_at.gt.${now}`),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("status", "arquivada"),
+      // Captadas hoje: APENAS captured_at, dentro do dia em America/Sao_Paulo
       supabase.from("posts").select("id", { count: "exact", head: true })
-        .or(`captured_at.gte.${startOfDay.toISOString()},and(captured_at.is.null,created_at.gte.${startOfDay.toISOString()})`),
+        .gte("captured_at", dayStart)
+        .lte("captured_at", dayEnd),
     ]);
     setStats({
       activeHome: activeRes.count ?? 0,
@@ -170,11 +189,9 @@ export default function AdminPosts() {
     }
 
     if (todayOnly) {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const iso = startOfDay.toISOString();
-      // Usa captured_at como referência principal; fallback para created_at quando nulo
-      q = q.or(`captured_at.gte.${iso},and(captured_at.is.null,created_at.gte.${iso})`);
+      // Mesma janela usada no contador: APENAS captured_at, fuso America/Sao_Paulo
+      const { startIso, endIso } = saoPauloTodayBoundsIso();
+      q = q.gte("captured_at", startIso).lte("captured_at", endIso);
     }
 
     const { data, error } = await q;
