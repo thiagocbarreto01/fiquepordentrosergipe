@@ -65,14 +65,16 @@ function buildHtml(opts: {
   };
   if (image) ld.image = [image];
 
-  const ogImageTags = img
-    ? `<meta property="og:image" content="${img}" />
-<meta property="og:image:secure_url" content="${img}" />
+  // OG image SEMPRE presente — img nunca deve vir nulo aqui (handler garante
+  // fallback via og-image endpoint). Mantemos o guard apenas por segurança.
+  const safeImg = img ?? escapeHtml(`${SITE_URL}/news-placeholder.svg`);
+  const ogImageTags = `<meta property="og:image" content="${safeImg}" />
+<meta property="og:image:secure_url" content="${safeImg}" />
+<meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="${t}" />
-<meta name="twitter:image" content="${img}" />`
-    : "";
+<meta name="twitter:image" content="${safeImg}" />`;
 
   return `<!doctype html>
 <html lang="pt-BR">
