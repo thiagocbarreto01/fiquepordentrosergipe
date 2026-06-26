@@ -214,7 +214,10 @@ Deno.serve(async (req) => {
       {
         status: 200,
         headers: {
-          ...noCacheHeaders,
+          ...corsHeaders,
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=0, must-revalidate",
+          "CDN-Cache-Control": "no-store",
           "Vary": "*",
           "X-Share-Preview-Slug": post.slug,
         },
