@@ -44,6 +44,7 @@ const App = () => (
             <Route path="/busca" element={<BuscaPage />} />
             <Route path="/categoria/:slug" element={<CategoriaPage />} />
             <Route path="/noticia/:slug" element={<NoticiaPage />} />
+            <Route path="/materia/:slug" element={<NoticiaPage />} />
             <Route path="/denuncias/enviar" element={<EnviarDenunciaPage />} />
             <Route path="/auth" element={<AuthPage />} />
 
