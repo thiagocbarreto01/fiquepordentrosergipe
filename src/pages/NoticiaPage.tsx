@@ -62,12 +62,14 @@ export default function NoticiaPage() {
     return <SiteLayout><div className="container-news py-20 text-center text-muted-foreground">Carregando…</div></SiteLayout>;
   }
 
-  const url = typeof window !== "undefined" ? window.location.href : "";
   // Cache-bust por versão da matéria: força redes sociais a refazer scrape
   // sempre que o conteúdo/imagem é atualizado.
   const shareVersion = encodeURIComponent(
     String((post as any).updated_at ?? post.published_at ?? (post as any).created_at ?? Date.now()),
   );
+  // REGRA: o ÚNICO link válido para compartilhamento externo é o endpoint
+  // share-preview (edge function). Nenhuma URL da SPA pode ser usada como
+  // fonte de preview social — crawlers não executam JS e leriam só o shell.
   const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}&v=${shareVersion}`;
   const shareText = encodeURIComponent(post.title);
   const shareUrlEnc = encodeURIComponent(shareUrl);
