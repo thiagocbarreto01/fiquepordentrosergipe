@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
 
     const { data: post } = await supabase
       .from("posts_public")
-      .select("title, subtitle, excerpt, cover_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_name, category_slug")
+      .select("title, subtitle, excerpt, cover_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id, categories:category_id(name)")
       .eq("slug", slug)
       .maybeSingle();
 
