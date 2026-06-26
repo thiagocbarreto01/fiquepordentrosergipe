@@ -160,7 +160,7 @@ export default function NoticiaPage() {
               <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${shareText}%20${shareUrlEnc}`} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
               <a aria-label="Compartilhar no Facebook" target="_blank" rel="noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
               <a aria-label="Compartilhar no Twitter" target="_blank" rel="noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
-              <button aria-label="Copiar link" onClick={() => navigator.clipboard.writeText(url)} className="p-2 hover:bg-secondary rounded-sm"><Share2 className="h-4 w-4" /></button>
+              <button aria-label="Copiar link" onClick={() => navigator.clipboard.writeText(shareUrl)} className="p-2 hover:bg-secondary rounded-sm"><Share2 className="h-4 w-4" /></button>
             </div>
           </div>
 
