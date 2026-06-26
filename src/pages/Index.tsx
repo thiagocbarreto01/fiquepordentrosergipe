@@ -141,7 +141,7 @@ export default function Index() {
           <AdSlot position="topo_home" />
 
           {/* Editorias fixas em duas colunas */}
-          <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
             {SECTIONS.slice(0, 8).map((s) => (
               <SectionBoundary key={s.slug} title={s.title} loading={!loaded}>
                 <EditorialSection
