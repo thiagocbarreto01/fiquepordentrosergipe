@@ -821,9 +821,14 @@ export default function AdminPosts() {
                         </Button>
                       )}
                       {s === "publicada" && (
-                        <Button variant="ghost" size="sm" onClick={() => updateStatus(p, "em_revisao")} className="h-8 px-3 text-muted-foreground hover:bg-secondary" title="Despublicar">
-                          <ArchiveRestore className="h-3.5 w-3.5 mr-1" />Despublicar
-                        </Button>
+                        <>
+                          <Button asChild variant="outline" size="sm" className="h-8 px-3 text-sky-700 border-sky-200 hover:bg-sky-50 hover:text-sky-800" title="Editar matéria publicada">
+                            <Link to={`/admin/posts/${p.id}`}><Edit className="h-3.5 w-3.5 mr-1" />Editar</Link>
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => updateStatus(p, "em_revisao")} className="h-8 px-3 text-muted-foreground hover:bg-secondary" title="Despublicar">
+                            <ArchiveRestore className="h-3.5 w-3.5 mr-1" />Despublicar
+                          </Button>
+                        </>
                       )}
                       <div className="w-px h-4 bg-border mx-1" />
                       {s === "publicada" && (
