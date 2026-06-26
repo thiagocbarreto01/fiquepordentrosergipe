@@ -63,7 +63,12 @@ export default function NoticiaPage() {
   }
 
   const url = typeof window !== "undefined" ? window.location.href : "";
-  const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}`;
+  // Cache-bust por versão da matéria: força redes sociais a refazer scrape
+  // sempre que o conteúdo/imagem é atualizado.
+  const shareVersion = encodeURIComponent(
+    String((post as any).updated_at ?? post.published_at ?? (post as any).created_at ?? Date.now()),
+  );
+  const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}&v=${shareVersion}`;
   const shareText = encodeURIComponent(post.title);
   const shareUrlEnc = encodeURIComponent(shareUrl);
 

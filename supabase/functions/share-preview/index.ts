@@ -123,6 +123,16 @@ Deno.serve(async (req) => {
 
   console.log(`[share-preview ${reqId}] slug recebido: ${JSON.stringify(slug)}`);
 
+  const noCacheHeaders = {
+    ...corsHeaders,
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+    "Surrogate-Control": "no-store",
+    "CDN-Cache-Control": "no-store",
+  };
+
   const html5xx = (msg: string) =>
     new Response(
       buildHtml({
@@ -131,7 +141,7 @@ Deno.serve(async (req) => {
         image: null,
         url: SITE_URL,
       }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
+      { status: 200, headers: noCacheHeaders },
     );
 
   if (!slug) {
@@ -197,11 +207,8 @@ Deno.serve(async (req) => {
       {
         status: 200,
         headers: {
-          ...corsHeaders,
-          "Content-Type": "text/html; charset=utf-8",
-          // Cache por slug — chaves diferentes não compartilham resposta.
-          "Cache-Control": "public, max-age=120, s-maxage=300",
-          "Vary": "Accept, Accept-Encoding",
+          ...noCacheHeaders,
+          "Vary": "*",
           "X-Share-Preview-Slug": post.slug,
         },
       },
