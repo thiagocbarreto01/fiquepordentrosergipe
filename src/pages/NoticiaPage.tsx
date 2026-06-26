@@ -63,8 +63,9 @@ export default function NoticiaPage() {
   }
 
   const url = typeof window !== "undefined" ? window.location.href : "";
+  const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}`;
   const shareText = encodeURIComponent(post.title);
-  const shareUrl = encodeURIComponent(url);
+  const shareUrlEnc = encodeURIComponent(shareUrl);
 
   const canonical = `${SITE_URL}/noticia/${post.slug}`;
   const aiTitle = (post as any).ai_seo_title || post.meta_title || post.title;
@@ -143,9 +144,9 @@ export default function NoticiaPage() {
             <span>·</span>
             <span>{post.published_at ? new Date(post.published_at).toLocaleString("pt-BR") : timeAgo(post.created_at)}</span>
             <div className="ml-auto flex items-center gap-2">
-              <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${shareText}%20${shareUrl}`} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
-              <a aria-label="Compartilhar no Facebook" target="_blank" rel="noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
-              <a aria-label="Compartilhar no Twitter" target="_blank" rel="noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${shareText}%20${shareUrlEnc}`} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no Facebook" target="_blank" rel="noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no Twitter" target="_blank" rel="noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
               <button aria-label="Copiar link" onClick={() => navigator.clipboard.writeText(url)} className="p-2 hover:bg-secondary rounded-sm"><Share2 className="h-4 w-4" /></button>
             </div>
           </div>
