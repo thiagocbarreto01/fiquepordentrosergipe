@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
         image,
         url: articleUrl,
         publishedAt: post.published_at,
-        category: (post as any).category_name,
+        category: (post as any).categories?.name,
         tags: post.tags,
       }),
       {
