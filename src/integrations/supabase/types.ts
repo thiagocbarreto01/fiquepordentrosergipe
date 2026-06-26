@@ -478,6 +478,8 @@ export type Database = {
           relevance_score: number | null
           resumo_gerado: string | null
           scheduled_at: string | null
+          share_image_generated_at: string | null
+          share_image_url: string | null
           similar_to: string | null
           similarity_score: number | null
           slug: string
@@ -548,6 +550,8 @@ export type Database = {
           relevance_score?: number | null
           resumo_gerado?: string | null
           scheduled_at?: string | null
+          share_image_generated_at?: string | null
+          share_image_url?: string | null
           similar_to?: string | null
           similarity_score?: number | null
           slug: string
@@ -618,6 +622,8 @@ export type Database = {
           relevance_score?: number | null
           resumo_gerado?: string | null
           scheduled_at?: string | null
+          share_image_generated_at?: string | null
+          share_image_url?: string | null
           similar_to?: string | null
           similarity_score?: number | null
           slug?: string
@@ -698,6 +704,8 @@ export type Database = {
           meta_description: string | null
           meta_title: string | null
           published_at: string | null
+          share_image_generated_at: string | null
+          share_image_url: string | null
           slug: string
           status: Database["public"]["Enums"]["post_status"]
           subtitle: string | null
@@ -732,6 +740,8 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           published_at?: string | null
+          share_image_generated_at?: string | null
+          share_image_url?: string | null
           slug: string
           status: Database["public"]["Enums"]["post_status"]
           subtitle?: string | null
@@ -766,6 +776,8 @@ export type Database = {
           meta_description?: string | null
           meta_title?: string | null
           published_at?: string | null
+          share_image_generated_at?: string | null
+          share_image_url?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["post_status"]
           subtitle?: string | null

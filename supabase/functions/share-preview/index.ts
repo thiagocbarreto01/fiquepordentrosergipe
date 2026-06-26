@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
     // retorna erro se houver mais de um match, evitando colisão silenciosa.
     const { data: post, error } = await supabase
       .from("posts_public")
-      .select("id, slug, title, subtitle, excerpt, cover_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id, categories:category_id(name)")
+      .select("id, slug, title, subtitle, excerpt, cover_image_url, share_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id, categories:category_id(name)")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -189,10 +189,15 @@ Deno.serve(async (req) => {
       post.subtitle ||
       post.excerpt ||
       post.title;
-    // Imagem EXCLUSIVAMENTE da própria matéria. Sem fallback genérico/Lovable.
-    const image = toAbsoluteImage(post.cover_image_url);
+    // OG image SEMPRE prioriza share_image_url (1200x630 otimizada). Quando
+    // ainda não foi gerada, aponta para o endpoint og-image que renderiza
+    // sob demanda e atualiza share_image_url.
+    const shareImg = toAbsoluteImage((post as any).share_image_url);
+    const ogImageUrl = shareImg
+      ?? `${Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "")}/functions/v1/og-image?slug=${encodeURIComponent(post.slug)}`;
+    const image = ogImageUrl;
 
-    console.log(`[share-preview ${reqId}] match post.id=${post.id} slug=${post.slug} og:image=${image ?? "(omitida)"}`);
+    console.log(`[share-preview ${reqId}] match post.id=${post.id} slug=${post.slug} og:image=${image}`);
 
     return new Response(
       buildHtml({
