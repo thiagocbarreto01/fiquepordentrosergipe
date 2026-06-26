@@ -207,11 +207,8 @@ Deno.serve(async (req) => {
       {
         status: 200,
         headers: {
-          ...corsHeaders,
-          "Content-Type": "text/html; charset=utf-8",
-          // Cache por slug — chaves diferentes não compartilham resposta.
-          "Cache-Control": "public, max-age=120, s-maxage=300",
-          "Vary": "Accept, Accept-Encoding",
+          ...noCacheHeaders,
+          "Vary": "*",
           "X-Share-Preview-Slug": post.slug,
         },
       },
