@@ -172,7 +172,9 @@ export default function AdminPosts() {
     if (todayOnly) {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
-      q = q.gte("created_at", startOfDay.toISOString());
+      const iso = startOfDay.toISOString();
+      // Usa captured_at como referência principal; fallback para created_at quando nulo
+      q = q.or(`captured_at.gte.${iso},and(captured_at.is.null,created_at.gte.${iso})`);
     }
 
     const { data, error } = await q;
