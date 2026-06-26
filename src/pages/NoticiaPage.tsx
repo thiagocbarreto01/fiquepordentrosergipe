@@ -62,12 +62,14 @@ export default function NoticiaPage() {
     return <SiteLayout><div className="container-news py-20 text-center text-muted-foreground">Carregando…</div></SiteLayout>;
   }
 
-  const url = typeof window !== "undefined" ? window.location.href : "";
   // Cache-bust por versão da matéria: força redes sociais a refazer scrape
   // sempre que o conteúdo/imagem é atualizado.
   const shareVersion = encodeURIComponent(
     String((post as any).updated_at ?? post.published_at ?? (post as any).created_at ?? Date.now()),
   );
+  // REGRA: o ÚNICO link válido para compartilhamento externo é o endpoint
+  // share-preview (edge function). Nenhuma URL da SPA pode ser usada como
+  // fonte de preview social — crawlers não executam JS e leriam só o shell.
   const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}&v=${shareVersion}`;
   const shareText = encodeURIComponent(post.title);
   const shareUrlEnc = encodeURIComponent(shareUrl);
@@ -111,7 +113,7 @@ export default function NoticiaPage() {
         <meta property="og:type" content="article" />
         <meta property="og:title" content={post.meta_title || post.title} />
         <meta property="og:description" content={metaDesc} />
-        <meta property="og:url" content={canonical} />
+        <meta property="og:url" content={shareUrl} />
         {ogImage && <meta property="og:image" content={ogImage} />}
         {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
         <meta name="twitter:card" content="summary_large_image" />
@@ -158,7 +160,7 @@ export default function NoticiaPage() {
               <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${shareText}%20${shareUrlEnc}`} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
               <a aria-label="Compartilhar no Facebook" target="_blank" rel="noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
               <a aria-label="Compartilhar no Twitter" target="_blank" rel="noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
-              <button aria-label="Copiar link" onClick={() => navigator.clipboard.writeText(url)} className="p-2 hover:bg-secondary rounded-sm"><Share2 className="h-4 w-4" /></button>
+              <button aria-label="Copiar link" onClick={() => navigator.clipboard.writeText(shareUrl)} className="p-2 hover:bg-secondary rounded-sm"><Share2 className="h-4 w-4" /></button>
             </div>
           </div>
 
