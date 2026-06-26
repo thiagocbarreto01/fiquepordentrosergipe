@@ -113,7 +113,7 @@ export default function NoticiaPage() {
         <meta property="og:type" content="article" />
         <meta property="og:title" content={post.meta_title || post.title} />
         <meta property="og:description" content={metaDesc} />
-        <meta property="og:url" content={canonical} />
+        <meta property="og:url" content={shareUrl} />
         {ogImage && <meta property="og:image" content={ogImage} />}
         {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
         <meta name="twitter:card" content="summary_large_image" />
