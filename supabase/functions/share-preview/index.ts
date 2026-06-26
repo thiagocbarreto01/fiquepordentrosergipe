@@ -119,7 +119,7 @@ Deno.serve(async (req) => {
       buildHtml({
         title: "Fique Por Dentro Sergipe",
         description: msg,
-        image: FALLBACK_IMAGE,
+        image: null,
         url: SITE_URL,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60" } },
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       post.subtitle ||
       post.excerpt ||
       post.title;
-    const image = post.cover_image_url || FALLBACK_IMAGE;
+    const image = toAbsoluteImage(post.cover_image_url);
 
     return new Response(
       buildHtml({
