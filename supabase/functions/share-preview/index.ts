@@ -8,7 +8,17 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const SITE_URL = "https://fiquepordentrosergipe.lovable.app";
-const FALLBACK_IMAGE = `${SITE_URL}/favicon.png`;
+
+function toAbsoluteImage(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  if (/^https:\/\//i.test(s)) return s;
+  if (/^http:\/\//i.test(s)) return s.replace(/^http:\/\//i, "https://");
+  if (s.startsWith("//")) return `https:${s}`;
+  if (s.startsWith("/")) return `${SITE_URL}${s}`;
+  return null;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
