@@ -189,11 +189,9 @@ export default function AdminPosts() {
     }
 
     if (todayOnly) {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const iso = startOfDay.toISOString();
-      // Usa captured_at como referência principal; fallback para created_at quando nulo
-      q = q.or(`captured_at.gte.${iso},and(captured_at.is.null,created_at.gte.${iso})`);
+      // Mesma janela usada no contador: APENAS captured_at, fuso America/Sao_Paulo
+      const { startIso, endIso } = saoPauloTodayBoundsIso();
+      q = q.gte("captured_at", startIso).lte("captured_at", endIso);
     }
 
     const { data, error } = await q;
