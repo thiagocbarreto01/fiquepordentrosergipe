@@ -110,7 +110,7 @@ export default function AdminPosts() {
         .or(`is_evergreen.eq.true,home_expires_at.is.null,home_expires_at.gt.${now}`),
       supabase.from("posts").select("id", { count: "exact", head: true }).eq("status", "arquivada"),
       supabase.from("posts").select("id", { count: "exact", head: true })
-        .gte("created_at", startOfDay.toISOString()),
+        .or(`captured_at.gte.${startOfDay.toISOString()},and(captured_at.is.null,created_at.gte.${startOfDay.toISOString()})`),
     ]);
     setStats({
       activeHome: activeRes.count ?? 0,
