@@ -72,7 +72,12 @@ export default function NoticiaPage() {
   const aiSummary = (post as any).ai_summary || post.meta_description || post.subtitle || post.excerpt || post.title;
   const metaTitle = `${aiTitle} — Fique Por Dentro Sergipe`;
   const metaDesc = aiSummary;
-  const ogImage = getPostImage(post) || `${SITE_URL}/favicon.png`;
+  const rawImage = getPostImage(post);
+  const ogImage = rawImage && /^https?:\/\//i.test(rawImage)
+    ? rawImage.replace(/^http:\/\//i, "https://")
+    : rawImage && rawImage.startsWith("/")
+      ? `${SITE_URL}${rawImage}`
+      : null;
   const newsArticleLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
