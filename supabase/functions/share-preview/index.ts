@@ -81,12 +81,11 @@ function buildHtml(opts: {
   };
   if (image) ld.image = [image];
 
+  // Apenas UMA og:image e UMA twitter:image. Sem og:image:secure_url,
+  // og:image:type, width/height/alt — evita qualquer chance de o Facebook
+  // interpretar múltiplas imagens candidatas.
+  void imageType;
   const ogImageTags = `<meta property="og:image" content="${img}" />
-<meta property="og:image:secure_url" content="${img}" />
-${imageType ? `<meta property="og:image:type" content="${imageType}" />` : ""}
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="${t}" />
 <meta name="twitter:image" content="${img}" />`;
 
   return `<!doctype html>
