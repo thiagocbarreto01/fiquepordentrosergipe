@@ -6,8 +6,10 @@
 // Uso: https://<projeto>.functions.supabase.co/share-preview?slug=<slug>
 //      ou /share-preview/<slug>
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const SITE_URL = "https://fiquepordentrosergipe.lovable.app";
+const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
 
 function toAbsoluteImage(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -23,10 +25,10 @@ function toAbsoluteImage(raw: string | null | undefined): string | null {
   return null;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const htmlHeaders = {
+  ...corsHeaders,
   "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Content-Type": "text/html; charset=utf-8",
 };
 
 function escapeHtml(s: string): string {
@@ -52,18 +54,16 @@ function buildHtml(opts: {
   title: string;
   description: string;
   image: string | null;
-  previewUrl: string;
   articleUrl: string;
   publishedAt?: string | null;
   category?: string | null;
   tags?: string[] | null;
 }) {
-  const { title, description, image, previewUrl, articleUrl, publishedAt, category, tags } = opts;
+  const { title, description, image, articleUrl, publishedAt, category, tags } = opts;
   const t = escapeHtml(title);
   const d = escapeHtml(description);
-  const preview = escapeHtml(previewUrl);
   const article = escapeHtml(articleUrl);
-  const img = image ? escapeHtml(image) : null;
+  const img = escapeHtml(image || DEFAULT_OG_IMAGE);
   const imageType = guessImageType(image);
   const ld: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -81,16 +81,13 @@ function buildHtml(opts: {
   };
   if (image) ld.image = [image];
 
-  // OG image SEMPRE presente — img nunca deve vir nulo aqui (handler garante
-  // fallback via og-image endpoint). Mantemos o guard apenas por segurança.
-  const safeImg = img ?? escapeHtml(`${SITE_URL}/news-placeholder.svg`);
-  const ogImageTags = `<meta property="og:image" content="${safeImg}" />
-<meta property="og:image:secure_url" content="${safeImg}" />
+  const ogImageTags = `<meta property="og:image" content="${img}" />
+<meta property="og:image:secure_url" content="${img}" />
 ${imageType ? `<meta property="og:image:type" content="${imageType}" />` : ""}
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="${t}" />
-<meta name="twitter:image" content="${safeImg}" />`;
+<meta name="twitter:image" content="${img}" />`;
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -99,13 +96,13 @@ ${imageType ? `<meta property="og:image:type" content="${imageType}" />` : ""}
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${t} — Fique Por Dentro Sergipe</title>
 <meta name="description" content="${d}" />
-<link rel="canonical" href="${preview}" />
+<link rel="canonical" href="${article}" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="Fique Por Dentro Sergipe" />
 <meta property="og:locale" content="pt_BR" />
 <meta property="og:title" content="${t}" />
 <meta property="og:description" content="${d}" />
-<meta property="og:url" content="${preview}" />
+<meta property="og:url" content="${article}" />
 ${ogImageTags}
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${t}" />
@@ -120,7 +117,7 @@ ${ogImageTags}
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: htmlHeaders });
 
   const reqId = crypto.randomUUID();
   const url = new URL(req.url);
@@ -141,8 +138,7 @@ Deno.serve(async (req) => {
   console.log(`[share-preview ${reqId}] slug recebido: ${JSON.stringify(slug)}`);
 
   const noCacheHeaders = {
-    ...corsHeaders,
-    "Content-Type": "text/html; charset=utf-8",
+    ...htmlHeaders,
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
     "Expires": "0",
@@ -155,8 +151,7 @@ Deno.serve(async (req) => {
       buildHtml({
         title: "Fique Por Dentro Sergipe",
         description: msg,
-        image: null,
-        previewUrl: SITE_URL,
+        image: DEFAULT_OG_IMAGE,
         articleUrl: SITE_URL,
       }),
       { status: 200, headers: noCacheHeaders },
@@ -179,7 +174,7 @@ Deno.serve(async (req) => {
     // retorna erro se houver mais de um match, evitando colisão silenciosa.
     const { data: post, error } = await supabase
       .from("posts_public")
-      .select("id, slug, title, subtitle, excerpt, cover_image_url, manual_image_url, share_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id, categories:category_id(name,default_cover_image_url)")
+      .select("id, slug, title, subtitle, excerpt, cover_image_url, manual_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id, categories:category_id(name)")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -207,20 +202,12 @@ Deno.serve(async (req) => {
       post.subtitle ||
       post.excerpt ||
       post.title;
-    // OG image SEMPRE prioriza share_image_url (1200x630 otimizada). Quando
-    // ainda não foi gerada, usa a imagem real da própria matéria para que o
-    // primeiro compartilhamento no WhatsApp já carregue preview sem timeout.
-    const shareImg = toAbsoluteImage((post as any).share_image_url);
     const manualImg = toAbsoluteImage((post as any).manual_image_url);
     const coverImg = toAbsoluteImage((post as any).cover_image_url);
-    const categoryImg = toAbsoluteImage((post as any).categories?.default_cover_image_url);
-    const ogImageUrl = shareImg
-      ?? manualImg
+    const ogImageUrl = manualImg
       ?? coverImg
-      ?? categoryImg
-      ?? `${Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "")}/functions/v1/og-image?slug=${encodeURIComponent(post.slug)}`;
+      ?? DEFAULT_OG_IMAGE;
     const image = ogImageUrl;
-    const previewUrl = `${Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "")}/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}${url.searchParams.get("v") ? `&v=${encodeURIComponent(url.searchParams.get("v")!)}` : ""}`;
 
     console.log(`[share-preview ${reqId}] match post.id=${post.id} slug=${post.slug} og:image=${image}`);
 
@@ -229,7 +216,6 @@ Deno.serve(async (req) => {
         title,
         description,
         image,
-        previewUrl,
         articleUrl,
         publishedAt: post.published_at,
         category: (post as any).categories?.name,
