@@ -62,10 +62,8 @@ export default function NoticiaPage() {
     return <SiteLayout><div className="container-news py-20 text-center text-muted-foreground">Carregando…</div></SiteLayout>;
   }
 
-  // Link público do portal — é o único que deve aparecer para o usuário
-  // final ao compartilhar. A edge function share-preview continua servindo
-  // metadados para crawlers internamente, mas nunca é exposta no share.
-  const shareUrl = `https://barretaonews.com.br/noticia/${post.slug}`;
+  // Link público do portal — único URL exposto ao usuário no compartilhamento.
+  const shareUrl = `https://www.fiquepordentrosergipe.com.br/noticia/${post.slug}`;
   const shareText = encodeURIComponent(post.title);
   const whatsappText = encodeURIComponent(shareUrl);
   const shareUrlEnc = encodeURIComponent(shareUrl);
