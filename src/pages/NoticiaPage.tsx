@@ -79,12 +79,11 @@ export default function NoticiaPage() {
     : rawImage && rawImage.startsWith("/")
       ? `${SITE_URL}${rawImage}`
       : null;
-  const newsArticleLd = {
+  const newsArticleLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: post.title,
     description: metaDesc,
-    image: [ogImage],
     datePublished: post.published_at ?? post.created_at,
     dateModified: post.updated_at ?? post.published_at ?? post.created_at,
     articleSection: post.categories?.name ?? "Geral",
@@ -97,6 +96,7 @@ export default function NoticiaPage() {
       logo: { "@type": "ImageObject", url: `${SITE_URL}/favicon.png` },
     },
   };
+  if (ogImage) newsArticleLd.image = [ogImage];
 
   return (
     <SiteLayout>
@@ -107,10 +107,10 @@ export default function NoticiaPage() {
         <meta property="og:type" content="article" />
         <meta property="og:title" content={post.meta_title || post.title} />
         <meta property="og:description" content={metaDesc} />
-        <meta property="og:url" content={shareUrl} />
+        <meta property="og:url" content={canonical} />
         {ogImage && <meta property="og:image" content={ogImage} />}
         {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
-        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:card" content={ogImage ? "summary_large_image" : "summary"} />
         <meta name="twitter:title" content={post.meta_title || post.title} />
         <meta name="twitter:description" content={metaDesc} />
         {ogImage && <meta name="twitter:image" content={ogImage} />}
