@@ -11,7 +11,10 @@ const SITE_URL = "https://fiquepordentrosergipe.lovable.app";
 
 function toAbsoluteImage(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const s = String(raw).trim();
+  const s = String(raw)
+    .trim()
+    .replace(/&amp;/gi, "&")
+    .replace(/&#0*38;/gi, "&");
   if (!s) return null;
   if (/^https:\/\//i.test(s)) return s;
   if (/^http:\/\//i.test(s)) return s.replace(/^http:\/\//i, "https://");
@@ -35,20 +38,33 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function guessImageType(image: string | null): string | null {
+  if (!image) return null;
+  const path = image.split("?")[0].toLowerCase();
+  if (path.endsWith(".png")) return "image/png";
+  if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+  if (path.endsWith(".webp")) return "image/webp";
+  if (path.endsWith(".gif")) return "image/gif";
+  return null;
+}
+
 function buildHtml(opts: {
   title: string;
   description: string;
   image: string | null;
-  url: string;
+  previewUrl: string;
+  articleUrl: string;
   publishedAt?: string | null;
   category?: string | null;
   tags?: string[] | null;
 }) {
-  const { title, description, image, url, publishedAt, category, tags } = opts;
+  const { title, description, image, previewUrl, articleUrl, publishedAt, category, tags } = opts;
   const t = escapeHtml(title);
   const d = escapeHtml(description);
-  const u = escapeHtml(url);
+  const preview = escapeHtml(previewUrl);
+  const article = escapeHtml(articleUrl);
   const img = image ? escapeHtml(image) : null;
+  const imageType = guessImageType(image);
   const ld: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -57,7 +73,7 @@ function buildHtml(opts: {
     datePublished: publishedAt ?? undefined,
     articleSection: category ?? "Geral",
     keywords: (tags ?? []).join(", "),
-    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
     publisher: {
       "@type": "NewsMediaOrganization",
       name: "Fique Por Dentro Sergipe",
@@ -70,7 +86,7 @@ function buildHtml(opts: {
   const safeImg = img ?? escapeHtml(`${SITE_URL}/news-placeholder.svg`);
   const ogImageTags = `<meta property="og:image" content="${safeImg}" />
 <meta property="og:image:secure_url" content="${safeImg}" />
-<meta property="og:image:type" content="image/png" />
+${imageType ? `<meta property="og:image:type" content="${imageType}" />` : ""}
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="${t}" />
@@ -83,23 +99,22 @@ function buildHtml(opts: {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${t} — Fique Por Dentro Sergipe</title>
 <meta name="description" content="${d}" />
-<link rel="canonical" href="${u}" />
+<link rel="canonical" href="${preview}" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="Fique Por Dentro Sergipe" />
 <meta property="og:locale" content="pt_BR" />
 <meta property="og:title" content="${t}" />
 <meta property="og:description" content="${d}" />
-<meta property="og:url" content="${u}" />
+<meta property="og:url" content="${preview}" />
 ${ogImageTags}
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${t}" />
 <meta name="twitter:description" content="${d}" />
-<meta http-equiv="refresh" content="0; url=${u}" />
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
 <body>
-<p>Redirecionando para <a href="${u}">${t}</a>…</p>
-<script>window.location.replace(${JSON.stringify(url)});</script>
+<p>Redirecionando para <a href="${article}">${t}</a>…</p>
+<script>window.location.replace(${JSON.stringify(articleUrl)});</script>
 </body>
 </html>`;
 }
@@ -141,7 +156,8 @@ Deno.serve(async (req) => {
         title: "Fique Por Dentro Sergipe",
         description: msg,
         image: null,
-        url: SITE_URL,
+        previewUrl: SITE_URL,
+        articleUrl: SITE_URL,
       }),
       { status: 200, headers: noCacheHeaders },
     );
@@ -163,7 +179,7 @@ Deno.serve(async (req) => {
     // retorna erro se houver mais de um match, evitando colisão silenciosa.
     const { data: post, error } = await supabase
       .from("posts_public")
-      .select("id, slug, title, subtitle, excerpt, cover_image_url, share_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id, categories:category_id(name)")
+      .select("id, slug, title, subtitle, excerpt, cover_image_url, manual_image_url, share_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id, categories:category_id(name,default_cover_image_url)")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -192,12 +208,19 @@ Deno.serve(async (req) => {
       post.excerpt ||
       post.title;
     // OG image SEMPRE prioriza share_image_url (1200x630 otimizada). Quando
-    // ainda não foi gerada, aponta para o endpoint og-image que renderiza
-    // sob demanda e atualiza share_image_url.
+    // ainda não foi gerada, usa a imagem real da própria matéria para que o
+    // primeiro compartilhamento no WhatsApp já carregue preview sem timeout.
     const shareImg = toAbsoluteImage((post as any).share_image_url);
+    const manualImg = toAbsoluteImage((post as any).manual_image_url);
+    const coverImg = toAbsoluteImage((post as any).cover_image_url);
+    const categoryImg = toAbsoluteImage((post as any).categories?.default_cover_image_url);
     const ogImageUrl = shareImg
+      ?? manualImg
+      ?? coverImg
+      ?? categoryImg
       ?? `${Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "")}/functions/v1/og-image?slug=${encodeURIComponent(post.slug)}`;
     const image = ogImageUrl;
+    const previewUrl = `${Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "")}/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}${url.searchParams.get("v") ? `&v=${encodeURIComponent(url.searchParams.get("v")!)}` : ""}`;
 
     console.log(`[share-preview ${reqId}] match post.id=${post.id} slug=${post.slug} og:image=${image}`);
 
@@ -206,7 +229,8 @@ Deno.serve(async (req) => {
         title,
         description,
         image,
-        url: articleUrl,
+        previewUrl,
+        articleUrl,
         publishedAt: post.published_at,
         category: (post as any).categories?.name,
         tags: post.tags,
