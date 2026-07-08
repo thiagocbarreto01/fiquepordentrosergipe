@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { Button } from "@/components/ui/button";
 
-const SITE_URL = "https://fiquepordentrosergipe.lovable.app";
+const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
 
 // Fonte/URL original NUNCA é exibida ao leitor (Fique Por Dentro Sergipe 2.0 — Etapa 1).
 
