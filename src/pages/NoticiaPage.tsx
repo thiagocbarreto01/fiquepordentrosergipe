@@ -62,18 +62,11 @@ export default function NoticiaPage() {
     return <SiteLayout><div className="container-news py-20 text-center text-muted-foreground">Carregando…</div></SiteLayout>;
   }
 
-  // Cache-bust por versão da matéria: força redes sociais a refazer scrape
-  // sempre que o conteúdo/imagem é atualizado.
-  const shareVersion = encodeURIComponent(
-    String((post as any).updated_at ?? post.published_at ?? (post as any).created_at ?? Date.now()),
-  );
-  // REGRA: o ÚNICO link válido para compartilhamento externo é o endpoint
-  // share-preview (edge function). Nenhuma URL da SPA pode ser usada como
-  // fonte de preview social — crawlers não executam JS e leriam só o shell.
-  const shareUrl = `https://faubrqvkzgyfryfjylnb.supabase.co/functions/v1/share-preview?slug=${encodeURIComponent(post.slug)}&v=${shareVersion}`;
+  // Link público do portal — é o único que deve aparecer para o usuário
+  // final ao compartilhar. A edge function share-preview continua servindo
+  // metadados para crawlers internamente, mas nunca é exposta no share.
+  const shareUrl = `https://barretaonews.com.br/noticia/${post.slug}`;
   const shareText = encodeURIComponent(post.title);
-  // WhatsApp gera a prévia com mais consistência quando a mensagem contém
-  // apenas o link rastreável. O título/descrição/imagem vêm do próprio OG.
   const whatsappText = encodeURIComponent(shareUrl);
   const shareUrlEnc = encodeURIComponent(shareUrl);
 
