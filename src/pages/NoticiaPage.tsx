@@ -16,6 +16,7 @@ import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { Button } from "@/components/ui/button";
 
 const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
 
 // Fonte/URL original NUNCA é exibida ao leitor (Fique Por Dentro Sergipe 2.0 — Etapa 1).
 
@@ -73,17 +74,18 @@ export default function NoticiaPage() {
   const aiSummary = (post as any).ai_summary || post.meta_description || post.subtitle || post.excerpt || post.title;
   const metaTitle = `${aiTitle} — Fique Por Dentro Sergipe`;
   const metaDesc = aiSummary;
-  const rawImage = getPostImage(post);
-  const ogImage = rawImage && /^https?:\/\//i.test(rawImage)
-    ? rawImage.replace(/^http:\/\//i, "https://")
-    : rawImage && rawImage.startsWith("/")
-      ? `${SITE_URL}${rawImage}`
-      : null;
+  const rawOwnImage = post.manual_image_url || post.cover_image_url;
+  const ogImage = rawOwnImage && /^https?:\/\//i.test(rawOwnImage)
+    ? rawOwnImage.replace(/^http:\/\//i, "https://")
+    : rawOwnImage && rawOwnImage.startsWith("/")
+      ? `${SITE_URL}${rawOwnImage}`
+      : DEFAULT_OG_IMAGE;
   const newsArticleLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: post.title,
     description: metaDesc,
+    image: [ogImage],
     datePublished: post.published_at ?? post.created_at,
     dateModified: post.updated_at ?? post.published_at ?? post.created_at,
     articleSection: post.categories?.name ?? "Geral",
@@ -96,8 +98,6 @@ export default function NoticiaPage() {
       logo: { "@type": "ImageObject", url: `${SITE_URL}/favicon.png` },
     },
   };
-  if (ogImage) newsArticleLd.image = [ogImage];
-
   return (
     <SiteLayout>
       <Helmet>
@@ -108,12 +108,12 @@ export default function NoticiaPage() {
         <meta property="og:title" content={post.meta_title || post.title} />
         <meta property="og:description" content={metaDesc} />
         <meta property="og:url" content={canonical} />
-        {ogImage && <meta property="og:image" content={ogImage} />}
-        {ogImage && <meta property="og:image:secure_url" content={ogImage} />}
-        <meta name="twitter:card" content={ogImage ? "summary_large_image" : "summary"} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:secure_url" content={ogImage} />
+        <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.meta_title || post.title} />
         <meta name="twitter:description" content={metaDesc} />
-        {ogImage && <meta name="twitter:image" content={ogImage} />}
+        <meta name="twitter:image" content={ogImage} />
         <script type="application/ld+json">{JSON.stringify(newsArticleLd)}</script>
       </Helmet>
       <div className="container-news"><AdSlot position="topo_home" /></div>
