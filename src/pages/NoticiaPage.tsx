@@ -59,12 +59,11 @@ export default function NoticiaPage() {
     let cancelled = false;
     setPost(null); setNotFound(false); setLoadError(null); setRelated([]); setIsLoading(true);
     const load = async () => {
-      const decodedSlug = decodeURIComponent(slug).trim();
       setIsLoading(true);
       setLoadError(null);
       setNotFound(false);
       try {
-        const p = await getNoticiaBySlug(decodedSlug);
+        const p = await getNoticiaBySlug(slug);
         if (cancelled) return;
         if (!p) {
           setPost(null);
