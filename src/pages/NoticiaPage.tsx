@@ -9,6 +9,7 @@ import { getPostImage, handleImgError } from "@/lib/postImage";
 import { Share2, Send, MessageCircle, Facebook, Twitter, Film } from "lucide-react";
 import { NewsListItem } from "@/components/site/NewsCards";
 import { SmartImage } from "@/components/site/SmartImage";
+import { AdaptiveCoverImage } from "@/components/site/AdaptiveCoverImage";
 import { VideoEmbed } from "@/components/site/VideoEmbed";
 import { parseVideoUrl } from "@/lib/videoEmbed";
 import { useAuth } from "@/hooks/useAuth";
