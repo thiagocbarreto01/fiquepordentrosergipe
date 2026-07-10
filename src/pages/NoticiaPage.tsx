@@ -31,6 +31,26 @@ export default function NoticiaPage() {
   const [notFound, setNotFound] = useState(false);
   const [reelOpen, setReelOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [contentLightbox, setContentLightbox] = useState<{ src: string; alt: string } | null>(null);
+
+  useEffect(() => {
+    if (!post) return;
+    const root = document.querySelector<HTMLElement>(".article-content");
+    if (!root) return;
+    const imgs = Array.from(root.querySelectorAll("img"));
+    const cleanups: Array<() => void> = [];
+    imgs.forEach((img) => {
+      if (!img.getAttribute("alt")) img.setAttribute("alt", post.title);
+      if (!img.getAttribute("title")) img.setAttribute("title", post.title);
+      img.setAttribute("loading", "lazy");
+      img.setAttribute("decoding", "async");
+      img.style.cursor = "zoom-in";
+      const handler = () => setContentLightbox({ src: img.currentSrc || img.src, alt: img.alt });
+      img.addEventListener("click", handler);
+      cleanups.push(() => img.removeEventListener("click", handler));
+    });
+    return () => cleanups.forEach((fn) => fn());
+  }, [post]);
 
   useEffect(() => {
     setPost(null); setNotFound(false); setRelated([]);
