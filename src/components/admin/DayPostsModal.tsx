@@ -159,12 +159,12 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
     try {
       const { error } = await supabase
         .from("posts")
-        .update({ status: "pronta_para_revisao" })
+        .update({ status: "em_revisao" })
         .in("id", ids);
       if (error) throw error;
-      toast.success(`${ids.length} notícia${ids.length === 1 ? "" : "s"} movida${ids.length === 1 ? "" : "s"} para Pronta para Revisão`);
+      toast.success(`${ids.length} notícia${ids.length === 1 ? "" : "s"} movida${ids.length === 1 ? "" : "s"} para Em Revisão`);
       setRows((prev) =>
-        prev.map((r) => (selected.has(r.id) ? { ...r, status: "pronta_para_revisao" } : r)),
+        prev.map((r) => (selected.has(r.id) ? { ...r, status: "em_revisao" } : r)),
       );
       setSelected(new Set());
       // Avisa a listagem para recarregar
@@ -251,7 +251,7 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-violet-600 hover:bg-violet-700 text-white font-bold uppercase tracking-wider text-[10px] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRightCircle className="h-3.5 w-3.5" />}
-              Mover para Pronta para Revisão
+              Mover para Em Revisão
             </button>
           </div>
         </div>

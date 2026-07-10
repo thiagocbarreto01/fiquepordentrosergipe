@@ -352,14 +352,9 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // Se o post atual está "captada" (ou variantes pré-revisão), promove para "pronta_para_revisao".
-      const { data: cur } = await admin
-        .from("posts")
-        .select("status")
-        .eq("id", body.post_id)
-        .maybeSingle();
-      const promote =
-        cur?.status === "captada" || cur?.status === "rascunho" || cur?.status === "em_revisao";
+      // Fluxo simplificado: a reescrita da IA NÃO altera o status do post.
+      // A notícia permanece em "captada" até que o editor a abra manualmente
+      // (o que dispara a transição para "em_revisao" no editor).
 
       const updatePayload: Record<string, unknown> = {
         titulo_original: title,
@@ -376,7 +371,6 @@ Deno.serve(async (req: Request) => {
         ai_rewritten_at: new Date().toISOString(),
         ai_version_used: "gerada",
       };
-      if (promote) updatePayload.status = "pronta_para_revisao";
       if (resolvedCategoryId) updatePayload.category_id = resolvedCategoryId;
 
       const { error: updErr } = await admin

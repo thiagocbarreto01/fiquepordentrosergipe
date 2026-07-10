@@ -9,7 +9,19 @@ export type EditorialStatus =
   | "duplicada"
   | "arquivada";
 
+// Fluxo simplificado: "pronta_para_revisao" foi removida da UI padrão.
+// O status ainda existe no enum para compatibilidade com posts antigos.
 export const STATUS_ORDER: EditorialStatus[] = [
+  "captada",
+  "em_revisao",
+  "aprovada",
+  "publicada",
+  "duplicada",
+  "rejeitada",
+  "arquivada",
+];
+
+const ALL_STATUSES: EditorialStatus[] = [
   "captada",
   "pronta_para_revisao",
   "em_revisao",
@@ -56,7 +68,7 @@ export function normalizeStatus(s: string | null | undefined): EditorialStatus {
   if (s === "rascunho") return "captada";
   if (s === "revisao") return "em_revisao";
   if (s === "publicado") return "publicada";
-  if (STATUS_ORDER.includes(s as EditorialStatus)) return s as EditorialStatus;
+  if (ALL_STATUSES.includes(s as EditorialStatus)) return s as EditorialStatus;
   return "captada";
 }
 
