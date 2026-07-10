@@ -23,6 +23,7 @@ import {
   type EditorialStatus,
 } from "@/lib/statusFlow";
 import { SourceBadge, CaptureMethodChip, OriginalLink, detectCaptureMethod } from "@/components/admin/SourceBadge";
+import { AdaptiveCoverImage } from "@/components/site/AdaptiveCoverImage";
 
 function slugify(s: string) {
   return s
