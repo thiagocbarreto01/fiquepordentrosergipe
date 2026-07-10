@@ -702,6 +702,8 @@ export type Database = {
           excerpt: string | null
           home_expires_at: string | null
           id: string
+          image_caption: string | null
+          image_credit: string | null
           is_denuncia: boolean
           is_editorial: boolean
           is_evergreen: boolean
@@ -738,6 +740,8 @@ export type Database = {
           excerpt?: string | null
           home_expires_at?: string | null
           id: string
+          image_caption?: string | null
+          image_credit?: string | null
           is_denuncia?: boolean
           is_editorial?: boolean
           is_evergreen?: boolean
@@ -774,6 +778,8 @@ export type Database = {
           excerpt?: string | null
           home_expires_at?: string | null
           id?: string
+          image_caption?: string | null
+          image_credit?: string | null
           is_denuncia?: boolean
           is_editorial?: boolean
           is_evergreen?: boolean
