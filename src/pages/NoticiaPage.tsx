@@ -113,7 +113,7 @@ export default function NoticiaPage() {
     articleSection: post.categories?.name ?? "Geral",
     keywords: (post.tags ?? []).join(", "),
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
-    author: { "@type": "Organization", name: post.profiles?.display_name || "Redação Fique Por Dentro Sergipe" },
+    author: { "@type": "Organization", name: "Redação Fique Por Dentro Sergipe" },
     publisher: {
       "@type": "NewsMediaOrganization",
       name: "Fique Por Dentro Sergipe",
@@ -169,7 +169,7 @@ export default function NoticiaPage() {
             <p className="mt-4 text-lg md:text-xl text-muted-foreground font-serif-news">{post.subtitle}</p>
           )}
           <div className="flex flex-wrap items-center gap-3 mt-6 pb-4 border-b border-border text-sm text-muted-foreground">
-            <span>Por <strong className="text-foreground">{post.profiles?.display_name || "Redação Fique Por Dentro Sergipe"}</strong></span>
+            <span>Por <strong className="text-foreground">Redação Fique Por Dentro Sergipe</strong></span>
             <span>·</span>
             <span>{post.published_at ? new Date(post.published_at).toLocaleString("pt-BR") : timeAgo(post.created_at)}</span>
             <div className="ml-auto flex items-center gap-2">

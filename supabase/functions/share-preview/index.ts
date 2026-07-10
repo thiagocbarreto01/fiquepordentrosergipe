@@ -74,9 +74,11 @@ function buildHtml(opts: {
     articleSection: category ?? "Geral",
     keywords: (tags ?? []).join(", "),
     mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
+    author: { "@type": "Organization", name: "Redação Fique Por Dentro Sergipe" },
     publisher: {
       "@type": "NewsMediaOrganization",
       name: "Fique Por Dentro Sergipe",
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/favicon.png` },
     },
   };
   if (image) ld.image = [image];
