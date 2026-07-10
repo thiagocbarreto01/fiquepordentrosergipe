@@ -314,11 +314,16 @@ export async function getDenunciaPosts(limit = 4) {
 }
 
 export async function getPostBySlug(slug: string) {
-  const { data } = await supabase
+  const decodedSlug = decodeURIComponent(slug).trim();
+  const { data, error } = await supabase
     .from("posts_public" as any)
     .select(POST_DETAIL_SELECT)
-    .eq("slug", slug)
+    .eq("slug", decodedSlug)
     .maybeSingle();
+  if (error) {
+    console.error("Falha ao buscar notícia por slug", { slug: decodedSlug, error });
+    throw error;
+  }
   if (!data) return null;
   // Busca display_name separado (view não tem o join)
   let profile: { display_name: string | null } | null = null;
