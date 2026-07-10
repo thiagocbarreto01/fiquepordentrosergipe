@@ -11,6 +11,8 @@ export type Post = {
   content: string;
   cover_image_url: string | null;
   manual_image_url: string | null; // Added
+  image_caption?: string | null;
+  image_credit?: string | null;
   category_id: string | null;
   author_id: string;
   tags: string[] | null;
@@ -61,6 +63,7 @@ const POST_SELECT = `
 // Apenas estes campos são expostos na página individual (sem campos internos)
 const POST_DETAIL_SELECT = `
   id, title, subtitle, excerpt, slug, content, cover_image_url, manual_image_url,
+  image_caption, image_credit,
   category_id, author_id, tags, is_featured, is_main_featured, is_urgent, is_denuncia,
   meta_title, meta_description, views, published_at, created_at, updated_at,
   video_url_principal, videos_relacionados, home_expires_at, main_featured_expires_at, is_evergreen, is_editorial,
