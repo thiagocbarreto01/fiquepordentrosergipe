@@ -9,6 +9,7 @@ import { getPostImage, handleImgError } from "@/lib/postImage";
 import { Share2, Send, MessageCircle, Facebook, Twitter, Film } from "lucide-react";
 import { NewsListItem } from "@/components/site/NewsCards";
 import { SmartImage } from "@/components/site/SmartImage";
+import { AdaptiveCoverImage } from "@/components/site/AdaptiveCoverImage";
 import { VideoEmbed } from "@/components/site/VideoEmbed";
 import { parseVideoUrl } from "@/lib/videoEmbed";
 import { useAuth } from "@/hooks/useAuth";
@@ -227,13 +228,11 @@ export default function NoticiaPage() {
                       className="group block w-full cursor-zoom-in overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                       aria-label="Ampliar imagem"
                     >
-                      <SmartImage
+                      <AdaptiveCoverImage
                         src={mainImageUrl}
                         alt={imgAlt}
-                        aspectRatio="16/9"
                         loading="eager"
                         fetchPriority="high"
-                        hoverZoom
                         onError={(e) => handleImgError(e, post)}
                       />
                     </button>
