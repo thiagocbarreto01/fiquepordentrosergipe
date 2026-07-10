@@ -51,7 +51,7 @@ export function AdaptiveCoverImage({
         alt={alt}
         loading={loading}
         decoding="async"
-        fetchPriority={fetchPriority}
+        {...(fetchPriority ? ({ fetchpriority: fetchPriority } as Record<string, string>) : {})}
         onLoad={handleLoad}
         onError={onError}
         className={`w-full h-full ${
