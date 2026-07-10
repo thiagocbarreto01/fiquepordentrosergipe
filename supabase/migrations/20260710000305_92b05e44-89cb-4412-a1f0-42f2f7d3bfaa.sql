@@ -1,0 +1,1 @@
+ALTER TABLE public.posts ADD COLUMN IF NOT EXISTS image_caption text, ADD COLUMN IF NOT EXISTS image_credit text;

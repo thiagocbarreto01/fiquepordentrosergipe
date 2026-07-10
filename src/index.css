@@ -164,6 +164,31 @@
   .gold-accent {
     @apply text-[hsl(var(--alert))];
   }
+  /* Imagens dentro do conteúdo da matéria — padrão grande portal */
+  .article-content img {
+    display: block;
+    margin: 1.5rem auto;
+    max-width: 760px;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    object-fit: contain;
+    object-position: top center;
+    cursor: zoom-in;
+  }
+  @media (max-width: 1024px) {
+    .article-content img { max-width: 90%; }
+  }
+  @media (max-width: 640px) {
+    .article-content img { max-width: 100%; border-radius: 6px; }
+  }
+  .article-content figure { margin: 1.5rem auto; }
+  .article-content figcaption {
+    text-align: center;
+    font-size: 0.8125rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.5rem;
+  }
 }
 
 @layer utilities {

@@ -60,6 +60,8 @@ export default function AdminPostEditor() {
     content: "",
     cover_image_url: "",
     manual_image_url: "",
+    image_caption: "",
+    image_credit: "",
     cover_image_original: "",
     cover_image_source: null,
     category_id: "",
@@ -233,6 +235,8 @@ export default function AdminPostEditor() {
       content: form.content,
       cover_image_url: form.cover_image_url || null,
       manual_image_url: form.manual_image_url || null,
+      image_caption: (form.image_caption || "").trim() || null,
+      image_credit: (form.image_credit || "").trim() || null,
       cover_image_original: form.cover_image_original || null,
       cover_image_source: form.cover_image_source || null,
       category_id: form.category_id || null,
@@ -1070,8 +1074,36 @@ export default function AdminPostEditor() {
                   />
                 </div>
               )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-border">
+                <div>
+                  <Label className="text-xs uppercase text-muted-foreground">Legenda da imagem</Label>
+                  <Input
+                    className="mt-1"
+                    placeholder="Ex: Vista aérea da orla de Aracaju"
+                    value={form.image_caption ?? ""}
+                    onChange={(e) => setForm({ ...form, image_caption: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Exibida abaixo da imagem principal. Se vazia, nada é mostrado.
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs uppercase text-muted-foreground">Crédito da imagem</Label>
+                  <Input
+                    className="mt-1"
+                    placeholder="Ex: Assessoria de Comunicação / TV Barretão"
+                    value={form.image_credit ?? ""}
+                    onChange={(e) => setForm({ ...form, image_credit: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Exibido abaixo da legenda (opcional).
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+
 
           <div className="border border-border bg-card p-4 space-y-3">
             <div>

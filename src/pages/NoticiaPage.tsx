@@ -14,6 +14,7 @@ import { parseVideoUrl } from "@/lib/videoEmbed";
 import { useAuth } from "@/hooks/useAuth";
 import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { Button } from "@/components/ui/button";
+import { ImageLightbox } from "@/components/site/ImageLightbox";
 
 const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
@@ -29,6 +30,27 @@ export default function NoticiaPage() {
   const [related, setRelated] = useState<Array<{ id: string; title: string; slug: string; cover_image_url: string | null; published_at: string }>>([]);
   const [notFound, setNotFound] = useState(false);
   const [reelOpen, setReelOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [contentLightbox, setContentLightbox] = useState<{ src: string; alt: string } | null>(null);
+
+  useEffect(() => {
+    if (!post) return;
+    const root = document.querySelector<HTMLElement>(".article-content");
+    if (!root) return;
+    const imgs = Array.from(root.querySelectorAll("img"));
+    const cleanups: Array<() => void> = [];
+    imgs.forEach((img) => {
+      if (!img.getAttribute("alt")) img.setAttribute("alt", post.title);
+      if (!img.getAttribute("title")) img.setAttribute("title", post.title);
+      img.setAttribute("loading", "lazy");
+      img.setAttribute("decoding", "async");
+      img.style.cursor = "zoom-in";
+      const handler = () => setContentLightbox({ src: img.currentSrc || img.src, alt: img.alt });
+      img.addEventListener("click", handler);
+      cleanups.push(() => img.removeEventListener("click", handler));
+    });
+    return () => cleanups.forEach((fn) => fn());
+  }, [post]);
 
   useEffect(() => {
     setPost(null); setNotFound(false); setRelated([]);
@@ -163,19 +185,33 @@ export default function NoticiaPage() {
             const relatedVideos = (post.videos_relacionados ?? [])
               .map((u) => ({ url: u, info: parseVideoUrl(u) }))
               .filter((v) => v.info);
-            const hasImage = !!(post.cover_image_url || post.categories?.default_cover_image_url);
+            const hasImage = !!(post.cover_image_url || post.manual_image_url || post.categories?.default_cover_image_url);
+            const mainImageUrl = hasImage ? getPostImage(post) : null;
+            const caption = post.image_caption?.trim() || null;
+            const credit = post.image_credit?.trim() || null;
+            const imgAlt = post.title;
             const providerLabel =
               mainVideo?.provider === "youtube" ? "YouTube" :
               mainVideo?.provider === "instagram" ? "Instagram" :
               mainVideo?.provider === "mp4" ? "vídeo" : "";
-            // Fique Por Dentro Sergipe 2.0 — Etapa 1: a fonte original NUNCA é exibida ao leitor.
-            // Se o vídeo não puder ser embedado, simplesmente omitimos.
-            const showSourceVideoCta = false;
+
+            // Dedupe: remove any <img> in content whose src matches the main image
+            const dedupedContent = (() => {
+              if (!mainImageUrl) return post.content;
+              try {
+                const escaped = mainImageUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const re = new RegExp(`<(?:figure|p)[^>]*>\\s*<img[^>]*src=["']${escaped}["'][^>]*>[\\s\\S]*?</(?:figure|p)>|<img[^>]*src=["']${escaped}["'][^>]*/?>`, "gi");
+                return post.content.replace(re, "");
+              } catch {
+                return post.content;
+              }
+            })();
+
+            const looksHtml = /<\/?(p|img|figure|h[1-6]|ul|ol|blockquote|br)\b/i.test(dedupedContent);
+
             return (
               <>
-                {/* Vídeo principal tem prioridade sobre a imagem.
-                    Se a URL não for suportada (provider desconhecido), o player
-                    é silenciosamente omitido e usamos a imagem como fallback. */}
+                {/* Vídeo principal tem prioridade sobre a imagem. */}
                 {mainVideo ? (
                   <figure className="mt-6">
                     <VideoEmbed url={post.video_url_principal!} title={post.title} />
@@ -183,37 +219,62 @@ export default function NoticiaPage() {
                       Vídeo: {providerLabel}
                     </figcaption>
                   </figure>
-                ) : hasImage ? (
-                  <figure className="mt-6">
-                    <SmartImage
-                      src={getPostImage(post)}
-                      alt={post.title}
-                      aspectRatio="16/9"
-                      loading="eager"
-                      fetchPriority="high"
-                      onError={(e) => handleImgError(e, post)}
+                ) : mainImageUrl ? (
+                  <figure className="mt-6 mx-auto max-w-[760px]">
+                    <button
+                      type="button"
+                      onClick={() => setLightboxOpen(true)}
+                      className="group block w-full cursor-zoom-in overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                      aria-label="Ampliar imagem"
+                    >
+                      <SmartImage
+                        src={mainImageUrl}
+                        alt={imgAlt}
+                        aspectRatio="16/9"
+                        loading="eager"
+                        fetchPriority="high"
+                        hoverZoom
+                        onError={(e) => handleImgError(e, post)}
+                      />
+                    </button>
+                    {(caption || credit) && (
+                      <figcaption className="mt-2 text-sm text-muted-foreground leading-snug">
+                        {caption && <span>{caption}</span>}
+                        {caption && credit && <span className="mx-1">·</span>}
+                        {credit && <span className="italic">Crédito: {credit}</span>}
+                      </figcaption>
+                    )}
+                    <ImageLightbox
+                      src={mainImageUrl}
+                      alt={imgAlt}
+                      caption={caption}
+                      credit={credit}
+                      open={lightboxOpen}
+                      onClose={() => setLightboxOpen(false)}
                     />
                   </figure>
                 ) : null}
 
-                {showSourceVideoCta && null}
-
-                <div className="prose prose-lg max-w-none mt-6 font-serif-news leading-relaxed text-foreground/90 whitespace-pre-wrap">
-                  {(() => {
-                    const paragraphs = post.content.split("\n").filter(p => p.trim().length > 0);
-                    if (paragraphs.length <= 2) return post.content;
-                    
-                    const firstPart = paragraphs.slice(0, 2).join("\n\n");
-                    const rest = paragraphs.slice(2).join("\n\n");
-                    
-                    return (
-                      <>
-                        <div className="mb-6">{firstPart}</div>
-                        <AdSlot position="dentro_materia" />
-                        <div className="mt-6">{rest}</div>
-                      </>
-                    );
-                  })()}
+                <div className="article-content prose prose-lg max-w-none mt-6 font-serif-news leading-relaxed text-foreground/90">
+                  {looksHtml ? (
+                    <div dangerouslySetInnerHTML={{ __html: dedupedContent }} />
+                  ) : (
+                    <div className="whitespace-pre-wrap">
+                      {(() => {
+                        const paragraphs = dedupedContent.split("\n").filter(p => p.trim().length > 0);
+                        if (paragraphs.length <= 2) return dedupedContent;
+                        const firstPart = paragraphs.slice(0, 2).join("\n\n");
+                        const rest = paragraphs.slice(2).join("\n\n");
+                        return (
+                          <>
+                            <div className="mb-6">{firstPart}</div>
+                            <AdSlot position="dentro_materia" />
+                            <div className="mt-6">{rest}</div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 {relatedVideos.length > 0 && (
@@ -301,6 +362,14 @@ export default function NoticiaPage() {
           <AdSlot position="lateral" />
         </aside>
       </article>
+      {contentLightbox && (
+        <ImageLightbox
+          src={contentLightbox.src}
+          alt={contentLightbox.alt}
+          open={!!contentLightbox}
+          onClose={() => setContentLightbox(null)}
+        />
+      )}
     </SiteLayout>
   );
 }
