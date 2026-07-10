@@ -362,6 +362,14 @@ export default function NoticiaPage() {
           <AdSlot position="lateral" />
         </aside>
       </article>
+      {contentLightbox && (
+        <ImageLightbox
+          src={contentLightbox.src}
+          alt={contentLightbox.alt}
+          open={!!contentLightbox}
+          onClose={() => setContentLightbox(null)}
+        />
+      )}
     </SiteLayout>
   );
 }
