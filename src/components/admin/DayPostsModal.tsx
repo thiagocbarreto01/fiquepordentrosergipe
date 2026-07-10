@@ -159,12 +159,12 @@ export default function DayPostsModal({ open, onOpenChange, referencePost }: Pro
     try {
       const { error } = await supabase
         .from("posts")
-        .update({ status: "pronta_para_revisao" })
+        .update({ status: "em_revisao" })
         .in("id", ids);
       if (error) throw error;
-      toast.success(`${ids.length} notícia${ids.length === 1 ? "" : "s"} movida${ids.length === 1 ? "" : "s"} para Pronta para Revisão`);
+      toast.success(`${ids.length} notícia${ids.length === 1 ? "" : "s"} movida${ids.length === 1 ? "" : "s"} para Em Revisão`);
       setRows((prev) =>
-        prev.map((r) => (selected.has(r.id) ? { ...r, status: "pronta_para_revisao" } : r)),
+        prev.map((r) => (selected.has(r.id) ? { ...r, status: "em_revisao" } : r)),
       );
       setSelected(new Set());
       // Avisa a listagem para recarregar
