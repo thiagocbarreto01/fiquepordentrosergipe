@@ -987,10 +987,10 @@ export default function AdminPostEditor() {
             </div>
             
             <div className="relative group mb-4 border border-border bg-secondary/30">
-              <img
+              <AdaptiveCoverImage
                 src={form.manual_image_url || form.cover_image_url || "https://placehold.co/600x400?text=Sem+imagem"}
                 alt="preview"
-                className="w-full aspect-video object-cover"
+                maxHeight={480}
               />
               {form.manual_image_url && (
                 <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 uppercase">
