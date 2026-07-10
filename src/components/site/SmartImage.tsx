@@ -40,7 +40,9 @@ export function SmartImage({
 
   const [currentUrl, setCurrentUrl] = useState<string>(initial.valid ? initial.url : (fallback?.valid ? fallback.url : ""));
   const [silent, setSilent] = useState<boolean>(!initial.valid && !fallback?.valid);
+  const [orientation, setOrientation] = useState<"landscape" | "portrait" | null>(null);
   const triedFallback = useRef<boolean>(!initial.valid);
+
 
   useEffect(() => {
     triedFallback.current = !initial.valid;
@@ -68,8 +70,11 @@ export function SmartImage({
       } else {
         setSilent(true);
       }
+      return;
     }
+    setOrientation(img.naturalWidth >= img.naturalHeight * 1.05 ? "landscape" : "portrait");
   }, [fallback?.url, fallback?.valid]);
+
 
   const handleError = useCallback((e: SyntheticEvent<HTMLImageElement>) => {
     registerImageFailure(currentUrl, "Erro ao carregar imagem no navegador", reportContext ?? alt);
@@ -82,12 +87,16 @@ export function SmartImage({
     onError?.(e);
   }, [alt, currentUrl, fallback?.url, fallback?.valid, onError, reportContext]);
 
+  const isPortrait = orientation === "portrait";
+
   return (
     <div
       className={`relative w-full overflow-hidden ${className}`}
       style={{
         aspectRatio,
-        background: "linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-deep)) 100%)",
+        background: isPortrait
+          ? "hsl(var(--muted))"
+          : "linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-deep)) 100%)",
       }}
     >
       {silent || !currentUrl ? (
@@ -100,23 +109,35 @@ export function SmartImage({
           />
         </div>
       ) : (
-        <img
-          src={currentUrl}
-          alt={alt}
-          loading={loading}
-          fetchPriority={fetchPriority}
-          width={width}
-          height={height}
-          onLoad={handleLoad}
-          onError={handleError}
-          className={[
-            "relative z-10 w-full h-full object-cover transition-transform duration-700",
-            hoverZoom ? "group-hover:scale-105" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        />
+        <>
+          {isPortrait && (
+            <img
+              src={currentUrl}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 z-0 w-full h-full object-cover scale-110 blur-2xl opacity-40"
+            />
+          )}
+          <img
+            src={currentUrl}
+            alt={alt}
+            loading={loading}
+            fetchPriority={fetchPriority}
+            width={width}
+            height={height}
+            onLoad={handleLoad}
+            onError={handleError}
+            className={[
+              "relative z-10 w-full h-full transition-transform duration-700",
+              isPortrait ? "object-contain object-top" : "object-cover",
+              hoverZoom && !isPortrait ? "group-hover:scale-105" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          />
+        </>
       )}
     </div>
   );
 }
+
