@@ -14,6 +14,7 @@ import { parseVideoUrl } from "@/lib/videoEmbed";
 import { useAuth } from "@/hooks/useAuth";
 import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { Button } from "@/components/ui/button";
+import { ImageLightbox } from "@/components/site/ImageLightbox";
 
 const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
@@ -29,6 +30,7 @@ export default function NoticiaPage() {
   const [related, setRelated] = useState<Array<{ id: string; title: string; slug: string; cover_image_url: string | null; published_at: string }>>([]);
   const [notFound, setNotFound] = useState(false);
   const [reelOpen, setReelOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     setPost(null); setNotFound(false); setRelated([]);
