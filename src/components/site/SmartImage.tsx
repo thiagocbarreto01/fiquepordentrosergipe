@@ -87,12 +87,16 @@ export function SmartImage({
     onError?.(e);
   }, [alt, currentUrl, fallback?.url, fallback?.valid, onError, reportContext]);
 
+  const isPortrait = orientation === "portrait";
+
   return (
     <div
       className={`relative w-full overflow-hidden ${className}`}
       style={{
         aspectRatio,
-        background: "linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-deep)) 100%)",
+        background: isPortrait
+          ? "hsl(var(--muted))"
+          : "linear-gradient(135deg, hsl(var(--brand-navy)) 0%, hsl(var(--brand-navy-deep)) 100%)",
       }}
     >
       {silent || !currentUrl ? (
@@ -105,25 +109,35 @@ export function SmartImage({
           />
         </div>
       ) : (
-        <img
-          src={currentUrl}
-          alt={alt}
-          loading={loading}
-          fetchPriority={fetchPriority}
-          width={width}
-          height={height}
-          onLoad={handleLoad}
-          onError={handleError}
-          className={[
-            "relative z-10 w-full h-full transition-transform duration-700",
-            orientation === "portrait" ? "object-contain object-top" : "object-cover",
-            hoverZoom && orientation !== "portrait" ? "group-hover:scale-105" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-
-        />
+        <>
+          {isPortrait && (
+            <img
+              src={currentUrl}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 z-0 w-full h-full object-cover scale-110 blur-2xl opacity-40"
+            />
+          )}
+          <img
+            src={currentUrl}
+            alt={alt}
+            loading={loading}
+            fetchPriority={fetchPriority}
+            width={width}
+            height={height}
+            onLoad={handleLoad}
+            onError={handleError}
+            className={[
+              "relative z-10 w-full h-full transition-transform duration-700",
+              isPortrait ? "object-contain object-top" : "object-cover",
+              hoverZoom && !isPortrait ? "group-hover:scale-105" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          />
+        </>
       )}
     </div>
   );
 }
+
