@@ -679,9 +679,10 @@ async function captureFromSource(
       let similar_to: string | null = null;
       let similarity_score: number | null = null;
       let duplicate_match_reason: string | null = null;
-      // Fique Por Dentro Sergipe 2.0 — Etapa 1: tudo entra como "captada"; após reescrita por IA
-      // o post é promovido para "pronta_para_revisao". Duplicatas (>= 91%) viram "duplicada".
-      let status: "captada" | "pronta_para_revisao" | "duplicada" = "captada";
+      // Fluxo simplificado: toda notícia capturada nasce como "captada".
+      // Duplicatas (>= 91%) viram "duplicada". A transição para "em_revisao"
+      // ocorre apenas quando um editor abre o post no painel.
+      let status: "captada" | "duplicada" = "captada";
       if (dupes && dupes.length > 0) {
         const best = dupes[0];
         const rawScore = typeof best.similarity === "number" ? best.similarity : 0;
