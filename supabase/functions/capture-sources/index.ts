@@ -871,8 +871,8 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
                 aiRewrittenAt = new Date().toISOString();
                 aiReviewStatus = "reescrito_ia";
                 aiVersionUsed = "gerada";
-                // Promove para revisão editorial
-                status = "pronta_para_revisao";
+                // Fluxo editorial: toda captura permanece como "captada" até ação manual da redação.
+                // A reescrita por IA fica registrada (ai_review_status/ai_rewritten_at) mas NÃO promove status.
               } else {
                 console.warn(`[capture-sources] reescrita rejeitada (validação): paragraphs=${paragraphs} len=${conteudo.length} "${originalTitle.slice(0,40)}"`);
               }
