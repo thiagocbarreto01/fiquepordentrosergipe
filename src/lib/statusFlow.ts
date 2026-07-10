@@ -9,7 +9,19 @@ export type EditorialStatus =
   | "duplicada"
   | "arquivada";
 
+// Fluxo simplificado: "pronta_para_revisao" foi removida da UI padrão.
+// O status ainda existe no enum para compatibilidade com posts antigos.
 export const STATUS_ORDER: EditorialStatus[] = [
+  "captada",
+  "em_revisao",
+  "aprovada",
+  "publicada",
+  "duplicada",
+  "rejeitada",
+  "arquivada",
+];
+
+const ALL_STATUSES: EditorialStatus[] = [
   "captada",
   "pronta_para_revisao",
   "em_revisao",
