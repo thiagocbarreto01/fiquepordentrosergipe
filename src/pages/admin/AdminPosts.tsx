@@ -88,9 +88,9 @@ export default function AdminPosts() {
   const [todayOnly, setTodayOnly] = useState(true);
   const [dayModalPost, setDayModalPost] = useState<any | null>(null);
 
-  useEffect(() => {
-    try { localStorage.setItem("admin:posts:viewMode", viewMode); } catch {}
-  }, [viewMode]);
+  // Preferências não são persistidas: cada entrada no módulo restaura a configuração padrão.
+
+
 
   // Bounds do "dia de hoje" no fuso America/Sao_Paulo (UTC-3, sem horário de verão).
   // Retorna ISO em UTC equivalentes a 00:00:00.000 e 23:59:59.999 de SP.
