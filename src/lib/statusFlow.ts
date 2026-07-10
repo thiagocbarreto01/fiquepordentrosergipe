@@ -68,7 +68,7 @@ export function normalizeStatus(s: string | null | undefined): EditorialStatus {
   if (s === "rascunho") return "captada";
   if (s === "revisao") return "em_revisao";
   if (s === "publicado") return "publicada";
-  if (STATUS_ORDER.includes(s as EditorialStatus)) return s as EditorialStatus;
+  if (ALL_STATUSES.includes(s as EditorialStatus)) return s as EditorialStatus;
   return "captada";
 }
 
