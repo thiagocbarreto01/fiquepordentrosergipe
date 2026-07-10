@@ -29,6 +29,8 @@ export default function NoticiaPage() {
   const [post, setPost] = useState<Post | null>(null);
   const [mostRead, setMostRead] = useState<Post[]>([]);
   const [related, setRelated] = useState<Array<{ id: string; title: string; slug: string; cover_image_url: string | null; published_at: string }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [reelOpen, setReelOpen] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -54,24 +56,67 @@ export default function NoticiaPage() {
   }, [post]);
 
   useEffect(() => {
-    setPost(null); setNotFound(false); setRelated([]);
-    const load = () => getNoticiaBySlug(slug).then((p) => {
-      if (!p) { setNotFound(true); return; }
-      setPost(p);
-      const seoTitle = (p as any).ai_seo_title || p.meta_title || p.title;
-      const seoDesc = (p as any).ai_summary || p.meta_description || p.subtitle || p.title;
-      document.title = `${seoTitle} — Fique Por Dentro Sergipe`;
-      const meta = document.querySelector('meta[name="description"]');
-      if (meta) meta.setAttribute("content", seoDesc);
-      // Notícias relacionadas (mesmo evento)
-      getRelatedPostsByEvent(p.id, 5).then(setRelated).catch(() => setRelated([]));
-    });
+    let cancelled = false;
+    setPost(null); setNotFound(false); setLoadError(null); setRelated([]); setIsLoading(true);
+    const load = async () => {
+      const decodedSlug = decodeURIComponent(slug).trim();
+      setIsLoading(true);
+      setLoadError(null);
+      setNotFound(false);
+      try {
+        const p = await getNoticiaBySlug(decodedSlug);
+        if (cancelled) return;
+        if (!p) {
+          setPost(null);
+          setNotFound(true);
+          return;
+        }
+        setPost(p);
+        const seoTitle = (p as any).ai_seo_title || p.meta_title || p.title;
+        const seoDesc = (p as any).ai_summary || p.meta_description || p.subtitle || p.title;
+        document.title = `${seoTitle} — Fique Por Dentro Sergipe`;
+        const meta = document.querySelector('meta[name="description"]');
+        if (meta) meta.setAttribute("content", seoDesc);
+        // Notícias relacionadas (mesmo evento)
+        getRelatedPostsByEvent(p.id, 5).then((items) => {
+          if (!cancelled) setRelated(items);
+        }).catch(() => {
+          if (!cancelled) setRelated([]);
+        });
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Falha temporária ao carregar notícia", { slug: decodeURIComponent(slug).trim(), error });
+        setLoadError(error instanceof Error ? error : new Error("Erro ao carregar notícia"));
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
     load();
     getMostReadNoticias(5).then(setMostRead);
-    return subscribeToNoticiasFeed(load);
+    const unsubscribe = subscribeToNoticiasFeed(load);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [slug]);
 
-  if (notFound) {
+  if (isLoading && !post) {
+    return <SiteLayout><div className="container-news py-20 text-center text-muted-foreground">Carregando…</div></SiteLayout>;
+  }
+
+  if (loadError && !post) {
+    return (
+      <SiteLayout>
+        <div className="container-news py-20 text-center">
+          <h1 className="font-display text-3xl font-black">Falha temporária ao carregar a notícia</h1>
+          <p className="mt-3 text-muted-foreground">Tente novamente em alguns instantes.</p>
+          <Link to="/" className="text-primary underline mt-4 inline-block">Voltar à home</Link>
+        </div>
+      </SiteLayout>
+    );
+  }
+
+  if (notFound && !post) {
     return (
       <SiteLayout>
         <div className="container-news py-20 text-center">
