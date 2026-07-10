@@ -70,8 +70,11 @@ export function SmartImage({
       } else {
         setSilent(true);
       }
+      return;
     }
+    setOrientation(img.naturalWidth >= img.naturalHeight * 1.05 ? "landscape" : "portrait");
   }, [fallback?.url, fallback?.valid]);
+
 
   const handleError = useCallback((e: SyntheticEvent<HTMLImageElement>) => {
     registerImageFailure(currentUrl, "Erro ao carregar imagem no navegador", reportContext ?? alt);
