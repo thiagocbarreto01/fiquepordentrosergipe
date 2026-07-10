@@ -40,7 +40,9 @@ export function SmartImage({
 
   const [currentUrl, setCurrentUrl] = useState<string>(initial.valid ? initial.url : (fallback?.valid ? fallback.url : ""));
   const [silent, setSilent] = useState<boolean>(!initial.valid && !fallback?.valid);
+  const [orientation, setOrientation] = useState<"landscape" | "portrait" | null>(null);
   const triedFallback = useRef<boolean>(!initial.valid);
+
 
   useEffect(() => {
     triedFallback.current = !initial.valid;
