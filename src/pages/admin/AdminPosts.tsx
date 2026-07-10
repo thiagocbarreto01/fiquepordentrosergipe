@@ -69,7 +69,9 @@ const TONE_CLASS: Record<string, string> = {
 export default function AdminPosts() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<any[]>([]);
-  const [filter, setFilter] = useState<Filter>("all");
+  // Configuração operacional padrão da redação (restaurada a cada entrada no módulo):
+  // Aba CAPTADAS · CAPTADAS HOJE · Não arquivadas · Validade/Fonte/Duplicidade/Relevância = Todas · Lista.
+  const [filter, setFilter] = useState<Filter>("captada");
   const [homeFilter, setHomeFilter] = useState<HomeFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all"); // "all" | source_id | "__manual" | "__instagram"
   const [duplicateFilter, setDuplicateFilter] = useState<DuplicateFilter>("all");
@@ -79,14 +81,11 @@ export default function AdminPosts() {
   const [archivedCount, setArchivedCount] = useState(0);
   const [sources, setSources] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const v = typeof window !== "undefined" ? localStorage.getItem("admin:posts:viewMode") : null;
-    return (v === "kanban" || v === "grouped" || v === "list") ? v : "list";
-  });
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [groupSort, setGroupSort] = useState<GroupSort>("count_desc");
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0, today: 0 });
-  const [todayOnly, setTodayOnly] = useState(false);
+  const [todayOnly, setTodayOnly] = useState(true);
   const [dayModalPost, setDayModalPost] = useState<any | null>(null);
 
   useEffect(() => {
