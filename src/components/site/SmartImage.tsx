@@ -115,11 +115,13 @@ export function SmartImage({
           onLoad={handleLoad}
           onError={handleError}
           className={[
-            "relative z-10 w-full h-full object-cover transition-transform duration-700",
-            hoverZoom ? "group-hover:scale-105" : "",
+            "relative z-10 w-full h-full transition-transform duration-700",
+            orientation === "portrait" ? "object-contain object-top" : "object-cover",
+            hoverZoom && orientation !== "portrait" ? "group-hover:scale-105" : "",
           ]
             .filter(Boolean)
             .join(" ")}
+
         />
       )}
     </div>
