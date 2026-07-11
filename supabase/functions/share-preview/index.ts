@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
     "CDN-Cache-Control": "no-store",
   };
 
-  const html5xx = (msg: string) =>
+  const htmlError = (status: number, msg: string) =>
     new Response(
       buildHtml({
         title: "Fique Por Dentro Sergipe",
@@ -155,12 +155,12 @@ Deno.serve(async (req) => {
         image: DEFAULT_OG_IMAGE,
         articleUrl: SITE_URL,
       }),
-      { status: 200, headers: noCacheHeaders },
+      { status, headers: noCacheHeaders },
     );
 
   if (!slug) {
-    console.log(`[share-preview ${reqId}] sem slug — retornando fallback institucional`);
-    return html5xx("Portal de notícias de Sergipe, Aracaju, Brasil e mundo.");
+    console.log(`[share-preview ${reqId}] sem slug — 404`);
+    return htmlError(404, "Notícia não encontrada.");
   }
 
   try {
@@ -181,18 +181,18 @@ Deno.serve(async (req) => {
 
     if (error) {
       console.error(`[share-preview ${reqId}] erro consultando slug=${slug}:`, error.message);
-      return html5xx("Erro ao carregar notícia.");
+      return htmlError(500, "Erro ao carregar notícia.");
     }
 
     if (!post) {
-      console.log(`[share-preview ${reqId}] nenhuma matéria para slug=${slug}`);
-      return html5xx("Notícia não encontrada.");
+      console.log(`[share-preview ${reqId}] nenhuma matéria para slug=${slug} — 404`);
+      return htmlError(404, "Notícia não encontrada.");
     }
 
     // Garantia extra: o slug retornado pelo banco deve bater com o solicitado.
     if (post.slug !== slug) {
-      console.error(`[share-preview ${reqId}] slug divergente: pedido=${slug} retornado=${post.slug} — abortando para evitar vazamento`);
-      return html5xx("Notícia não encontrada.");
+      console.error(`[share-preview ${reqId}] slug divergente: pedido=${slug} retornado=${post.slug} — abortando`);
+      return htmlError(404, "Notícia não encontrada.");
     }
 
     const articleUrl = `${SITE_URL}/noticia/${post.slug}`;
@@ -236,6 +236,6 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error(`[share-preview ${reqId}] exceção:`, (e as Error).message);
-    return html5xx("Erro ao carregar notícia.");
+    return htmlError(500, "Erro ao carregar notícia.");
   }
 });

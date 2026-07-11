@@ -16,6 +16,9 @@ import { useAuth } from "@/hooks/useAuth";
 import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/site/ImageLightbox";
+import { getSocialShareUrl, getArticleDirectUrl } from "@/lib/socialShare";
+import { toast } from "@/hooks/use-toast";
+import { Link2 } from "lucide-react";
 
 const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
@@ -130,11 +133,15 @@ export default function NoticiaPage() {
     return <SiteLayout><div className="container-news py-20 text-center text-muted-foreground">Carregando…</div></SiteLayout>;
   }
 
-  // Link público do portal — único URL exposto ao usuário no compartilhamento.
-  const shareUrl = `https://www.fiquepordentrosergipe.com.br/noticia/${post.slug}`;
+  // Link com prévia dinâmica (Open Graph via Edge Function share-preview).
+  // Usado nos botões de compartilhamento social — crawlers de WhatsApp/Facebook
+  // leem as metatags da matéria e navegadores são redirecionados para a URL normal.
+  const socialShareUrl = getSocialShareUrl(post.slug);
+  // Link direto da matéria — sem prévia dinâmica para crawlers.
+  const directUrl = getArticleDirectUrl(post.slug);
   const shareText = encodeURIComponent(post.title);
-  const whatsappText = encodeURIComponent(shareUrl);
-  const shareUrlEnc = encodeURIComponent(shareUrl);
+  const whatsappText = encodeURIComponent(socialShareUrl);
+  const shareUrlEnc = encodeURIComponent(socialShareUrl);
 
   const canonical = `${SITE_URL}/noticia/${post.slug}`;
   const aiTitle = (post as any).ai_seo_title || post.meta_title || post.title;
@@ -227,9 +234,31 @@ export default function NoticiaPage() {
               <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noopener noreferrer" href={`https://wa.me/?text=${whatsappText}`} onClick={(e) => { e.preventDefault(); const w = window.open(`https://wa.me/?text=${whatsappText}`, "_blank", "noopener,noreferrer"); if (!w) { try { window.top!.location.href = `https://wa.me/?text=${whatsappText}`; } catch { window.location.href = `https://wa.me/?text=${whatsappText}`; } } }} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
               <a aria-label="Compartilhar no Facebook" target="_blank" rel="noopener noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} onClick={(e) => { e.preventDefault(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
               <a aria-label="Compartilhar no Twitter" target="_blank" rel="noopener noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} onClick={(e) => { e.preventDefault(); window.open(`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
-              <button aria-label="Copiar link" onClick={() => navigator.clipboard.writeText(shareUrl)} className="p-2 hover:bg-secondary rounded-sm"><Share2 className="h-4 w-4" /></button>
+              <button
+                aria-label="Copiar link com prévia"
+                title="Copiar link com prévia (WhatsApp, Facebook)"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(socialShareUrl);
+                  toast({ title: "Link com prévia copiado." });
+                }}
+                className="p-2 hover:bg-secondary rounded-sm"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+              <button
+                aria-label="Copiar link direto"
+                title="Copiar link direto da matéria"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(directUrl);
+                  toast({ title: "Link direto copiado." });
+                }}
+                className="p-2 hover:bg-secondary rounded-sm"
+              >
+                <Link2 className="h-4 w-4" />
+              </button>
             </div>
           </div>
+
 
           {(() => {
             const mainVideo = parseVideoUrl(post.video_url_principal);
