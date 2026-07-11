@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   };
 
   const htmlError = (status: number, msg: string) =>
-    new Response(
+    htmlResponse(
       buildHtml({
         title: "Fique Por Dentro Sergipe",
         description: msg,
