@@ -10,6 +10,16 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
+const CRAWLER_USER_AGENT_RE = /(facebookexternalhit|facebot|whatsapp|twitterbot|telegrambot|linkedinbot|discordbot|slackbot)/i;
+
+function isCrawlerUserAgent(userAgent: string | null): boolean {
+  return CRAWLER_USER_AGENT_RE.test(userAgent || "");
+}
+
+function getPublicSharePreviewUrl(slug: string): string {
+  const backendUrl = Deno.env.get("SUPABASE_URL") || "https://faubrqvkzgyfryfjylnb.supabase.co";
+  return `${backendUrl.replace(/\/$/, "")}/functions/v1/share-preview?slug=${encodeURIComponent(slug)}`;
+}
 
 function toAbsoluteImage(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -38,8 +48,8 @@ function htmlResponse(body: string, init: ResponseInit = {}) {
   headers.delete("Content-Type");
   headers.set("content-type", "text/html; charset=utf-8");
   headers.set("x-content-type-options", "nosniff");
-  headers.set("x-share-preview-version", "html-v2");
-  return new Response(body, { ...init, headers });
+  headers.set("x-share-preview-version", "html-v3");
+  return new Response(new Blob([body], { type: "text/html; charset=utf-8" }), { ...init, headers });
 }
 
 function escapeHtml(s: string): string {
@@ -66,14 +76,16 @@ function buildHtml(opts: {
   description: string;
   image: string | null;
   articleUrl: string;
+  sharePreviewUrl: string;
   publishedAt?: string | null;
   category?: string | null;
   tags?: string[] | null;
 }) {
-  const { title, description, image, articleUrl, publishedAt, category, tags } = opts;
+  const { title, description, image, articleUrl, sharePreviewUrl, publishedAt, category, tags } = opts;
   const t = escapeHtml(title);
   const d = escapeHtml(description);
   const article = escapeHtml(articleUrl);
+  const share = escapeHtml(sharePreviewUrl);
   const img = escapeHtml(image || DEFAULT_OG_IMAGE);
   const imageType = guessImageType(image);
   const ld: Record<string, unknown> = {
@@ -108,13 +120,13 @@ function buildHtml(opts: {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${t} — Fique Por Dentro Sergipe</title>
 <meta name="description" content="${d}" />
-<link rel="canonical" href="${article}" />
+<link rel="canonical" href="${share}" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="Fique Por Dentro Sergipe" />
 <meta property="og:locale" content="pt_BR" />
 <meta property="og:title" content="${t}" />
 <meta property="og:description" content="${d}" />
-<meta property="og:url" content="${article}" />
+<meta property="og:url" content="${share}" />
 ${ogImageTags}
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${t}" />
@@ -133,6 +145,8 @@ Deno.serve(async (req) => {
 
   const reqId = crypto.randomUUID();
   const url = new URL(req.url);
+  const sharePreviewUrl = url.toString();
+  const crawler = isCrawlerUserAgent(req.headers.get("user-agent"));
 
   // Slug vem SOMENTE de ?slug=... ou /share-preview/<slug>. Stateless: nada
   // é mantido entre requests — toda variável vive dentro deste handler.
@@ -165,6 +179,7 @@ Deno.serve(async (req) => {
         description: msg,
         image: DEFAULT_OG_IMAGE,
         articleUrl: SITE_URL,
+        sharePreviewUrl,
       }),
       { status, headers: noCacheHeaders },
     );
@@ -207,6 +222,7 @@ Deno.serve(async (req) => {
     }
 
     const articleUrl = `${SITE_URL}/noticia/${post.slug}`;
+    const canonicalSharePreviewUrl = getPublicSharePreviewUrl(post.slug);
     const title = (post as any).ai_seo_title || post.meta_title || post.title;
     const description =
       (post as any).ai_summary ||
@@ -223,12 +239,18 @@ Deno.serve(async (req) => {
 
     console.log(`[share-preview ${reqId}] match post.id=${post.id} slug=${post.slug} og:image=${image}`);
 
+    if (!crawler) {
+      console.log(`[share-preview ${reqId}] navegador humano — redirect 302 para ${articleUrl}`);
+      return Response.redirect(articleUrl, 302);
+    }
+
     return htmlResponse(
       buildHtml({
         title,
         description,
         image,
         articleUrl,
+        sharePreviewUrl: canonicalSharePreviewUrl,
         publishedAt: post.published_at,
         category: (post as any).categories?.name,
         tags: post.tags,
