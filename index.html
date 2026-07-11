@@ -14,14 +14,10 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Fique Por Dentro Sergipe" />
     <meta property="og:locale" content="pt_BR" />
-    <!-- og:url é definido por rota via react-helmet-async (NoticiaPage, Index etc.).
-         Não fixar aqui — evita apontar notícias para a home. -->
-    <!-- og:image dinâmico:
-         - Crawlers em /noticia/<slug> recebem HTML da edge function
-           share-preview (via Cloudflare Worker) com og:image da matéria.
-         - Demais rotas recebem og:image definido por rota via
-           react-helmet-async (ex.: Index.tsx define og-default.jpg).
-         Nenhuma og:image fixa aqui — evita sobrescrever o og:image da notícia. -->
+    <!-- og:url e og:image são definidos por rota via react-helmet-async
+         (NoticiaPage, Index etc.). Nada fixo aqui para não sobrescrever
+         o og da notícia em crawlers que executam JS. -->
+
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />

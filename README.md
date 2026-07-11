@@ -1,21 +1,39 @@
 # Fique Por Dentro Sergipe
 
-## Open Graph dinâmico para notícias
+Portal de notícias — SPA React + Vite hospedada no Lovable, backend Lovable Cloud.
 
-Para Facebook, WhatsApp e outros crawlers, use o Worker `cloudflare-og-worker.js` no Cloudflare com a rota:
+## Open Graph / prévia de compartilhamento
 
-```txt
-www.fiquepordentrosergipe.com.br/noticia/*
-```
+Cada rota `/noticia/:slug` define suas próprias tags via `react-helmet-async`
+em `src/pages/NoticiaPage.tsx`:
 
-Configure a variável de ambiente do Worker:
+- `title`, `meta description`, `canonical`
+- `og:type=article`, `og:title`, `og:description`, `og:image`, `og:url`, `og:site_name`
+- `twitter:card=summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`
+- JSON-LD `NewsArticle`
 
-```txt
-SHARE_PREVIEW_FUNCTION_URL=<endpoint da função share-preview>
-```
+A imagem usada é sempre a capa real da matéria (`manual_image_url` ou
+`cover_image_url`), normalizada para URL absoluta HTTPS. `og-default.jpg`
+só entra como fallback quando a matéria realmente não tem imagem.
 
-Fluxo esperado:
+### Limitação conhecida (SPA sem SSR)
 
-- Leitores continuam abrindo `https://www.fiquepordentrosergipe.com.br/noticia/<slug>` normalmente.
-- Crawlers recebem HTML da função `share-preview` com `og:type=article`, `og:url` e `canonical` apontando para a URL pública da notícia.
-- `og:image` usa a imagem manual/capa da própria matéria; se não houver imagem própria, usa `/og-default.jpg`.
+O hosting Lovable serve `index.html` estático para todas as rotas. Crawlers
+que **executam JavaScript** (Googlebot moderno, Twitter/X) leem as tags
+dinâmicas do Helmet corretamente. Crawlers que **não executam JS**
+(WhatsApp, Facebook, Telegram, LinkedIn, Discord) veem apenas o
+`index.html` bruto — não veem título/imagem por notícia.
+
+Para atender esses crawlers seriam necessárias uma das opções abaixo,
+todas fora do escopo atual do projeto:
+
+- SSR na página de notícia (migrar Vite SPA → framework com SSR); ou
+- Um proxy no caminho da requisição que detecte o User-Agent do crawler
+  e devolva HTML pré-renderizado com as tags corretas.
+
+### Edge Function `share-preview`
+
+`supabase/functions/share-preview/index.ts` continua deployada e gera o
+HTML com Open Graph pronto por slug (`?slug=<slug>`). Ela é independente
+de qualquer proxy — fica disponível caso, no futuro, se opte por uma
+solução de rewrite/prerender no hosting.
