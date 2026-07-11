@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload, History, AlertTriangle, ExternalLink, Sparkles, RotateCcw, Loader2, Globe, CheckCircle2, ArchiveRestore, BrainCircuit, ThumbsUp, ThumbsDown, Pin, PinOff, Film, Share2 } from "lucide-react";
-import { getSocialShareUrl } from "@/lib/socialShare";
+import { getSocialShareUrl, getArticleDirectUrl } from "@/lib/socialShare";
 import { Link } from "react-router-dom";
 import { ImageActionButtons } from "@/components/admin/ImageActionButtons";
 import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
@@ -571,17 +571,28 @@ export default function AdminPostEditor() {
           <Button
             type="button"
             size="sm"
-            variant="outline"
             className="gap-2"
             onClick={async () => {
               await navigator.clipboard.writeText(getSocialShareUrl(form.slug));
               toast.success("Link com prévia copiado.");
             }}
           >
-            <Share2 className="h-4 w-4" /> Copiar link com prévia
+            <Share2 className="h-4 w-4" /> Copiar link para WhatsApp
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={async () => {
+              await navigator.clipboard.writeText(getArticleDirectUrl(form.slug));
+              toast.success("Link do site copiado.");
+            }}
+          >
+            <Share2 className="h-4 w-4" /> Link do site
           </Button>
           <span className="text-xs text-muted-foreground">
-            Use este link para compartilhar no WhatsApp, Facebook e Telegram — mostra a prévia da matéria.
+            "WhatsApp" gera prévia da matéria; "Link do site" abre a página diretamente.
           </span>
         </div>
       )}
