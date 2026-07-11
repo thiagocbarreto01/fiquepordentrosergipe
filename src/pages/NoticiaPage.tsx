@@ -142,11 +142,14 @@ export default function NoticiaPage() {
   const metaTitle = `${aiTitle} — Fique Por Dentro Sergipe`;
   const metaDesc = aiSummary;
   const rawOwnImage = post.manual_image_url || post.cover_image_url;
-  const ogImage = rawOwnImage && /^https?:\/\//i.test(rawOwnImage)
-    ? rawOwnImage.replace(/^http:\/\//i, "https://")
-    : rawOwnImage && rawOwnImage.startsWith("/")
-      ? `${SITE_URL}${rawOwnImage}`
-      : DEFAULT_OG_IMAGE;
+  const hasOwnImage = !!rawOwnImage;
+  const ogImage = hasOwnImage
+    ? (/^https?:\/\//i.test(rawOwnImage!)
+        ? rawOwnImage!.replace(/^http:\/\//i, "https://")
+        : rawOwnImage!.startsWith("/")
+          ? `${SITE_URL}${rawOwnImage}`
+          : DEFAULT_OG_IMAGE)
+    : DEFAULT_OG_IMAGE;
   const newsArticleLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -172,17 +175,20 @@ export default function NoticiaPage() {
         <meta name="description" content={metaDesc} />
         <link rel="canonical" href={canonical} />
         <meta property="og:type" content="article" />
-        <meta property="og:title" content={post.meta_title || post.title} />
+        <meta property="og:site_name" content="Fique Por Dentro Sergipe" />
+        <meta property="og:locale" content="pt_BR" />
+        <meta property="og:title" content={aiTitle} />
         <meta property="og:description" content={metaDesc} />
         <meta property="og:url" content={canonical} />
         <meta property="og:image" content={ogImage} />
         <meta property="og:image:secure_url" content={ogImage} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.meta_title || post.title} />
+        <meta name="twitter:title" content={aiTitle} />
         <meta name="twitter:description" content={metaDesc} />
         <meta name="twitter:image" content={ogImage} />
         <script type="application/ld+json">{JSON.stringify(newsArticleLd)}</script>
       </Helmet>
+
       <div className="container-news"><AdSlot position="topo_home" /></div>
       <article className="container-news mt-4 grid lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2">
