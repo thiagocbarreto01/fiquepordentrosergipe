@@ -128,6 +128,10 @@ export default function Index() {
 
   return (
     <SiteLayout>
+      <Helmet>
+        <meta property="og:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
+        <meta name="twitter:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
+      </Helmet>
       {/* HERO */}
       <section className="container-news pt-2 md:pt-3">
         <SectionBoundary title="Manchete" loading={!loaded && !manchete}>
