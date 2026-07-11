@@ -17,7 +17,7 @@ import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
 import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/site/ImageLightbox";
 import { getSocialShareUrl, getArticleDirectUrl } from "@/lib/socialShare";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Link2 } from "lucide-react";
 
 const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
@@ -136,8 +136,7 @@ export default function NoticiaPage() {
   // Link com prévia dinâmica (Open Graph via Edge Function share-preview).
   // Usado nos botões de compartilhamento social — crawlers de WhatsApp/Facebook
   // leem as metatags da matéria e navegadores são redirecionados para a URL normal.
-  const getCurrentSocialShareUrl = () => getSocialShareUrl(post.slug);
-  const socialShareUrl = getCurrentSocialShareUrl();
+  const socialShareUrl = getSocialShareUrl(post.slug);
   // Link direto da matéria — sem prévia dinâmica para crawlers.
   const directUrl = getArticleDirectUrl(post.slug);
   const shareText = encodeURIComponent(post.title);
@@ -232,15 +231,15 @@ export default function NoticiaPage() {
             <span>·</span>
             <span>{post.published_at ? new Date(post.published_at).toLocaleString("pt-BR") : timeAgo(post.created_at)}</span>
             <div className="ml-auto flex items-center gap-2">
-              <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noopener noreferrer" href={`https://wa.me/?text=${whatsappText}`} onClick={(e) => { e.preventDefault(); const url = `https://wa.me/?text=${encodeURIComponent(getCurrentSocialShareUrl())}`; const w = window.open(url, "_blank", "noopener,noreferrer"); if (!w) { try { window.top!.location.href = url; } catch { window.location.href = url; } } }} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
-              <a aria-label="Compartilhar no Facebook" target="_blank" rel="noopener noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} onClick={(e) => { e.preventDefault(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getCurrentSocialShareUrl())}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
-              <a aria-label="Compartilhar no Twitter" target="_blank" rel="noopener noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} onClick={(e) => { e.preventDefault(); window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(getCurrentSocialShareUrl())}&text=${shareText}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noopener noreferrer" href={`https://wa.me/?text=${whatsappText}`} onClick={(e) => { e.preventDefault(); const url = `https://wa.me/?text=${encodeURIComponent(getSocialShareUrl(post.slug))}`; const w = window.open(url, "_blank", "noopener,noreferrer"); if (!w) { try { window.top!.location.href = url; } catch { window.location.href = url; } } }} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no Facebook" target="_blank" rel="noopener noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} onClick={(e) => { e.preventDefault(); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getSocialShareUrl(post.slug))}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no Twitter" target="_blank" rel="noopener noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} onClick={(e) => { e.preventDefault(); window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(getSocialShareUrl(post.slug))}&text=${shareText}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
               <button
                 aria-label="Copiar link com prévia"
                 title="Copiar link com prévia (WhatsApp, Facebook)"
                 onClick={async () => {
-                  await navigator.clipboard.writeText(getCurrentSocialShareUrl());
-                  toast({ title: "Link com prévia copiado." });
+                  await navigator.clipboard.writeText(getSocialShareUrl(post.slug));
+                  toast("Link com prévia copiado");
                 }}
                 className="p-2 hover:bg-secondary rounded-sm"
               >
@@ -251,7 +250,7 @@ export default function NoticiaPage() {
                 title="Link do site"
                 onClick={async () => {
                   await navigator.clipboard.writeText(directUrl);
-                  toast({ title: "Link do site copiado." });
+                  toast("Link do site copiado");
                 }}
                 className="p-2 hover:bg-secondary rounded-sm"
               >
