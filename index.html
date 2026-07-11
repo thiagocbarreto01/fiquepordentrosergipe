@@ -14,7 +14,8 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Fique Por Dentro Sergipe" />
     <meta property="og:locale" content="pt_BR" />
-    <meta property="og:url" content="https://www.fiquepordentrosergipe.com.br/" />
+    <!-- og:url é definido por rota via react-helmet-async (NoticiaPage, Index etc.).
+         Não fixar aqui — evita apontar notícias para a home. -->
     <!-- og:image dinâmico:
          - Crawlers em /noticia/<slug> recebem HTML da edge function
            share-preview (via Cloudflare Worker) com og:image da matéria.
