@@ -1,16 +1,24 @@
 // URL central para compartilhamento social com prévia (Open Graph dinâmico).
 //
-// Aponta para a Edge Function `share-preview`, que devolve HTML com og:type=article,
-// og:title, og:description, og:image e canonical apontando para /noticia/<slug>.
-// Crawlers (WhatsApp, Facebook, Telegram, etc.) leem as metatags; navegadores
-// reais são redirecionados imediatamente para a matéria original.
+// Aponta para a rota serverless da Vercel `/api/share-preview`, que devolve
+// HTML com og:type=article, og:title, og:description e og:image. Crawlers
+// (WhatsApp, Facebook, Telegram, etc.) leem as metatags; navegadores reais
+// são redirecionados via JS para a matéria original.
+//
+// Configure VITE_SHARE_PREVIEW_BASE_URL com o domínio da Vercel (ex.:
+// "https://fiquepordentrosergipe.vercel.app"). Sem essa variável, cai no
+// domínio público do portal — que só funciona quando o /api estiver
+// deployado no mesmo host (Vercel + domínio custom).
 
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/+$/, "") ?? "";
+const SHARE_BASE = (
+  (import.meta.env.VITE_SHARE_PREVIEW_BASE_URL as string | undefined) ??
+  "https://www.fiquepordentrosergipe.com.br"
+).replace(/\/+$/, "");
 
-/** URL da função share-preview para o slug informado. */
+/** URL da rota serverless share-preview para o slug informado. */
 export function getSocialShareUrl(slug: string): string {
   const safeSlug = encodeURIComponent(String(slug ?? "").trim());
-  return `${SUPABASE_URL}/functions/v1/share-preview?slug=${safeSlug}`;
+  return `${SHARE_BASE}/api/share-preview?slug=${safeSlug}`;
 }
 
 /** URL pública canônica da matéria (link direto, sem prévia dinâmica). */
