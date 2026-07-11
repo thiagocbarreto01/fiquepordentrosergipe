@@ -12,13 +12,14 @@
 
 const SHARE_BASE = (
   (import.meta.env.VITE_SHARE_PREVIEW_BASE_URL as string | undefined) ??
-  "https://www.fiquepordentrosergipe.com.br"
+  "https://fiquepordentrosergipe.vercel.app"
 ).replace(/\/+$/, "");
 
-/** URL da rota serverless share-preview para o slug informado. */
+/** URL da rota serverless share-preview para o slug informado.
+ *  Inclui `&v=<timestamp>` para evitar cache do WhatsApp/Facebook. */
 export function getSocialShareUrl(slug: string): string {
   const safeSlug = encodeURIComponent(String(slug ?? "").trim());
-  return `${SHARE_BASE}/api/share-preview?slug=${safeSlug}`;
+  return `${SHARE_BASE}/api/share-preview?slug=${safeSlug}&v=${Date.now()}`;
 }
 
 /** URL pública canônica da matéria (link direto, sem prévia dinâmica). */
