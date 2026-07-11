@@ -74,19 +74,51 @@ export default async function handler(req: any, res: any) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: post, error } = await supabase
+    const SELECT_COLS =
+      "id, slug, title, subtitle, excerpt, cover_image_url, manual_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id";
+
+    // 1) posts_public (view canônica de publicadas)
+    let { data: post, error } = await supabase
       .from("posts_public")
-      .select(
-        "id, slug, title, subtitle, excerpt, cover_image_url, manual_image_url, meta_title, meta_description, ai_seo_title, ai_summary, published_at, tags, category_id",
-      )
+      .select(SELECT_COLS)
       .eq("slug", slug)
       .maybeSingle();
 
-    if (error) {
+    // 2) fallback: tabela posts (apenas publicadas)
+    if (!post && !error) {
+      const r = await supabase
+        .from("posts")
+        .select(SELECT_COLS + ", status")
+        .eq("slug", slug)
+        .eq("status", "publicada")
+        .maybeSingle();
+      if (r.data) post = r.data as any;
+    }
+
+    // 3) fallback: aliases de slug (se a tabela existir)
+    if (!post) {
+      try {
+        const alias = await supabase
+          .from("post_slug_aliases")
+          .select("post_id")
+          .eq("alias", slug)
+          .maybeSingle();
+        if (alias.data?.post_id) {
+          const r = await supabase
+            .from("posts_public")
+            .select(SELECT_COLS)
+            .eq("id", alias.data.post_id)
+            .maybeSingle();
+          if (r.data) post = r.data as any;
+        }
+      } catch { /* tabela pode não existir — ignora */ }
+    }
+
+    if (error && !post) {
       console.error("[share-preview] erro:", error.message);
       return htmlError(res, 500, "Erro ao carregar notícia.");
     }
-    if (!post || post.slug !== slug) {
+    if (!post) {
       return htmlError(res, 404, "Notícia não encontrada.");
     }
 
