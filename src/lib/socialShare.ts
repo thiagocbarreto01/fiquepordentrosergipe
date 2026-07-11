@@ -10,10 +10,7 @@
 // domínio público do portal — que só funciona quando o /api estiver
 // deployado no mesmo host (Vercel + domínio custom).
 
-const SHARE_BASE = (
-  (import.meta.env.VITE_SHARE_PREVIEW_BASE_URL as string | undefined) ??
-  "https://fiquepordentrosergipe.vercel.app"
-).replace(/\/+$/, "");
+const SHARE_BASE = "https://fiquepordentrosergipe.vercel.app";
 
 /** URL da rota serverless share-preview para o slug informado.
  *  Inclui `&v=<timestamp>` para evitar cache do WhatsApp/Facebook. */
