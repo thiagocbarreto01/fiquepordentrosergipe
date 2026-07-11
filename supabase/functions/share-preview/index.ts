@@ -236,6 +236,6 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error(`[share-preview ${reqId}] exceção:`, (e as Error).message);
-    return html5xx("Erro ao carregar notícia.");
+    return htmlError(500, "Erro ao carregar notícia.");
   }
 });
