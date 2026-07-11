@@ -44,7 +44,7 @@ function htmlResponse(body: string, init: ResponseInit = {}) {
   headers.set("content-type", "text/html; charset=utf-8");
   headers.set("x-content-type-options", "nosniff");
   headers.set("x-share-preview-version", "html-v3");
-  return new Response(body, { ...init, headers });
+  return new Response(new Blob([body], { type: "text/html; charset=utf-8" }), { ...init, headers });
 }
 
 function escapeHtml(s: string): string {
