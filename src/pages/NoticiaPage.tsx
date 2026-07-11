@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/site/ImageLightbox";
 import { getSocialShareUrl, getArticleDirectUrl } from "@/lib/socialShare";
 import { toast } from "sonner";
-import { Link2 } from "lucide-react";
 
 const SITE_URL = "https://www.fiquepordentrosergipe.com.br";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`;
@@ -231,9 +230,9 @@ export default function NoticiaPage() {
             <span>·</span>
             <span>{post.published_at ? new Date(post.published_at).toLocaleString("pt-BR") : timeAgo(post.created_at)}</span>
             <div className="ml-auto flex items-center gap-2">
-              <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noopener noreferrer" href={`https://wa.me/?text=${whatsappText}`} onClick={(e) => { e.preventDefault(); const shareUrl = getSocialShareUrl(post.slug); console.log("shareUrl usado:", shareUrl); const url = `https://wa.me/?text=${encodeURIComponent(shareUrl)}`; const w = window.open(url, "_blank", "noopener,noreferrer"); if (!w) { try { window.top!.location.href = url; } catch { window.location.href = url; } } }} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
-              <a aria-label="Compartilhar no Facebook" target="_blank" rel="noopener noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} onClick={(e) => { e.preventDefault(); const shareUrl = getSocialShareUrl(post.slug); console.log("shareUrl usado:", shareUrl); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
-              <a aria-label="Compartilhar no Twitter" target="_blank" rel="noopener noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} onClick={(e) => { e.preventDefault(); const shareUrl = getSocialShareUrl(post.slug); console.log("shareUrl usado:", shareUrl); window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareText}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no WhatsApp" target="_blank" rel="noopener noreferrer" href={`https://wa.me/?text=${whatsappText}`} onClick={(e) => { e.preventDefault(); const shareUrl = getSocialShareUrl(post.slug); console.log("shareUrl usado:", shareUrl); toast("Link com prévia copiado"); const url = `https://wa.me/?text=${encodeURIComponent(shareUrl)}`; const w = window.open(url, "_blank", "noopener,noreferrer"); if (!w) { try { window.top!.location.href = url; } catch { window.location.href = url; } } }} className="p-2 hover:bg-secondary rounded-sm"><MessageCircle className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no Facebook" target="_blank" rel="noopener noreferrer" href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEnc}`} onClick={(e) => { e.preventDefault(); const shareUrl = getSocialShareUrl(post.slug); console.log("shareUrl usado:", shareUrl); toast("Link com prévia copiado"); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Facebook className="h-4 w-4" /></a>
+              <a aria-label="Compartilhar no Twitter" target="_blank" rel="noopener noreferrer" href={`https://twitter.com/intent/tweet?url=${shareUrlEnc}&text=${shareText}`} onClick={(e) => { e.preventDefault(); const shareUrl = getSocialShareUrl(post.slug); console.log("shareUrl usado:", shareUrl); toast("Link com prévia copiado"); window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareText}`, "_blank", "noopener,noreferrer"); }} className="p-2 hover:bg-secondary rounded-sm"><Twitter className="h-4 w-4" /></a>
               <button
                 aria-label="Compartilhar link com prévia"
                 title="Compartilhar link com prévia"
@@ -242,6 +241,7 @@ export default function NoticiaPage() {
                   console.log("shareUrl usado:", shareUrl);
                   if (navigator.share) {
                     await navigator.share({ title: post.title, url: shareUrl });
+                    toast("Link com prévia copiado");
                     return;
                   }
                   await navigator.clipboard.writeText(shareUrl);
