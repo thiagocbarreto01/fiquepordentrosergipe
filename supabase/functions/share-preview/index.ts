@@ -38,6 +38,7 @@ function htmlResponse(body: string, init: ResponseInit = {}) {
   headers.delete("Content-Type");
   headers.set("content-type", "text/html; charset=utf-8");
   headers.set("x-content-type-options", "nosniff");
+  headers.set("x-share-preview-version", "html-v2");
   return new Response(body, { ...init, headers });
 }
 
