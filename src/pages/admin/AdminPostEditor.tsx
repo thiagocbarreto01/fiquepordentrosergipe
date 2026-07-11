@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, History, AlertTriangle, ExternalLink, Sparkles, RotateCcw, Loader2, Globe, CheckCircle2, ArchiveRestore, BrainCircuit, ThumbsUp, ThumbsDown, Pin, PinOff, Film } from "lucide-react";
+import { Upload, History, AlertTriangle, ExternalLink, Sparkles, RotateCcw, Loader2, Globe, CheckCircle2, ArchiveRestore, BrainCircuit, ThumbsUp, ThumbsDown, Pin, PinOff, Film, Share2 } from "lucide-react";
+import { getSocialShareUrl } from "@/lib/socialShare";
 import { Link } from "react-router-dom";
 import { ImageActionButtons } from "@/components/admin/ImageActionButtons";
 import ReelGeneratorDialog from "@/components/admin/ReelGeneratorDialog";
@@ -564,6 +565,26 @@ export default function AdminPostEditor() {
           </span>
         )}
       </div>
+
+      {!isNew && form.slug && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={async () => {
+              await navigator.clipboard.writeText(getSocialShareUrl(form.slug));
+              toast.success("Link com prévia copiado.");
+            }}
+          >
+            <Share2 className="h-4 w-4" /> Copiar link com prévia
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Use este link para compartilhar no WhatsApp, Facebook e Telegram — mostra a prévia da matéria.
+          </span>
+        </div>
+      )}
 
       {!isNew && (() => {
         const method = detectCaptureMethod({ source_id: form.source_id, source_url: form.source_url });
