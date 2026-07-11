@@ -246,11 +246,11 @@ export default function NoticiaPage() {
                 <Share2 className="h-4 w-4" />
               </button>
               <button
-                aria-label="Copiar link direto"
-                title="Copiar link direto da matéria"
+                aria-label="Link do site"
+                title="Link do site"
                 onClick={async () => {
                   await navigator.clipboard.writeText(directUrl);
-                  toast({ title: "Link direto copiado." });
+                  toast({ title: "Link do site copiado." });
                 }}
                 className="p-2 hover:bg-secondary rounded-sm"
               >
