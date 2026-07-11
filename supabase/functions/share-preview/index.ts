@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
 
     console.log(`[share-preview ${reqId}] match post.id=${post.id} slug=${post.slug} og:image=${image}`);
 
-    return new Response(
+    return htmlResponse(
       buildHtml({
         title,
         description,
@@ -236,7 +236,6 @@ Deno.serve(async (req) => {
         status: 200,
         headers: {
           ...corsHeaders,
-          "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "public, max-age=0, must-revalidate",
           "CDN-Cache-Control": "no-store",
           "Vary": "*",
