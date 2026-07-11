@@ -16,6 +16,11 @@ function isCrawlerUserAgent(userAgent: string | null): boolean {
   return CRAWLER_USER_AGENT_RE.test(userAgent || "");
 }
 
+function getPublicSharePreviewUrl(slug: string): string {
+  const backendUrl = Deno.env.get("SUPABASE_URL") || "https://faubrqvkzgyfryfjylnb.supabase.co";
+  return `${backendUrl.replace(/\/$/, "")}/functions/v1/share-preview?slug=${encodeURIComponent(slug)}`;
+}
+
 function toAbsoluteImage(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const s = String(raw)
@@ -217,6 +222,7 @@ Deno.serve(async (req) => {
     }
 
     const articleUrl = `${SITE_URL}/noticia/${post.slug}`;
+    const canonicalSharePreviewUrl = getPublicSharePreviewUrl(post.slug);
     const title = (post as any).ai_seo_title || post.meta_title || post.title;
     const description =
       (post as any).ai_summary ||
@@ -244,7 +250,7 @@ Deno.serve(async (req) => {
         description,
         image,
         articleUrl,
-        sharePreviewUrl,
+        sharePreviewUrl: canonicalSharePreviewUrl,
         publishedAt: post.published_at,
         category: (post as any).categories?.name,
         tags: post.tags,
