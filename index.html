@@ -15,15 +15,15 @@
     <meta property="og:site_name" content="Fique Por Dentro Sergipe" />
     <meta property="og:locale" content="pt_BR" />
     <meta property="og:url" content="https://www.fiquepordentrosergipe.com.br/" />
-    <!-- og:image institucional: única tag og:image do site.
-         Impede o fallback de screenshot automático da hospedagem
-         (pub-*.lovable.app-*.png). Sobrescrita por matéria via CF Worker
-         + edge function share-preview para crawlers de redes sociais. -->
-    <meta property="og:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
+    <!-- og:image dinâmico:
+         - Crawlers em /noticia/<slug> recebem HTML da edge function
+           share-preview (via Cloudflare Worker) com og:image da matéria.
+         - Demais rotas recebem og:image definido por rota via
+           react-helmet-async (ex.: Index.tsx define og-default.jpg).
+         Nenhuma og:image fixa aqui — evita sobrescrever o og:image da notícia. -->
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
 
     
     
