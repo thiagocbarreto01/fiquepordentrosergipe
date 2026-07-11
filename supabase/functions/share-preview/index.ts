@@ -28,8 +28,18 @@ function toAbsoluteImage(raw: string | null | undefined): string | null {
 const htmlHeaders = {
   ...corsHeaders,
   "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Content-Type": "text/html; charset=utf-8",
+  "content-type": "text/html; charset=utf-8",
 };
+
+function htmlResponse(body: string, init: ResponseInit = {}) {
+  const headers = new Headers(init.headers);
+  // Remove qualquer variação de content-type já setada para evitar duplicatas
+  headers.delete("content-type");
+  headers.delete("Content-Type");
+  headers.set("content-type", "text/html; charset=utf-8");
+  headers.set("x-content-type-options", "nosniff");
+  return new Response(body, { ...init, headers });
+}
 
 function escapeHtml(s: string): string {
   return s
@@ -148,7 +158,7 @@ Deno.serve(async (req) => {
   };
 
   const htmlError = (status: number, msg: string) =>
-    new Response(
+    htmlResponse(
       buildHtml({
         title: "Fique Por Dentro Sergipe",
         description: msg,
@@ -212,7 +222,7 @@ Deno.serve(async (req) => {
 
     console.log(`[share-preview ${reqId}] match post.id=${post.id} slug=${post.slug} og:image=${image}`);
 
-    return new Response(
+    return htmlResponse(
       buildHtml({
         title,
         description,
@@ -226,7 +236,6 @@ Deno.serve(async (req) => {
         status: 200,
         headers: {
           ...corsHeaders,
-          "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "public, max-age=0, must-revalidate",
           "CDN-Cache-Control": "no-store",
           "Vary": "*",
