@@ -23,6 +23,7 @@ const FIELDS: { key: keyof SiteSettings; label: string; placeholder?: string }[]
 
 export default function AdminConfiguracoes() {
   const qc = useQueryClient();
+  const { isAdmin } = useAuth();
   const [form, setForm] = useState<SiteSettings | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -69,6 +70,25 @@ export default function AdminConfiguracoes() {
             />
           </div>
         ))}
+
+        {isAdmin && (
+          <div className="pt-4 mt-4 border-t border-border">
+            <h2 className="text-xs font-bold uppercase tracking-wider mb-3 text-muted-foreground">Recursos experimentais</h2>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label className="text-sm font-semibold">Recaptura assistida</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Permite reextrair o conteúdo da fonte original da notícia e comparar antes de substituir. Só admins veem o botão no editor.
+                </p>
+              </div>
+              <Switch
+                checked={!!form.recapture_assisted_enabled}
+                onCheckedChange={(v) => setForm({ ...form, recapture_assisted_enabled: v })}
+              />
+            </div>
+          </div>
+        )}
+
         <Button onClick={save} disabled={saving} className="mt-2">
           {saving ? "Salvando…" : "Salvar"}
         </Button>
