@@ -235,7 +235,7 @@ export default function AdminPostEditor() {
       subtitle: form.subtitle || null,
       instagram_headline: (form.instagram_headline || "").trim() || null,
       slug,
-      content: form.content,
+      content: normalizeEditorContent(form.content),
       cover_image_url: form.cover_image_url || null,
       manual_image_url: form.manual_image_url || null,
       image_caption: (form.image_caption || "").trim() || null,
