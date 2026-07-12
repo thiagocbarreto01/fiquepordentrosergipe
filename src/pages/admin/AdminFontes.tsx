@@ -32,7 +32,11 @@ import {
   CheckCircle2,
   XCircle,
   Search,
+  ChevronDown,
+  ExternalLink,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 
 type RunLog = {
   source_id: string;
@@ -436,60 +440,99 @@ export default function AdminFontes() {
         </div>
       </div>
 
-      {/* Barra de filtros */}
-      <div className="bg-card border border-border mb-4 p-3 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou URL…"
-            className="pl-9"
-          />
+      {/* Barra de filtros — mobile: busca full width + filtros recolhíveis */}
+      <div className="bg-card border border-border mb-4 p-3">
+        <div className="flex flex-col md:flex-row md:flex-wrap gap-3 md:items-center">
+          <div className="relative flex-1 min-w-0 md:min-w-[220px] w-full">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou URL…"
+              className="pl-9 w-full"
+            />
+          </div>
+
+          {/* Mobile ações rápidas full-width */}
+          <div className="grid grid-cols-2 gap-2 md:hidden">
+            <Button
+              onClick={runAllNow}
+              disabled={runAllLoading}
+              variant="outline"
+              className="border-2 border-foreground font-bold w-full"
+              size="sm"
+            >
+              {runAllLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Zap className="h-4 w-4 mr-1" />}
+              Captar
+            </Button>
+            <Button onClick={openNew} className="bg-urgent hover:bg-urgent/90 w-full" size="sm">
+              <PlusCircle className="h-4 w-4 mr-1" /> Nova fonte
+            </Button>
+          </div>
+
+          {/* Filtros: sempre visíveis no desktop, colapsáveis no mobile */}
+          <Collapsible className="md:hidden w-full">
+            <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold uppercase tracking-wider border border-border rounded-sm bg-secondary">
+              Filtros <ChevronDown className="h-4 w-4" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 space-y-2">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Editoria" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as editorias ({sources.length})</SelectItem>
+                  <SelectItem value={UNCATEGORIZED}>Sem categoria ({countByCategory.get(UNCATEGORIZED) ?? 0})</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name} ({countByCategory.get(c.id) ?? 0})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="active">Apenas ativas</SelectItem>
+                  <SelectItem value="inactive">Apenas inativas</SelectItem>
+                </SelectContent>
+              </Select>
+              {(search || categoryFilter !== "all" || statusFilter !== "all") && (
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => { setSearch(""); setCategoryFilter("all"); setStatusFilter("all"); }}>
+                  Limpar filtros
+                </Button>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+
+          <div className="hidden md:flex md:items-center md:gap-3 md:flex-wrap">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Editoria" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as editorias ({sources.length})</SelectItem>
+                <SelectItem value={UNCATEGORIZED}>Sem categoria ({countByCategory.get(UNCATEGORIZED) ?? 0})</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name} ({countByCategory.get(c.id) ?? 0})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="active">Apenas ativas</SelectItem>
+                <SelectItem value="inactive">Apenas inativas</SelectItem>
+              </SelectContent>
+            </Select>
+            {(search || categoryFilter !== "all" || statusFilter !== "all") && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setCategoryFilter("all"); setStatusFilter("all"); }}>
+                Limpar filtros
+              </Button>
+            )}
+            <span className="text-xs text-muted-foreground ml-auto">
+              {filtered.length} de {sources.length}
+            </span>
+          </div>
         </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Editoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as editorias ({sources.length})</SelectItem>
-            <SelectItem value={UNCATEGORIZED}>
-              Sem categoria ({countByCategory.get(UNCATEGORIZED) ?? 0})
-            </SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name} ({countByCategory.get(c.id) ?? 0})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="active">Apenas ativas</SelectItem>
-            <SelectItem value="inactive">Apenas inativas</SelectItem>
-          </SelectContent>
-        </Select>
-        {(search || categoryFilter !== "all" || statusFilter !== "all") && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSearch("");
-              setCategoryFilter("all");
-              setStatusFilter("all");
-            }}
-          >
-            Limpar filtros
-          </Button>
-        )}
-        <span className="text-xs text-muted-foreground ml-auto">
-          {filtered.length} de {sources.length}
-        </span>
       </div>
+
 
       {lastRunLogs && (
         <div className="bg-card border-2 border-foreground mb-6 p-4">
