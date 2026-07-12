@@ -1167,11 +1167,33 @@ export default function AdminPostEditor() {
 
           <div>
             <Label>Conteúdo *</Label>
+            <ContentToolbar
+              onWrap={(open, close) => {
+                const el = contentRef.current;
+                if (!el) return;
+                const start = el.selectionStart ?? 0;
+                const end = el.selectionEnd ?? 0;
+                const before = form.content.slice(0, start);
+                const sel = form.content.slice(start, end);
+                const after = form.content.slice(end);
+                const next = `${before}${open}${sel}${close}${after}`;
+                setForm({ ...form, content: next });
+                requestAnimationFrame(() => {
+                  el.focus();
+                  const pos = start + open.length + sel.length + close.length;
+                  el.setSelectionRange(pos, pos);
+                });
+              }}
+            />
             <Textarea
+              ref={contentRef}
               rows={18}
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Dica: parágrafos separados por linha em branco são preservados na publicação. Use a barra acima para formatação rápida.
+            </p>
           </div>
         </div>
 
