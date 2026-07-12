@@ -525,34 +525,69 @@ function extractVideosFromHtml(html: string, baseUrl: string): { main: string | 
   return { main: ordered[0] ?? null, related: ordered.slice(1, 6) };
 }
 
-async function fetchPageMedia(url: string): Promise<PageMedia> {
-  const empty: PageMedia = { ogImage: null, mainVideo: null, relatedVideos: [] };
+// Extrai o corpo principal do artigo (heurística leve, sem libs externas).
+// Tenta <article>, depois <main>, depois maior bloco de <p>. Retorna texto limpo.
+function extractArticleText(html: string): string {
+  const clean = (s: string) =>
+    s
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<(figure|aside|nav|header|footer|form)[\s\S]*?<\/\1>/gi, " ");
+
+  const paragraphsFrom = (chunk: string): string => {
+    const ps: string[] = [];
+    const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(chunk)) !== null) {
+      const t = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (t.length >= 40) ps.push(t);
+    }
+    return ps.join("\n\n");
+  };
+
+  const cleaned = clean(html);
+  const candidates: string[] = [];
+  const artMatches = cleaned.match(/<article[\s\S]*?<\/article>/gi) ?? [];
+  for (const a of artMatches) candidates.push(paragraphsFrom(a));
+  const mainMatch = cleaned.match(/<main[\s\S]*?<\/main>/i);
+  if (mainMatch) candidates.push(paragraphsFrom(mainMatch[0]));
+  const entryMatch = cleaned.match(/<div[^>]+class=['"][^'"]*(entry-content|post-content|article-content|content-body|td-post-content|single-content)[^'"]*['"][^>]*>[\s\S]*?<\/div>/i);
+  if (entryMatch) candidates.push(paragraphsFrom(entryMatch[0]));
+  candidates.push(paragraphsFrom(cleaned));
+
+  let best = "";
+  for (const c of candidates) if (c.length > best.length) best = c;
+  return best.slice(0, 20_000);
+}
+
+interface PageFetchResult extends PageMedia { articleText: string; html: string | null }
+
+async function fetchPage(url: string): Promise<PageFetchResult> {
+  const empty: PageFetchResult = { ogImage: null, mainVideo: null, relatedVideos: [], articleText: "", html: null };
   try {
     const r = await fetch(url, {
       headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0" },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10000),
     });
     if (!r.ok) return empty;
     const ct = r.headers.get("content-type") ?? "";
     if (!ct.includes("text/html")) return empty;
-    const html = (await r.text()).slice(0, 400_000); // cap leitura
+    const html = (await r.text()).slice(0, 600_000);
 
     const og =
       html.match(/<meta[^>]+property=['"]og:image['"][^>]*content=['"]([^'"]+)['"]/i) ??
       html.match(/<meta[^>]+content=['"]([^'"]+)['"][^>]*property=['"]og:image['"]/i) ??
       html.match(/<meta[^>]+name=['"]twitter:image['"][^>]*content=['"]([^'"]+)['"]/i);
-    
+
     let ogImage: string | null = null;
     if (og) {
       try { ogImage = new URL(og[1], url).toString(); }
       catch { ogImage = og[1]; }
     }
 
-    // Se não encontrou og:image nas meta tags, busca a primeira tag <img> da página (fora do head)
     if (!ogImage) {
       const bodyOnly = html.split(/<\/head>/i)[1] || html;
-      // Ignora imagens com extensões que costumam ser trackers ou ícones pequenos
-      // Tenta pegar a primeira imagem que não tenha "logo" no nome se possível, ou apenas a primeira
       const imgMatch = bodyOnly.match(/<img[^>]+src=['"]([^'"]+\.(?:jpe?g|png|webp|gif)[^'"]*)['"]/i);
       if (imgMatch) {
         try { ogImage = new URL(imgMatch[1], url).toString(); }
@@ -561,10 +596,16 @@ async function fetchPageMedia(url: string): Promise<PageMedia> {
     }
 
     const { main, related } = extractVideosFromHtml(html, url);
-    return { ogImage, mainVideo: main, relatedVideos: related };
+    const articleText = extractArticleText(html);
+    return { ogImage, mainVideo: main, relatedVideos: related, articleText, html };
   } catch {
     return empty;
   }
+}
+
+async function fetchPageMedia(url: string): Promise<PageMedia> {
+  const r = await fetchPage(url);
+  return { ogImage: r.ogImage, mainVideo: r.mainVideo, relatedVideos: r.relatedVideos };
 }
 
 // fetchOgImage removido (usar fetchPageMedia)
