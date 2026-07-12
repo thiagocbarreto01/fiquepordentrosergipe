@@ -49,7 +49,7 @@ export default function AdminPostEditor() {
   const { id } = useParams();
   const isNew = !id || id === "novo";
   const nav = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isStaff } = useAuth();
   const canPublish = isAdmin; // Only admins as requested
   const siteSettings = useSiteSettings();
   const [cats, setCats] = useState<any[]>([]);
