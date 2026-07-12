@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ContentToolbar from "@/components/admin/ContentToolbar";
 import RecaptureDialog from "@/components/admin/RecaptureDialog";
+import CompletePostAIDialog from "@/components/admin/CompletePostAIDialog";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,7 +49,7 @@ export default function AdminPostEditor() {
   const { id } = useParams();
   const isNew = !id || id === "novo";
   const nav = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isStaff } = useAuth();
   const canPublish = isAdmin; // Only admins as requested
   const siteSettings = useSiteSettings();
   const [cats, setCats] = useState<any[]>([]);
@@ -1192,15 +1193,32 @@ export default function AdminPostEditor() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
               <Label>Conteúdo *</Label>
-              {!isNew && isAdmin && siteSettings.recapture_assisted_enabled && id && (
-                <RecaptureDialog
-                  postId={id}
-                  currentContent={form.content || ""}
-                  onReplace={(newContent) => setForm({ ...form, previous_content: form.content, content: newContent })}
-                />
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {!isNew && isStaff && (
+                  <CompletePostAIDialog
+                    postId={id}
+                    currentTitle={form.title || ""}
+                    currentContent={form.content || ""}
+                    onApply={(r) => setForm({
+                      ...form,
+                      previous_content: form.content,
+                      title: r.titulo || form.title,
+                      subtitle: r.subtitulo || form.subtitle,
+                      content: r.conteudo || form.content,
+                      excerpt: r.resumo || form.excerpt,
+                    })}
+                  />
+                )}
+                {!isNew && isAdmin && siteSettings.recapture_assisted_enabled && id && (
+                  <RecaptureDialog
+                    postId={id}
+                    currentContent={form.content || ""}
+                    onReplace={(newContent) => setForm({ ...form, previous_content: form.content, content: newContent })}
+                  />
+                )}
+              </div>
             </div>
             <ContentToolbar
               onWrap={(open, close) => {
