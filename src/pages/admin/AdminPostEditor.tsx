@@ -4,6 +4,8 @@ import { getContentQuality } from "@/lib/contentQuality";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ContentToolbar from "@/components/admin/ContentToolbar";
+import RecaptureDialog from "@/components/admin/RecaptureDialog";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
