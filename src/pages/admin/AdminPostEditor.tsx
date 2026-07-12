@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ContentToolbar from "@/components/admin/ContentToolbar";
 import RecaptureDialog from "@/components/admin/RecaptureDialog";
+import CompletePostAIDialog from "@/components/admin/CompletePostAIDialog";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
