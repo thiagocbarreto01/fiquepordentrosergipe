@@ -1191,7 +1191,16 @@ export default function AdminPostEditor() {
           </div>
 
           <div>
-            <Label>Conteúdo *</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label>Conteúdo *</Label>
+              {!isNew && isAdmin && siteSettings.recapture_assisted_enabled && id && (
+                <RecaptureDialog
+                  postId={id}
+                  currentContent={form.content || ""}
+                  onReplace={(newContent) => setForm({ ...form, previous_content: form.content, content: newContent })}
+                />
+              )}
+            </div>
             <ContentToolbar
               onWrap={(open, close) => {
                 const el = contentRef.current;
