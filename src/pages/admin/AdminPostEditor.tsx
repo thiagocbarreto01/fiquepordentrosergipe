@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { normalizeEditorContent } from "@/lib/normalizeEditorContent";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
+import ContentToolbar from "@/components/admin/ContentToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,7 @@ export default function AdminPostEditor() {
   const [cats, setCats] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [duplicateOriginal, setDuplicateOriginal] = useState<any>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
@@ -234,7 +237,7 @@ export default function AdminPostEditor() {
       subtitle: form.subtitle || null,
       instagram_headline: (form.instagram_headline || "").trim() || null,
       slug,
-      content: form.content,
+      content: normalizeEditorContent(form.content),
       cover_image_url: form.cover_image_url || null,
       manual_image_url: form.manual_image_url || null,
       image_caption: (form.image_caption || "").trim() || null,
@@ -1166,11 +1169,33 @@ export default function AdminPostEditor() {
 
           <div>
             <Label>Conteúdo *</Label>
+            <ContentToolbar
+              onWrap={(open, close) => {
+                const el = contentRef.current;
+                if (!el) return;
+                const start = el.selectionStart ?? 0;
+                const end = el.selectionEnd ?? 0;
+                const before = form.content.slice(0, start);
+                const sel = form.content.slice(start, end);
+                const after = form.content.slice(end);
+                const next = `${before}${open}${sel}${close}${after}`;
+                setForm({ ...form, content: next });
+                requestAnimationFrame(() => {
+                  el.focus();
+                  const pos = start + open.length + sel.length + close.length;
+                  el.setSelectionRange(pos, pos);
+                });
+              }}
+            />
             <Textarea
+              ref={contentRef}
               rows={18}
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Dica: parágrafos separados por linha em branco são preservados na publicação. Use a barra acima para formatação rápida.
+            </p>
           </div>
         </div>
 
