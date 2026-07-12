@@ -590,7 +590,86 @@ export default function AdminFontes() {
         </div>
       )}
 
-      <div className="bg-card border border-border overflow-x-auto">
+      {/* Mobile: cards */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 && (
+          <div className="bg-card border border-border p-8 text-center text-sm text-muted-foreground">
+            {sources.length === 0
+              ? 'Nenhuma fonte cadastrada. Toque em "Nova fonte" para começar.'
+              : "Nenhuma fonte encontrada com os filtros atuais."}
+          </div>
+        )}
+        {filtered.map((s) => {
+          const catName = s.default_category_id ? categoryMap.get(s.default_category_id) : null;
+          return (
+            <div key={s.id} className="bg-card border border-border p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-display font-black text-base leading-tight">{s.name}</div>
+                  {s.url && (
+                    <a href={s.url} target="_blank" rel="noreferrer" className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary break-all">
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{s.url}</span>
+                    </a>
+                  )}
+                </div>
+                <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s)} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <div className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Editorial</div>
+                  <div className="mt-0.5">
+                    {catName ? (
+                      <span className="inline-block font-bold uppercase tracking-wider bg-secondary px-2 py-0.5">{catName}</span>
+                    ) : (
+                      <span className="text-amber-700 font-semibold">sem categoria</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Tipo</div>
+                  <div className="font-bold uppercase mt-0.5">{s.source_type}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Frequência</div>
+                  <div className="font-semibold mt-0.5">{s.frequency_minutes} min</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Captado</div>
+                  <div className="font-semibold mt-0.5">{s.total_captured}</div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-muted-foreground uppercase tracking-wider text-[10px] font-bold">Última atualização</div>
+                  <div className="font-semibold mt-0.5">
+                    {timeAgo(s.last_run_at)}
+                    {s.last_run_status === "error" && <span className="ml-2 text-urgent">· erro</span>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2 pt-1">
+                <Button onClick={() => openEdit(s)} variant="outline" className="w-full font-bold">
+                  <Edit className="h-4 w-4 mr-2" /> Editar
+                </Button>
+                {s.source_type === "rss" && (
+                  <Button onClick={() => captureNow(s)} disabled={running === s.id} className="w-full font-bold">
+                    {running === s.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCcw className="h-4 w-4 mr-2" />}
+                    Executar captação
+                  </Button>
+                )}
+                <Button onClick={() => remove(s.id)} variant="outline" className="w-full font-bold border-urgent text-urgent hover:bg-urgent/10">
+                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: tabela */}
+      <div className="hidden md:block bg-card border border-border overflow-x-auto">
+
         <table className="w-full text-sm">
           <thead className="bg-secondary text-xs uppercase tracking-wider">
             <tr>
