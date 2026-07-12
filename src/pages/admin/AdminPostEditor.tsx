@@ -50,6 +50,7 @@ export default function AdminPostEditor() {
   const nav = useNavigate();
   const { user, isAdmin } = useAuth();
   const canPublish = isAdmin; // Only admins as requested
+  const siteSettings = useSiteSettings();
   const [cats, setCats] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
