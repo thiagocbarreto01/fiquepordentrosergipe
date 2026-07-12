@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { normalizeEditorContent } from "@/lib/normalizeEditorContent";
+import { getContentQuality } from "@/lib/contentQuality";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ContentToolbar from "@/components/admin/ContentToolbar";
@@ -297,6 +298,25 @@ export default function AdminPostEditor() {
     }
   }
 
+  // Fase 7: publicação segura — bloqueia incompleto, confirma curto, publica completo.
+  async function tryPublish() {
+    const q = getContentQuality(form.content || "");
+    if (q.level === "incompleto") {
+      toast.error(
+        `Conteúdo muito curto (${q.chars} chars). Complete a matéria antes de publicar — recomendado ≥ 500 caracteres.`,
+        { duration: 6000 }
+      );
+      return;
+    }
+    if (q.level === "curto") {
+      const ok = window.confirm(
+        `Atenção: matéria curta (${q.chars} caracteres, ${q.words} palavras). Publicar mesmo assim?`
+      );
+      if (!ok) return;
+    }
+    await save("publicada");
+  }
+
   async function gerarComIA() {
     if (!form.title || !form.content) {
       return toast.error("Título e conteúdo são obrigatórios para gerar com IA");
@@ -524,7 +544,7 @@ export default function AdminPostEditor() {
           {canPublish && (
             <div className="flex items-center gap-2 border-l pl-2 ml-2">
               <Button
-                onClick={() => save("publicada")}
+                onClick={() => tryPublish()}
                 disabled={saving}
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
@@ -1421,7 +1441,7 @@ export default function AdminPostEditor() {
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Publicação Rápida</p>
                   
                   <Button
-                    onClick={() => save("publicada")}
+                    onClick={() => tryPublish()}
                     disabled={saving}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-7 text-lg shadow-md group transition-all"
                   >
@@ -1561,7 +1581,7 @@ export default function AdminPostEditor() {
               Visualizar
             </Button>
             <Button
-              onClick={() => save("publicada")}
+              onClick={() => tryPublish()}
               disabled={saving || !canPublish}
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-black"
