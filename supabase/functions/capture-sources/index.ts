@@ -754,10 +754,27 @@ async function captureFromSource(
       }
 
       const cleanDesc = cleanContent(item.description);
-      const excerpt = cleanDesc ? cleanDesc.slice(0, 500) : null;
       const originalTitle = item.title.slice(0, 300);
-      const originalContent = cleanDesc
-        ? `${cleanDesc}\n\n[Fonte original: ${sourceUrl ?? source.name}]`
+
+      // Fase 5: sempre que possível, buscar o CORPO COMPLETO do artigo na página da fonte.
+      // Reaproveita o mesmo fetch para extrair mídia (og:image + vídeos) — evita chamada dupla.
+      let prefetched: PageFetchResult | null = null;
+      let fullArticleText = "";
+      if (sourceUrl) {
+        try {
+          prefetched = await fetchPage(sourceUrl);
+          fullArticleText = prefetched.articleText ?? "";
+        } catch { /* ignorar; segue com o que veio do RSS */ }
+      }
+
+      // Escolhe o texto mais rico: página completa (se substancialmente maior) ou descrição RSS.
+      const chosenBody =
+        fullArticleText && fullArticleText.length > Math.max(600, cleanDesc.length + 200)
+          ? fullArticleText
+          : cleanDesc;
+      const excerpt = chosenBody ? chosenBody.slice(0, 500) : null;
+      const originalContent = chosenBody
+        ? `${chosenBody}\n\n[Fonte original: ${sourceUrl ?? source.name}]`
         : `Notícia captada de ${source.name}. Acesse a fonte original: ${sourceUrl ?? source.url}`;
 
       // Reescrita por IA — qualidade JORNALÍSTICA padrão, com limpeza profunda.
