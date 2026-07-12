@@ -298,6 +298,25 @@ export default function AdminPostEditor() {
     }
   }
 
+  // Fase 7: publicação segura — bloqueia incompleto, confirma curto, publica completo.
+  async function tryPublish() {
+    const q = getContentQuality(form.content || "");
+    if (q.level === "incompleto") {
+      toast.error(
+        `Conteúdo muito curto (${q.chars} chars). Complete a matéria antes de publicar — recomendado ≥ 500 caracteres.`,
+        { duration: 6000 }
+      );
+      return;
+    }
+    if (q.level === "curto") {
+      const ok = window.confirm(
+        `Atenção: matéria curta (${q.chars} caracteres, ${q.words} palavras). Publicar mesmo assim?`
+      );
+      if (!ok) return;
+    }
+    await save("publicada");
+  }
+
   async function gerarComIA() {
     if (!form.title || !form.content) {
       return toast.error("Título e conteúdo são obrigatórios para gerar com IA");
