@@ -237,3 +237,10 @@
 .fpd-marquee-pause:hover .fpd-marquee {
   animation-play-state: paused;
 }
+
+/* Painel admin — mobile safety */
+html, body { overflow-x: hidden; max-width: 100vw; }
+.admin-editor-bottombar {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+}
+

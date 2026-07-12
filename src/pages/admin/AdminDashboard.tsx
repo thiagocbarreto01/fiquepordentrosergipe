@@ -204,7 +204,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <Stat label="Notícias" value={counts.posts} icon={FileText} color="bg-primary" />
         <Stat label="Denúncias novas" value={counts.denuncias} icon={AlertTriangle} color="bg-urgent" />
         <Stat label="Visualizações" value={counts.views.toLocaleString("pt-BR")} icon={Eye} color="bg-navy-deep" />
