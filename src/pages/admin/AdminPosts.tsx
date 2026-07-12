@@ -1035,7 +1035,9 @@ export default function AdminPosts() {
           </tbody>
         </table>
       </div>
+      </>
       )}
+
 
       <DayPostsModal
         open={!!dayModalPost}
