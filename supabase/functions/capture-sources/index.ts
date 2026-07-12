@@ -948,20 +948,18 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
       let coverOriginal: string | null = item.image ?? null;
       let coverSource: "rss" | "extracted" | "category_fallback" = "rss";
 
+      // Reutiliza o fetch feito antes (Fase 5) para evitar 2ª requisição na mesma URL.
+      const media = prefetched ?? (sourceUrl ? await fetchPage(sourceUrl) : null);
       if (!coverOriginal) {
         coverSource = "extracted";
-        if (sourceUrl) {
-          const media = await fetchPageMedia(sourceUrl);
+        if (media) {
           coverOriginal = media.ogImage;
           videoUrlPrincipal = media.mainVideo;
           videosRelacionados = media.relatedVideos;
         }
-      } else {
-        if (sourceUrl) {
-          const media = await fetchPageMedia(sourceUrl);
-          videoUrlPrincipal = media.mainVideo;
-          videosRelacionados = media.relatedVideos;
-        }
+      } else if (media) {
+        videoUrlPrincipal = media.mainVideo;
+        videosRelacionados = media.relatedVideos;
       }
 
       let finalCoverUrl = coverOriginal;
