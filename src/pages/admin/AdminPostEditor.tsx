@@ -50,6 +50,7 @@ export default function AdminPostEditor() {
   const [cats, setCats] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [duplicateOriginal, setDuplicateOriginal] = useState<any>(null);
   const [duplicateMatches, setDuplicateMatches] = useState<any[]>([]);
