@@ -10,6 +10,7 @@ export type SiteSettings = {
   whatsapp_url: string;
   youtube_url: string;
   contact_email: string;
+  recapture_assisted_enabled: boolean;
 };
 
 const DEFAULTS: SiteSettings = {
@@ -21,6 +22,7 @@ const DEFAULTS: SiteSettings = {
   whatsapp_url: "",
   youtube_url: "",
   contact_email: "contato@fiquepordentrose.com",
+  recapture_assisted_enabled: false,
 };
 
 export function useSiteSettings() {
@@ -29,7 +31,7 @@ export function useSiteSettings() {
     queryFn: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase
         .from("site_settings")
-        .select("site_name,instagram_handle,instagram_url,facebook_url,threads_url,whatsapp_url,youtube_url,contact_email")
+        .select("site_name,instagram_handle,instagram_url,facebook_url,threads_url,whatsapp_url,youtube_url,contact_email,recapture_assisted_enabled")
         .maybeSingle();
       if (error || !data) return DEFAULTS;
       return { ...DEFAULTS, ...data } as SiteSettings;

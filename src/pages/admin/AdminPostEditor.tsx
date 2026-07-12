@@ -4,6 +4,8 @@ import { getContentQuality } from "@/lib/contentQuality";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ContentToolbar from "@/components/admin/ContentToolbar";
+import RecaptureDialog from "@/components/admin/RecaptureDialog";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,7 @@ export default function AdminPostEditor() {
   const nav = useNavigate();
   const { user, isAdmin } = useAuth();
   const canPublish = isAdmin; // Only admins as requested
+  const siteSettings = useSiteSettings();
   const [cats, setCats] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -239,6 +242,7 @@ export default function AdminPostEditor() {
       instagram_headline: (form.instagram_headline || "").trim() || null,
       slug,
       content: normalizeEditorContent(form.content),
+      previous_content: form.previous_content ?? null,
       cover_image_url: form.cover_image_url || null,
       manual_image_url: form.manual_image_url || null,
       image_caption: (form.image_caption || "").trim() || null,
@@ -1188,7 +1192,16 @@ export default function AdminPostEditor() {
           </div>
 
           <div>
-            <Label>Conteúdo *</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label>Conteúdo *</Label>
+              {!isNew && isAdmin && siteSettings.recapture_assisted_enabled && id && (
+                <RecaptureDialog
+                  postId={id}
+                  currentContent={form.content || ""}
+                  onReplace={(newContent) => setForm({ ...form, previous_content: form.content, content: newContent })}
+                />
+              )}
+            </div>
             <ContentToolbar
               onWrap={(open, close) => {
                 const el = contentRef.current;
