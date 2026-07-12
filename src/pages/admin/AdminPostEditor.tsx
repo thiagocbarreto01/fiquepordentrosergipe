@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { normalizeEditorContent } from "@/lib/normalizeEditorContent";
+import { getContentQuality } from "@/lib/contentQuality";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import ContentToolbar from "@/components/admin/ContentToolbar";
