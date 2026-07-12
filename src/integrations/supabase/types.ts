@@ -472,6 +472,7 @@ export type Database = {
           meta_description: string | null
           meta_keywords: string[]
           meta_title: string | null
+          previous_content: string | null
           previous_status: Database["public"]["Enums"]["post_status"] | null
           published_at: string | null
           relevance_analyzed_at: string | null
@@ -547,6 +548,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[]
           meta_title?: string | null
+          previous_content?: string | null
           previous_status?: Database["public"]["Enums"]["post_status"] | null
           published_at?: string | null
           relevance_analyzed_at?: string | null
@@ -622,6 +624,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[]
           meta_title?: string | null
+          previous_content?: string | null
           previous_status?: Database["public"]["Enums"]["post_status"] | null
           published_at?: string | null
           relevance_analyzed_at?: string | null
@@ -873,6 +876,7 @@ export type Database = {
           id: boolean
           instagram_handle: string | null
           instagram_url: string | null
+          recapture_assisted_enabled: boolean
           site_name: string
           threads_url: string | null
           updated_at: string
@@ -886,6 +890,7 @@ export type Database = {
           id?: boolean
           instagram_handle?: string | null
           instagram_url?: string | null
+          recapture_assisted_enabled?: boolean
           site_name?: string
           threads_url?: string | null
           updated_at?: string
@@ -899,6 +904,7 @@ export type Database = {
           id?: boolean
           instagram_handle?: string | null
           instagram_url?: string | null
+          recapture_assisted_enabled?: boolean
           site_name?: string
           threads_url?: string | null
           updated_at?: string
