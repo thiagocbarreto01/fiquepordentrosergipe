@@ -32,6 +32,7 @@ export default function AdminConfiguracoes() {
         site_name: "Fique Por Dentro Sergipe",
         instagram_handle: "", instagram_url: "", facebook_url: "", threads_url: "",
         whatsapp_url: "", youtube_url: "", contact_email: "contato@fiquepordentrose.com",
+        recapture_assisted_enabled: false,
       });
     })();
   }, []);
