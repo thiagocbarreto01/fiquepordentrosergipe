@@ -242,6 +242,7 @@ export default function AdminPostEditor() {
       instagram_headline: (form.instagram_headline || "").trim() || null,
       slug,
       content: normalizeEditorContent(form.content),
+      previous_content: form.previous_content ?? null,
       cover_image_url: form.cover_image_url || null,
       manual_image_url: form.manual_image_url || null,
       image_caption: (form.image_caption || "").trim() || null,
