@@ -26,8 +26,12 @@ import { RelevanceBadge } from "@/components/admin/RelevanceBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { SourceGroupedView, type GroupSort } from "@/components/admin/SourceGroupedView";
 import { KanbanBoard } from "@/components/admin/KanbanBoard";
-import { List, FolderTree, KanbanSquare, Search } from "lucide-react";
+import { List, FolderTree, KanbanSquare, Search, Share2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { getContentQuality } from "@/lib/contentQuality";
+import { QualityBadge } from "@/components/admin/QualityBadge";
+import { getSocialShareUrl } from "@/lib/socialShare";
+
 
 type Filter = "all" | EditorialStatus;
 type HomeFilter = "all" | "active" | "expired" | "expiring_today";
