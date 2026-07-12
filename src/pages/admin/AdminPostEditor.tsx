@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { normalizeEditorContent } from "@/lib/normalizeEditorContent";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
+import ContentToolbar from "@/components/admin/ContentToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
