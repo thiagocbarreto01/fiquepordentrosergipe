@@ -10,6 +10,7 @@ export type SiteSettings = {
   whatsapp_url: string;
   youtube_url: string;
   contact_email: string;
+  recapture_assisted_enabled: boolean;
 };
 
 const DEFAULTS: SiteSettings = {
@@ -21,6 +22,7 @@ const DEFAULTS: SiteSettings = {
   whatsapp_url: "",
   youtube_url: "",
   contact_email: "contato@fiquepordentrose.com",
+  recapture_assisted_enabled: false,
 };
 
 export function useSiteSettings() {
