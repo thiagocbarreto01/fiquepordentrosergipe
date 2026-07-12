@@ -1,134 +1,78 @@
-# G1 PRO MAX — Plano de Upgrade
+# Atualização do Painel Administrativo — Fique Por Dentro Sergipe
 
-Arquitetura jornalística baseada em **eventos** (clusters de notícias relacionadas), com IA editorial, breaking automático, scoring v2, failsafe total, auto-sync de espelho e SEO de portal.
+Escopo grande. Vou entregar em **fases numeradas**, cada uma testável isoladamente. Só sigo para a próxima após você confirmar.
 
----
+## Fase 1 — Responsividade do Painel (base para tudo)
 
-## 1. Banco de dados (migration)
+- `AdminLayout.tsx`: sidebar vira **Drawer** (`Sheet` do shadcn) em <768px, fecha ao clicar item / ESC / clicar fora / botão X.
+- Header sticky com safe-area iPhone (`env(safe-area-inset-top)`), logo alinhada, botão hambúrguer visível só no mobile.
+- `body { overflow-x: hidden }` no `index.css`; tabelas ganham wrapper `overflow-x-auto`.
+- Grid do Dashboard: 1 col <480px, 2 col <768px, mantém 5 col desktop.
+- Editor de post (`AdminPostEditor.tsx`): barra fixa inferior mobile com **Salvar / Visualizar / Publicar** + safe-area-bottom.
 
-Novas estruturas em `public`:
+## Fase 2 — Tela Fontes (Cards mobile)
 
-- `news_events` — cluster editorial
-  - `id uuid pk`, `slug text unique`, `title text`, `summary text`
-  - `category_id uuid`, `entities text[]`, `keywords text[]`
-  - `impact_score numeric` (0–100), `is_breaking bool`, `breaking_until timestamptz`
-  - `first_seen_at`, `last_updated_at`, `post_count int`
-- `posts.event_id uuid` (FK → news_events) + `posts_public.event_id`
-- `posts.ai_seo_title text`, `posts.ai_summary text`, `posts.ai_clickbait_score numeric`, `posts.ai_suggested_category uuid`
-- `sync_audit_log` — `id, event_type, post_id, status, error, created_at` (drift/retry/log)
-- RPCs:
-  - `cluster_post_into_event(_post_id uuid)` — calcula similaridade (trigram em título+tags+entities) e atribui `event_id` (cria novo se nenhum match ≥ 0.55)
-  - `detect_breaking_events()` — marca `is_breaking=true` em eventos com `impact_score ≥ 80` nas últimas 2h, define `breaking_until = now()+90min`
-  - `expire_breaking_events()` — limpa `is_breaking` quando `breaking_until < now()`
-  - `audit_posts_public_drift()` — retorna ids divergentes
-  - `auto_repair_posts_public()` — corrige drift + grava em `sync_audit_log`
-- Trigger `posts AFTER INSERT/UPDATE` → chama `cluster_post_into_event` + atualiza `news_events.last_updated_at`/`post_count`.
-- GRANTs em todas as novas tabelas; RLS: leitura pública de `news_events`, escrita restrita a staff.
+- `AdminFontes.tsx`: mantém tabela desktop; abaixo de 768px renderiza **grid de cards** com todos os campos pedidos (Nome, URL, Editorial, Tipo, Frequência, Última atualização, Qtd captada, Status) e 3 botões full-width (Editar / Executar Captação / Excluir).
+- Busca full-width, filtros em `<Collapsible>`.
 
----
+## Fase 3 — Tela Notícias (Cards mobile) + novo fluxo padrão
 
-## 2. Edge Function `editorial-ai`
+- `AdminPosts.tsx`: cards mobile com Imagem, Título, Fonte, Categoria, Status, Duplicidade, Data, **Qualidade** (badge nova), ações verticais (Editar, Publicar, Arquivar, Excluir, Compartilhar, Visualizar).
+- Filtro inicial ao abrir a tela: `status = captada` **e** `período = hoje` (querystring default).
+- Toggle "Ver tudo" para limpar filtros.
 
-Nova função Supabase (`supabase/functions/editorial-ai/index.ts`) usando **Lovable AI Gateway** (`google/gemini-3-flash-preview`):
+## Fase 4 — Fluxo de Captura: CAPTADA por padrão
 
-- Input: `{ post_id }`
-- Ações sequenciais com `Output.object` (Zod):
-  - SEO title (≤ 60 chars, sem clickbait)
-  - Summary jornalístico (2–3 frases, lead invertido)
-  - Clickbait score (0–1)
-  - Categoria sugerida (id entre categorias existentes)
-  - Entidades extraídas (pessoas/lugares/orgs)
-- Persiste em `posts.ai_*` + atualiza `entities` do evento.
-- Trigger automático: chamada via `secure-publish-trigger` ao publicar.
+- `supabase/functions/capture-sources/index.ts`: novas notícias entram como `captada` (hoje entram como `pronta_para_revisao`).
+- Sem migração de banco — só muda o valor default no insert. Notícias antigas ficam como estão.
 
----
+## Fase 5 — Extração completa das matérias
 
-## 3. Impact Scoring v2 (frontend)
+- `capture-sources`: após ler o RSS, faz `fetch` da URL original e extrai o corpo com seletores semânticos (`article`, `main`, `[itemprop=articleBody]`, `.entry-content`, etc.), removendo `nav/footer/aside/script/iframe/.ad/.share/.related/.comments`.
+- Fallback para o `content:encoded` do RSS quando a página bloquear.
+- Salva HTML estruturado em `posts.content`.
 
-Refatorar `src/lib/editorialEngine.ts`:
+## Fase 6 — Qualidade + Origem + Estatísticas
 
-```
-finalScore = 0.30·recency + 0.25·engagement + 0.25·entityImpact + 0.20·eventImportance
-```
+- Utilitário `src/lib/contentQuality.ts` com `getQuality(html)` → `completo | curto | incompleto` (por nº de caracteres do texto puro).
+- Badge `QualityBadge` reutilizável (verde/amarelo/vermelho).
+- Barra de stats acima do editor: Caracteres, Palavras, Tempo de leitura, Qualidade, **Origem** (RSS / Página Original / IA / Manual, derivada de `source_id` + metadata), SEO score simples.
+- Origem exibida também na página da notícia pública? **Não** — o pedido é do painel; mantenho só no admin para não mexer no SEO/public.
 
-- `eventImportance` = `news_events.impact_score` normalizado + bonus se `is_breaking`.
-- `entityImpact` reusa keywords + entidades extraídas pela IA.
-- Mantém override manual de `home_audit`.
+## Fase 7 — Publicação segura
 
----
+- No botão Publicar do editor: verifica qualidade.
+  - Completo → publica.
+  - Curto → `AlertDialog` de confirmação.
+  - Incompleto → bloqueia com opções: **Recapturar**, **Completar com IA**, **Editar manualmente**.
 
-## 4. Failsafe System
+## Fase 8 — Recaptura assistida (feature flag)
 
-Novo módulo `src/lib/failsafe.ts`:
+- Flag em `site_settings` (linha `recapture_assisted_enabled`, default `false`, só admin ativa em `AdminConfiguracoes`).
+- Nova edge function `recapture-post`: extrai versão nova, retorna preview **sem gravar**.
+- Diálogo compara caracteres/qualidade/parágrafos adicionados|removidos, com botões **Manter atual / Substituir / Copiar para edição**. Backup do conteúdo em `posts.previous_content` (coluna nova via migração).
 
-1. Tenta fetch normal (`posts_public` + cache de memória).
-2. Em erro → cache `sessionStorage` (`lkg:home`).
-3. Em erro → `localStorage` snapshot persistente (last known good).
-4. Em erro total → placeholder estático mínimo (3 cards genéricos) — nunca tela vazia.
-5. Toda render bem-sucedida grava o snapshot.
+## Fase 9 — IA para completar matérias
 
-Aplicado em `Index.tsx`, `CategoriaPage`, `UltimasPage`.
+- Nova edge function `complete-post-ai` usando Lovable AI (`google/gemini-2.5-flash`), prompt restritivo (não inventa fatos/números/datas/cargos/falas — só melhora redação, cria intro/fechamento, transições, SEO, com base no texto existente).
+- Preview no editor antes de aplicar.
 
----
+## Fase 10 — Auditoria final
 
-## 5. Auto-Sync Engine
-
-- Hook `useAutoSync` em `AdminLayout` que a cada 60s chama `audit_posts_public_drift`; se houver drift, dispara `auto_repair_posts_public()` e mostra toast com contagem.
-- Edge function `sync-watchdog` agendada (cron 5 min) faz o mesmo no servidor.
-- Página `/admin/sync` mostra `sync_audit_log` (últimos 50 eventos).
-
----
-
-## 6. Breaking News Engine
-
-- `BreakingBar` consulta `news_events where is_breaking=true order by impact_score desc limit 1`.
-- Quando ativo: substitui manchete em `PortalHero` por evento breaking (post mais recente do cluster) com badge "URGENTE".
-- Expira automaticamente via `expire_breaking_events()` (rodado no fetch).
-
----
-
-## 7. SEO Engine
-
-Em `NoticiaPage.tsx`:
-
-- URL canônica `/{categoria}/{slug}`.
-- `<Helmet>`: title = `ai_seo_title || title`, description = `ai_summary || excerpt`, JSON-LD `NewsArticle` completo (headline, datePublished, author, image, articleSection, keywords).
-- **Internal linking**: bloco "Mais sobre este assunto" listando outros posts do mesmo `event_id`.
-- Slug normalizado server-side (trigger já existente; garantir unicidade).
-
----
-
-## 8. Home Structure (Index.tsx)
-
-Ordem fixa:
-
-1. `BreakingBar` (auto)
-2. `PortalHero` — manchete por evento + 2 secundárias do mesmo cluster
-3. Faixa "3 Destaques" (próximos eventos por impact_score)
-4. Grid editorial por categoria (existente, agora alimentado por scoring v2)
-5. Sidebar: Trending por evento (eventos com mais posts em 24h) + Mais Lidas (views reais de `posts_public`)
-
----
+Relatório com arquivos alterados, migrações, riscos e checklist dos ✓ pedidos.
 
 ## Detalhes técnicos
 
-- Migrations idempotentes (`IF NOT EXISTS`).
-- Realtime: subscribe em `news_events` além de `posts`.
-- Cache: `src/lib/cache.ts` ganha namespace `events:*` com TTL 60s.
-- Backfill: script SQL roda `cluster_post_into_event` para todos os posts publicados existentes.
-- IA: chamada apenas em publicação (não em rascunho) para economizar créditos; fallback silencioso se 402/429.
-- Sem mudanças em `src/integrations/supabase/client.ts` e secrets existentes.
+**Migrações** (apenas o mínimo necessário):
+- `posts.previous_content text` (backup para recaptura).
+- `site_settings` já existe — apenas insert de linha `recapture_assisted_enabled`.
+
+**Sem alterações em**: URLs públicas, SEO público, categorias, autoria, imagens/backfill, RSS parser (só adição de extração de página), Auto Sync, sistema de duplicidade.
+
+**Compatibilidade**: tudo testado em 390px e desktop; `useIsMobile()` já existe.
+
+**Risco principal**: extração de página original pode falhar em sites com bloqueio anti-bot → fallback garantido para conteúdo do RSS mantém comportamento atual.
 
 ---
 
-## Ordem de execução
-
-1. Migration (tabelas, colunas, RPCs, triggers, GRANTs, RLS)
-2. Backfill de clusters
-3. Edge function `editorial-ai` + integração no `secure-publish-trigger`
-4. Edge function `sync-watchdog` + cron
-5. Frontend: `failsafe.ts`, `editorialEngine.ts` v2, `BreakingBar`, `PortalHero`, `Index.tsx`, `NoticiaPage.tsx`, `useAutoSync`
-6. Página `/admin/sync`
-7. Validação: home, breaking, evento com 2+ posts, drift forçado
-
-Confirma para eu executar?
+**Confirma o plano?** Se sim, começo pela **Fase 1 (responsividade)** e paro para você validar antes de seguir. Se quiser reordenar (ex: começar pela Fase 4 que é a mudança de comportamento mais visível), me diga.

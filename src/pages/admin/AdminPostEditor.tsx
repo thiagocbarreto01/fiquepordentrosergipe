@@ -1510,6 +1510,45 @@ export default function AdminPostEditor() {
           )}
         </aside>
       </div>
+
+      {/* Barra fixa mobile: Salvar / Visualizar / Publicar */}
+      {!isNew && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg admin-editor-bottombar px-3 pt-2">
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              onClick={() => save()}
+              disabled={saving}
+              variant="outline"
+              size="sm"
+              className="font-bold"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+            </Button>
+            <Button
+              onClick={() => {
+                const s = form.slug || slugify(form.title);
+                if (s) window.open(`/noticia/${s}`, "_blank");
+              }}
+              variant="outline"
+              size="sm"
+              className="font-bold"
+            >
+              Visualizar
+            </Button>
+            <Button
+              onClick={() => save("publicada")}
+              disabled={saving || !canPublish}
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black"
+            >
+              Publicar
+            </Button>
+          </div>
+        </div>
+      )}
+      {/* Espaço para não sobrepor conteúdo no mobile */}
+      {!isNew && <div className="md:hidden h-20" aria-hidden />}
     </AdminLayout>
   );
 }
+
