@@ -544,7 +544,7 @@ export default function AdminPostEditor() {
           {canPublish && (
             <div className="flex items-center gap-2 border-l pl-2 ml-2">
               <Button
-                onClick={() => save("publicada")}
+                onClick={() => tryPublish()}
                 disabled={saving}
                 size="sm"
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
@@ -1441,7 +1441,7 @@ export default function AdminPostEditor() {
                   <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Publicação Rápida</p>
                   
                   <Button
-                    onClick={() => save("publicada")}
+                    onClick={() => tryPublish()}
                     disabled={saving}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-7 text-lg shadow-md group transition-all"
                   >
@@ -1581,7 +1581,7 @@ export default function AdminPostEditor() {
               Visualizar
             </Button>
             <Button
-              onClick={() => save("publicada")}
+              onClick={() => tryPublish()}
               disabled={saving || !canPublish}
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-black"
