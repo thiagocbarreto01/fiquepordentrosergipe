@@ -120,6 +120,7 @@ export default function AdminDashboard() {
   const [topRange, setTopRange] = useState<"day" | "week" | "month">("day");
   const [backfilling, setBackfilling] = useState(false);
   const [reclassifying, setReclassifying] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | "backfill" | "reclassify">(null);
   const [topRelevant, setTopRelevant] = useState<any[]>([]);
   const [urgentPending, setUrgentPending] = useState<any[]>([]);
 
