@@ -10,6 +10,10 @@ import {
 import { STATUS_LABEL, STATUS_COLOR, normalizeStatus, type EditorialStatus } from "@/lib/statusFlow";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { SourceBadge } from "@/components/admin/SourceBadge";
 import { RelevanceBadge, PLACEMENT_LABEL } from "@/components/admin/RelevanceBadge";
@@ -78,10 +82,12 @@ function MetricCard({
   return inner;
 }
 
-const STATUS_TILES: { key: EditorialStatus; label: string; group: string[] }[] = [
+// "Em revisão" agrega no banco: pronta_para_revisao + em_revisao + revisao (legado).
+// O link do card usa ?status=em_revisao, cuja query em AdminPosts também expande
+// para esses três valores — garantindo que o número do card e o total listado sejam idênticos.
+const STATUS_TILES: { key: EditorialStatus; label: string; group: string[]; subKey?: string }[] = [
   { key: "captada", label: STATUS_LABEL.captada, group: ["captada", "rascunho"] },
-  { key: "pronta_para_revisao", label: STATUS_LABEL.pronta_para_revisao, group: ["pronta_para_revisao"] },
-  { key: "em_revisao", label: STATUS_LABEL.em_revisao, group: ["em_revisao", "revisao"] },
+  { key: "em_revisao", label: "Em revisão", group: ["pronta_para_revisao", "em_revisao", "revisao"], subKey: "pronta_para_revisao" },
   { key: "aprovada", label: STATUS_LABEL.aprovada, group: ["aprovada"] },
   { key: "publicada", label: STATUS_LABEL.publicada, group: ["publicada", "publicado"] },
   { key: "duplicada", label: STATUS_LABEL.duplicada, group: ["duplicada"] },
@@ -114,6 +120,7 @@ export default function AdminDashboard() {
   const [topRange, setTopRange] = useState<"day" | "week" | "month">("day");
   const [backfilling, setBackfilling] = useState(false);
   const [reclassifying, setReclassifying] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | "backfill" | "reclassify">(null);
   const [topRelevant, setTopRelevant] = useState<any[]>([]);
   const [urgentPending, setUrgentPending] = useState<any[]>([]);
 
@@ -165,6 +172,7 @@ export default function AdminDashboard() {
     return STATUS_TILES.map(t => ({
       ...t,
       count: t.group.reduce((s, k) => s + Number(counts[k] ?? 0), 0),
+      subCount: t.subKey ? Number(counts[t.subKey] ?? 0) : undefined,
     }));
   }, [stats]);
 
@@ -179,7 +187,7 @@ export default function AdminDashboard() {
   const rangeLabel = topRange === "day" ? "do Dia" : topRange === "week" ? "da Semana" : "do Mês";
 
   async function runBackfill() {
-    if (!confirm("Rodar backfill de imagens agora? A rotina revisa todas as notícias publicadas e substitui imagens vazias/genéricas.")) return;
+    if (backfilling) return;
     setBackfilling(true);
     try {
       const { data, error } = await supabase.functions.invoke("backfill-images");
@@ -188,11 +196,11 @@ export default function AdminDashboard() {
       toast.success(`Backfill OK — ${r.corrigidos_rss + r.corrigidos_categoria} corrigidos (RSS: ${r.corrigidos_rss}, categoria: ${r.corrigidos_categoria}). Sem solução: ${r.sem_solucao}. Já OK: ${r.ja_ok}.`);
     } catch (e: any) {
       toast.error(`Erro no backfill: ${e?.message ?? e}`);
-    } finally { setBackfilling(false); }
+    } finally { setBackfilling(false); setConfirmAction(null); }
   }
 
   async function runReclassify() {
-    if (!confirm("Reaplicar as regras de categorização em todas as notícias existentes?")) return;
+    if (reclassifying) return;
     setReclassifying(true);
     try {
       const { data, error } = await supabase.functions.invoke("reclassify-categories");
@@ -202,7 +210,7 @@ export default function AdminDashboard() {
       toast.success(`Reclassificação OK — ${r.atualizados} atualizadas de ${r.total_verificados} (${origens || "sem mudanças"})`);
     } catch (e: any) {
       toast.error(`Erro ao reclassificar: ${e?.message ?? e}`);
-    } finally { setReclassifying(false); }
+    } finally { setReclassifying(false); setConfirmAction(null); }
   }
 
   const fmt = (n: number | undefined | null) => (typeof n === "number" ? n : 0).toLocaleString("pt-BR");
@@ -364,10 +372,15 @@ export default function AdminDashboard() {
           <Link
             key={s.key}
             to={`/admin/posts?status=${s.key}`}
-            className={`p-4 border ${STATUS_COLOR[s.key]} hover:opacity-80 focus:ring-2 focus:ring-primary transition rounded-sm min-h-[92px]`}
+            className={`p-4 border ${STATUS_COLOR[s.key]} hover:opacity-80 focus:ring-2 focus:ring-primary transition rounded-sm min-h-[92px] flex flex-col`}
           >
             <div className="text-xs uppercase font-bold tracking-wider">{s.label}</div>
             <div className="font-display text-3xl font-black mt-1">{statsLoading ? "…" : fmt(s.count)}</div>
+            {typeof s.subCount === "number" && s.subCount > 0 && (
+              <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                {fmt(s.subCount)} prontas para revisão
+              </div>
+            )}
           </Link>
         ))}
       </div>
@@ -458,7 +471,7 @@ export default function AdminDashboard() {
                 <h3 className="font-display font-black">Corrigir imagens das notícias</h3>
                 <p className="text-sm text-muted-foreground mt-1">Revisa notícias publicadas e substitui imagens vazias/genéricas por imagem do RSS ou padrão da categoria. Requer confirmação.</p>
               </div>
-              <Button onClick={runBackfill} disabled={backfilling}>
+              <Button onClick={() => setConfirmAction("backfill")} disabled={backfilling}>
                 {backfilling ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Corrigindo…</> : "Rodar backfill"}
               </Button>
             </div>
@@ -467,7 +480,7 @@ export default function AdminDashboard() {
                 <h3 className="font-display font-black">Reclassificar categorias</h3>
                 <p className="text-sm text-muted-foreground mt-1">Reaplica regras de categorização em posts existentes. Requer confirmação.</p>
               </div>
-              <Button onClick={runReclassify} disabled={reclassifying} variant="outline" className="border-2 border-foreground font-bold">
+              <Button onClick={() => setConfirmAction("reclassify")} disabled={reclassifying} variant="outline" className="border-2 border-foreground font-bold">
                 {reclassifying ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Reclassificando…</> : "Reclassificar agora"}
               </Button>
             </div>
@@ -478,6 +491,50 @@ export default function AdminDashboard() {
           </div>
         </details>
       )}
+
+      <AlertDialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => { if (!open && !backfilling && !reclassifying) setConfirmAction(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === "backfill" ? "Corrigir imagens das notícias" : "Reclassificar categorias"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  {confirmAction === "backfill"
+                    ? "Vai varrer todas as notícias publicadas e substituir imagens vazias ou genéricas por imagem do RSS original ou pela imagem padrão da categoria correspondente."
+                    : "Vai reaplicar as regras de categorização em todos os posts existentes, reatribuindo a categoria com base nas regras atuais."}
+                </p>
+                <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-sm p-2">
+                  <strong>Impacto:</strong> a operação altera dados em massa e não pode ser desfeita em lote.
+                  O número exato de registros afetados só é conhecido ao final da execução — não há modo de prévia.
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Nenhum título, corpo, slug ou status editorial será modificado. Ao concluir, o resultado (total processado e eventuais erros) aparece em notificação.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={backfilling || reclassifying}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={backfilling || reclassifying}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmAction === "backfill") runBackfill();
+                else if (confirmAction === "reclassify") runReclassify();
+              }}
+            >
+              {(backfilling || reclassifying) ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando…</>
+              ) : "Confirmar e executar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

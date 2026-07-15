@@ -157,10 +157,13 @@ export default function AdminPosts() {
       .order("published_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
     if (filter !== "all") {
+      // "em_revisao" agrega os três status editoriais que representam "em revisão":
+      // pronta_para_revisao (nova nomenclatura), em_revisao e revisao (legado).
+      // Isso garante paridade com o card "Em revisão" do Dashboard.
       const map: Record<EditorialStatus, string[]> = {
         captada: ["captada", "rascunho"],
         pronta_para_revisao: ["pronta_para_revisao"],
-        em_revisao: ["em_revisao", "revisao"],
+        em_revisao: ["pronta_para_revisao", "em_revisao", "revisao"],
         aprovada: ["aprovada"],
         rejeitada: ["rejeitada"],
         publicada: ["publicada", "publicado"],
