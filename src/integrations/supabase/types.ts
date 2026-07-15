@@ -472,6 +472,10 @@ export type Database = {
           meta_description: string | null
           meta_keywords: string[]
           meta_title: string | null
+          pinned_by: string | null
+          pinned_reason: string | null
+          pinned_slot: string | null
+          pinned_until: string | null
           previous_content: string | null
           previous_status: Database["public"]["Enums"]["post_status"] | null
           published_at: string | null
@@ -548,6 +552,10 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[]
           meta_title?: string | null
+          pinned_by?: string | null
+          pinned_reason?: string | null
+          pinned_slot?: string | null
+          pinned_until?: string | null
           previous_content?: string | null
           previous_status?: Database["public"]["Enums"]["post_status"] | null
           published_at?: string | null
@@ -624,6 +632,10 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string[]
           meta_title?: string | null
+          pinned_by?: string | null
+          pinned_reason?: string | null
+          pinned_slot?: string | null
+          pinned_until?: string | null
           previous_content?: string | null
           previous_status?: Database["public"]["Enums"]["post_status"] | null
           published_at?: string | null
@@ -717,6 +729,9 @@ export type Database = {
           manual_image_url: string | null
           meta_description: string | null
           meta_title: string | null
+          pinned_reason: string | null
+          pinned_slot: string | null
+          pinned_until: string | null
           published_at: string | null
           share_image_generated_at: string | null
           share_image_url: string | null
@@ -755,6 +770,9 @@ export type Database = {
           manual_image_url?: string | null
           meta_description?: string | null
           meta_title?: string | null
+          pinned_reason?: string | null
+          pinned_slot?: string | null
+          pinned_until?: string | null
           published_at?: string | null
           share_image_generated_at?: string | null
           share_image_url?: string | null
@@ -793,6 +811,9 @@ export type Database = {
           manual_image_url?: string | null
           meta_description?: string | null
           meta_title?: string | null
+          pinned_reason?: string | null
+          pinned_slot?: string | null
+          pinned_until?: string | null
           published_at?: string | null
           share_image_generated_at?: string | null
           share_image_url?: string | null
@@ -1065,9 +1086,19 @@ export type Database = {
           similarity: number
         }[]
       }
+      pin_post_to_home: {
+        Args: {
+          _hours: number
+          _post_id: string
+          _reason: string
+          _slot?: string
+        }
+        Returns: undefined
+      }
       recluster_all_posts: { Args: { _force?: boolean }; Returns: number }
       restore_post: { Args: { _post_id: string }; Returns: undefined }
       resync_posts_public: { Args: never; Returns: number }
+      unpin_post_from_home: { Args: { _post_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "editor" | "redator"
