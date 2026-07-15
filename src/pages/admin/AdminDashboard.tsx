@@ -471,7 +471,7 @@ export default function AdminDashboard() {
                 <h3 className="font-display font-black">Corrigir imagens das notícias</h3>
                 <p className="text-sm text-muted-foreground mt-1">Revisa notícias publicadas e substitui imagens vazias/genéricas por imagem do RSS ou padrão da categoria. Requer confirmação.</p>
               </div>
-              <Button onClick={runBackfill} disabled={backfilling}>
+              <Button onClick={() => setConfirmAction("backfill")} disabled={backfilling}>
                 {backfilling ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Corrigindo…</> : "Rodar backfill"}
               </Button>
             </div>
@@ -480,7 +480,7 @@ export default function AdminDashboard() {
                 <h3 className="font-display font-black">Reclassificar categorias</h3>
                 <p className="text-sm text-muted-foreground mt-1">Reaplica regras de categorização em posts existentes. Requer confirmação.</p>
               </div>
-              <Button onClick={runReclassify} disabled={reclassifying} variant="outline" className="border-2 border-foreground font-bold">
+              <Button onClick={() => setConfirmAction("reclassify")} disabled={reclassifying} variant="outline" className="border-2 border-foreground font-bold">
                 {reclassifying ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Reclassificando…</> : "Reclassificar agora"}
               </Button>
             </div>
@@ -491,6 +491,50 @@ export default function AdminDashboard() {
           </div>
         </details>
       )}
+
+      <AlertDialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => { if (!open && !backfilling && !reclassifying) setConfirmAction(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === "backfill" ? "Corrigir imagens das notícias" : "Reclassificar categorias"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  {confirmAction === "backfill"
+                    ? "Vai varrer todas as notícias publicadas e substituir imagens vazias ou genéricas por imagem do RSS original ou pela imagem padrão da categoria correspondente."
+                    : "Vai reaplicar as regras de categorização em todos os posts existentes, reatribuindo a categoria com base nas regras atuais."}
+                </p>
+                <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-sm p-2">
+                  <strong>Impacto:</strong> a operação altera dados em massa e não pode ser desfeita em lote.
+                  O número exato de registros afetados só é conhecido ao final da execução — não há modo de prévia.
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Nenhum título, corpo, slug ou status editorial será modificado. Ao concluir, o resultado (total processado e eventuais erros) aparece em notificação.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={backfilling || reclassifying}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={backfilling || reclassifying}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmAction === "backfill") runBackfill();
+                else if (confirmAction === "reclassify") runReclassify();
+              }}
+            >
+              {(backfilling || reclassifying) ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Processando…</>
+              ) : "Confirmar e executar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
