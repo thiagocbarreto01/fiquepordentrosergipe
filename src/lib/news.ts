@@ -60,7 +60,7 @@ const POST_SELECT = `
   is_featured, is_main_featured, is_urgent, is_denuncia, views, published_at, created_at, tags, video_url_principal,
   home_expires_at, main_featured_expires_at, is_evergreen, is_editorial,
   event_id, ai_seo_title, ai_summary,
-  pinned_until, pinned_slot, pinned_reason,
+  pinned_until, pinned_slot,
   categories ( name, slug, color, default_cover_image_url )
 `;
 
