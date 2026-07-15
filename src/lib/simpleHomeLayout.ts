@@ -79,7 +79,10 @@ export function isPlantaoActive(p: Post, now: number): boolean {
 export function isPinnedActive(p: Post, now: number, slot = "manchete"): boolean {
   if (!p.pinned_slot || p.pinned_slot !== slot) return false;
   if (!p.pinned_until) return false;
-  if (!p.pinned_reason || p.pinned_reason.trim().length < 3) return false;
+  // Motivo (pinned_reason) é validado no servidor pela RPC pin_post_to_home
+  // e não é exposto em posts_public por privacidade. Se vier definido (contexto
+  // administrativo), exigimos >=3 caracteres.
+  if (typeof p.pinned_reason === "string" && p.pinned_reason.trim().length < 3) return false;
   return new Date(p.pinned_until).getTime() > now;
 }
 

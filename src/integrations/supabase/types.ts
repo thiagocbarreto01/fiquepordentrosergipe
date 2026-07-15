@@ -729,7 +729,6 @@ export type Database = {
           manual_image_url: string | null
           meta_description: string | null
           meta_title: string | null
-          pinned_reason: string | null
           pinned_slot: string | null
           pinned_until: string | null
           published_at: string | null
@@ -770,7 +769,6 @@ export type Database = {
           manual_image_url?: string | null
           meta_description?: string | null
           meta_title?: string | null
-          pinned_reason?: string | null
           pinned_slot?: string | null
           pinned_until?: string | null
           published_at?: string | null
@@ -811,7 +809,6 @@ export type Database = {
           manual_image_url?: string | null
           meta_description?: string | null
           meta_title?: string | null
-          pinned_reason?: string | null
           pinned_slot?: string | null
           pinned_until?: string | null
           published_at?: string | null
