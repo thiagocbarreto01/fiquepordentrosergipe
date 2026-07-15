@@ -372,10 +372,15 @@ export default function AdminDashboard() {
           <Link
             key={s.key}
             to={`/admin/posts?status=${s.key}`}
-            className={`p-4 border ${STATUS_COLOR[s.key]} hover:opacity-80 focus:ring-2 focus:ring-primary transition rounded-sm min-h-[92px]`}
+            className={`p-4 border ${STATUS_COLOR[s.key]} hover:opacity-80 focus:ring-2 focus:ring-primary transition rounded-sm min-h-[92px] flex flex-col`}
           >
             <div className="text-xs uppercase font-bold tracking-wider">{s.label}</div>
             <div className="font-display text-3xl font-black mt-1">{statsLoading ? "…" : fmt(s.count)}</div>
+            {typeof s.subCount === "number" && s.subCount > 0 && (
+              <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                {fmt(s.subCount)} prontas para revisão
+              </div>
+            )}
           </Link>
         ))}
       </div>
