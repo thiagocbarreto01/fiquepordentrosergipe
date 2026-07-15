@@ -59,7 +59,7 @@ export default function SiteHeader() {
       </div>
 
       {/* Main bar — logo à esquerda, busca centralizada, botões à direita */}
-      <div className="container-news flex items-center gap-3 md:gap-5 h-16 md:h-20 py-2">
+      <div className="container-news flex items-center gap-3 md:gap-5 h-20 md:h-28 py-2">
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden p-2 -ml-2 hover:bg-secondary rounded-sm transition-colors"
@@ -68,14 +68,19 @@ export default function SiteHeader() {
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
 
-        <Link to="/" className="flex items-center shrink-0" aria-label="Fique Por Dentro Sergipe - Início">
+        <Link
+          to="/"
+          className="flex items-center shrink-0 group"
+          aria-label="Fique Por Dentro Sergipe - Início"
+        >
           <img
             src={logo}
             alt="Fique Por Dentro Sergipe"
-            className="h-10 md:h-14 w-auto select-none"
+            className="h-14 md:h-20 lg:h-24 w-auto select-none drop-shadow-sm transition-transform duration-300 group-hover:scale-[1.03]"
             draggable={false}
           />
         </Link>
+
 
         {/* Busca grande centralizada (desktop) */}
         <form onSubmit={submitSearch} className="hidden md:flex flex-1 max-w-2xl mx-auto">
