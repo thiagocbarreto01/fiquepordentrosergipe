@@ -171,6 +171,7 @@ export default function AdminDashboard() {
     return STATUS_TILES.map(t => ({
       ...t,
       count: t.group.reduce((s, k) => s + Number(counts[k] ?? 0), 0),
+      subCount: t.subKey ? Number(counts[t.subKey] ?? 0) : undefined,
     }));
   }, [stats]);
 
