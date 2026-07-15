@@ -67,30 +67,13 @@ export default function Index() {
       SECTIONS.forEach((s, i) => (map[s.slug] = sectionResults[i]));
       setSections(map);
 
-      // Carrega event scores e breaking em paralelo
-      const ids = l.slice(0, 30).map((p) => p.id);
-      const [eventScores, breaking] = await Promise.all([
-        safe(getEventScoresByPostIds(ids), {} as Record<string, any>),
-        safe(getActiveBreakingEvent(), null),
-      ]);
-
-      const autoManchete = pickManchete(l, eventScores);
-      const autoSecundarias = pickSecundarias(l, autoManchete, 3, eventScores);
-
-      // Breaking news sobrescreve manchete (mas mantém slots manuais via override depois)
-      let manchete = autoManchete;
-      if (breaking) {
-        const breakingPost = l.find(
-          (p) => (p as any).event_id === breaking.id,
-        );
-        if (breakingPost) manchete = breakingPost;
-      }
-
-      const final = await safe(
-        applyManualOverride({ manchete, secundarias: autoSecundarias }),
-        { manchete, secundarias: autoSecundarias },
+      // Regra simples e definitiva (estilo TV Barretão).
+      // Sem histórico temporal de views → passa mapa vazio, cai em recência.
+      const layout = buildSimpleHomeLayout(l, {}, Date.now());
+      const secundarias = [layout.lateral1.post, layout.lateral2.post, layout.lateral3.post].filter(
+        (p): p is Post => !!p,
       );
-      setHero(final);
+      setHero({ manchete: layout.manchete.post, secundarias });
       setLoaded(true);
     };
     load();
