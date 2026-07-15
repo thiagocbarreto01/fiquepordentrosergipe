@@ -94,7 +94,8 @@ export default function AdminPosts() {
   const [groupSort, setGroupSort] = useState<GroupSort>("count_desc");
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0, today: 0 });
-  const [todayOnly, setTodayOnly] = useState(true);
+  // Quando a tela é aberta via link do Dashboard (?status=...), não restringimos ao "hoje".
+  const [todayOnly, setTodayOnly] = useState(!urlStatus);
   const [dayModalPost, setDayModalPost] = useState<any | null>(null);
 
   // Preferências não são persistidas: cada entrada no módulo restaura a configuração padrão.
