@@ -73,10 +73,14 @@ const TONE_CLASS: Record<string, string> = {
 
 export default function AdminPosts() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlStatus = searchParams.get("status");
+  const validStatus = new Set<Filter>(["all","captada","pronta_para_revisao","em_revisao","aprovada","rejeitada","publicada","duplicada","arquivada"]);
+  const initialFilter: Filter = urlStatus && validStatus.has(urlStatus as Filter) ? (urlStatus as Filter) : "captada";
   const [posts, setPosts] = useState<any[]>([]);
   // Configuração operacional padrão da redação (restaurada a cada entrada no módulo):
   // Aba CAPTADAS · CAPTADAS HOJE · Não arquivadas · Validade/Fonte/Duplicidade/Relevância = Todas · Lista.
-  const [filter, setFilter] = useState<Filter>("captada");
+  const [filter, setFilter] = useState<Filter>(initialFilter);
   const [homeFilter, setHomeFilter] = useState<HomeFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all"); // "all" | source_id | "__manual" | "__instagram"
   const [duplicateFilter, setDuplicateFilter] = useState<DuplicateFilter>("all");
