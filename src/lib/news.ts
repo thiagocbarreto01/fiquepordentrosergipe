@@ -39,6 +39,9 @@ export type Post = {
   ai_seo_title?: string | null;
   ai_summary?: string | null;
   ai_entities?: string[] | null;
+  pinned_until?: string | null;
+  pinned_slot?: string | null;
+  pinned_reason?: string | null;
   categories?: { name: string; slug: string; color: string | null; default_cover_image_url?: string | null } | null;
   profiles?: { display_name: string | null } | null;
 };
