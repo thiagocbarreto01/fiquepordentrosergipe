@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -72,10 +73,14 @@ const TONE_CLASS: Record<string, string> = {
 
 export default function AdminPosts() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlStatus = searchParams.get("status");
+  const validStatus = new Set<Filter>(["all","captada","pronta_para_revisao","em_revisao","aprovada","rejeitada","publicada","duplicada","arquivada"]);
+  const initialFilter: Filter = urlStatus && validStatus.has(urlStatus as Filter) ? (urlStatus as Filter) : "captada";
   const [posts, setPosts] = useState<any[]>([]);
   // Configuração operacional padrão da redação (restaurada a cada entrada no módulo):
   // Aba CAPTADAS · CAPTADAS HOJE · Não arquivadas · Validade/Fonte/Duplicidade/Relevância = Todas · Lista.
-  const [filter, setFilter] = useState<Filter>("captada");
+  const [filter, setFilter] = useState<Filter>(initialFilter);
   const [homeFilter, setHomeFilter] = useState<HomeFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all"); // "all" | source_id | "__manual" | "__instagram"
   const [duplicateFilter, setDuplicateFilter] = useState<DuplicateFilter>("all");
@@ -89,7 +94,8 @@ export default function AdminPosts() {
   const [groupSort, setGroupSort] = useState<GroupSort>("count_desc");
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState({ activeHome: 0, expired: 0, evergreen: 0, urgent: 0, today: 0 });
-  const [todayOnly, setTodayOnly] = useState(true);
+  // Quando a tela é aberta via link do Dashboard (?status=...), não restringimos ao "hoje".
+  const [todayOnly, setTodayOnly] = useState(!urlStatus);
   const [dayModalPost, setDayModalPost] = useState<any | null>(null);
 
   // Preferências não são persistidas: cada entrada no módulo restaura a configuração padrão.

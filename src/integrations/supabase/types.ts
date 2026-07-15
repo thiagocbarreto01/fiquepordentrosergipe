@@ -992,6 +992,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_dashboard_stats: { Args: never; Returns: Json }
       archive_post: {
         Args: { _post_id: string; _reason?: string }
         Returns: undefined
