@@ -82,10 +82,12 @@ function MetricCard({
   return inner;
 }
 
-const STATUS_TILES: { key: EditorialStatus; label: string; group: string[] }[] = [
+// "Em revisão" agrega no banco: pronta_para_revisao + em_revisao + revisao (legado).
+// O link do card usa ?status=em_revisao, cuja query em AdminPosts também expande
+// para esses três valores — garantindo que o número do card e o total listado sejam idênticos.
+const STATUS_TILES: { key: EditorialStatus; label: string; group: string[]; subKey?: string }[] = [
   { key: "captada", label: STATUS_LABEL.captada, group: ["captada", "rascunho"] },
-  { key: "pronta_para_revisao", label: STATUS_LABEL.pronta_para_revisao, group: ["pronta_para_revisao"] },
-  { key: "em_revisao", label: STATUS_LABEL.em_revisao, group: ["em_revisao", "revisao"] },
+  { key: "em_revisao", label: "Em revisão", group: ["pronta_para_revisao", "em_revisao", "revisao"], subKey: "pronta_para_revisao" },
   { key: "aprovada", label: STATUS_LABEL.aprovada, group: ["aprovada"] },
   { key: "publicada", label: STATUS_LABEL.publicada, group: ["publicada", "publicado"] },
   { key: "duplicada", label: STATUS_LABEL.duplicada, group: ["duplicada"] },
