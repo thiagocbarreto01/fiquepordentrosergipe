@@ -92,12 +92,7 @@ export default function Index() {
 
   useEffect(() => {
     if (!hero.manchete) return;
-    const scored = editorialScore(hero.manchete);
-    console.info("[Home] Manchete", {
-      title: hero.manchete.title,
-      score: scored.score,
-      reasons: scored.reasons,
-    });
+    console.info("[Home] Manchete", { title: hero.manchete.title, id: hero.manchete.id });
   }, [hero.manchete?.id]);
 
   const manchete = hero.manchete;
