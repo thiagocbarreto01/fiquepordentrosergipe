@@ -187,7 +187,7 @@ export default function AdminDashboard() {
   const rangeLabel = topRange === "day" ? "do Dia" : topRange === "week" ? "da Semana" : "do Mês";
 
   async function runBackfill() {
-    if (!confirm("Rodar backfill de imagens agora? A rotina revisa todas as notícias publicadas e substitui imagens vazias/genéricas.")) return;
+    if (backfilling) return;
     setBackfilling(true);
     try {
       const { data, error } = await supabase.functions.invoke("backfill-images");
@@ -196,11 +196,11 @@ export default function AdminDashboard() {
       toast.success(`Backfill OK — ${r.corrigidos_rss + r.corrigidos_categoria} corrigidos (RSS: ${r.corrigidos_rss}, categoria: ${r.corrigidos_categoria}). Sem solução: ${r.sem_solucao}. Já OK: ${r.ja_ok}.`);
     } catch (e: any) {
       toast.error(`Erro no backfill: ${e?.message ?? e}`);
-    } finally { setBackfilling(false); }
+    } finally { setBackfilling(false); setConfirmAction(null); }
   }
 
   async function runReclassify() {
-    if (!confirm("Reaplicar as regras de categorização em todas as notícias existentes?")) return;
+    if (reclassifying) return;
     setReclassifying(true);
     try {
       const { data, error } = await supabase.functions.invoke("reclassify-categories");
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
       toast.success(`Reclassificação OK — ${r.atualizados} atualizadas de ${r.total_verificados} (${origens || "sem mudanças"})`);
     } catch (e: any) {
       toast.error(`Erro ao reclassificar: ${e?.message ?? e}`);
-    } finally { setReclassifying(false); }
+    } finally { setReclassifying(false); setConfirmAction(null); }
   }
 
   const fmt = (n: number | undefined | null) => (typeof n === "number" ? n : 0).toLocaleString("pt-BR");
