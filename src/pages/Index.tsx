@@ -14,14 +14,8 @@ import {
   subscribeToNoticiasFeed,
 } from "@/lib/noticias";
 import { getTrending } from "@/lib/trending";
-import {
-  applyManualOverride,
-  editorialScore,
-  pickLatest,
-  pickManchete,
-  pickSecundarias,
-} from "@/lib/editorialEngine";
-import { getActiveBreakingEvent, getEventScoresByPostIds } from "@/lib/events";
+import { pickLatest } from "@/lib/editorialEngine";
+import { buildSimpleHomeLayout } from "@/lib/simpleHomeLayout";
 import { withFailsafe } from "@/lib/failsafe";
 
 type CategoryDef = { slug: string; title: string; color: string };
