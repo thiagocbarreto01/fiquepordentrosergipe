@@ -8,7 +8,7 @@ import {
   safeFetch,
   type AllowedHost,
   type Purpose,
-} from "../capture-sources/safe-fetch.ts";
+} from "./safe-fetch.ts";
 
 const METRO_ID = "60f21b41-7cd6-4e03-b594-b45b340cceb0";
 const TJSE_ID = "867a2f71-e399-4872-9aae-fe9ed218024f";
