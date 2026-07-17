@@ -214,7 +214,7 @@ function applyServerFilters(
 }
 
 export default function AdminPosts() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
