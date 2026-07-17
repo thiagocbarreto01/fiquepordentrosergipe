@@ -325,7 +325,9 @@ export default function AdminPostEditor() {
         finalStatus === "publicada"
           ? form.published_at ?? new Date().toISOString()
           : null,
-      scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
+      // scheduled_at: Passada 4.1 desativa gravação direta.
+      // A publicação agendada só volta na Passada 4.2, quando pg_cron
+      // e as RPCs seguras estiverem instalados.
     };
 
     let res;
@@ -334,12 +336,18 @@ export default function AdminPostEditor() {
     setSaving(false);
     if (res.error) return toast.error(res.error.message);
 
+    // Salvamento real bem-sucedido → limpa o rascunho local desta chave
+    try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ }
+    setDirty(false);
+    setLocalSavedAt(null);
+
     const labels: Partial<Record<EditorialStatus, string>> = {
       publicada: "Publicada!",
       aprovada: "Aprovada",
       rejeitada: "Rejeitada",
       em_revisao: "Salva em revisão",
       captada: "Salva como captada",
+      rascunho: "Rascunho salvo",
     };
     toast.success(labels[finalStatus] ?? "Salva");
     if (isNew && res.data?.id) {
@@ -353,7 +361,11 @@ export default function AdminPostEditor() {
     }
   }
 
-  // Fase 7: publicação segura — bloqueia incompleto, confirma curto, publica completo.
+  // Diálogo de "matéria curta" — substitui window.confirm por AlertDialog acessível.
+  const [shortPublishOpen, setShortPublishOpen] = useState(false);
+  const [shortPublishInfo, setShortPublishInfo] = useState<{ chars: number; words: number } | null>(null);
+
+  // Fase 7: publicação segura — bloqueia incompleto, abre AlertDialog em curto.
   async function tryPublish() {
     const q = getContentQuality(form.content || "");
     if (q.level === "incompleto") {
@@ -364,10 +376,9 @@ export default function AdminPostEditor() {
       return;
     }
     if (q.level === "curto") {
-      const ok = window.confirm(
-        `Atenção: matéria curta (${q.chars} caracteres, ${q.words} palavras). Publicar mesmo assim?`
-      );
-      if (!ok) return;
+      setShortPublishInfo({ chars: q.chars, words: q.words });
+      setShortPublishOpen(true);
+      return;
     }
     await save("publicada");
   }
