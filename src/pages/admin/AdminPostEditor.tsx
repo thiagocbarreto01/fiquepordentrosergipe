@@ -799,6 +799,8 @@ export default function AdminPostEditor() {
           pinned_reason: null,
         }}
         onConfirm={async () => { await save("publicada"); setPublishOpen(false); }}
+        canSchedule={canPublish}
+        onSchedule={handleSchedulePublish}
       />
 
       {/* ArticlePreviewDialog — desktop/mobile */}
