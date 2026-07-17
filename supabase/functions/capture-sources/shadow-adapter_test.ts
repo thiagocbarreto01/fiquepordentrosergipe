@@ -245,7 +245,7 @@ async function runShadowWithFetch(opts: {
     _resolveDns: dns,
   });
 }
-}
+
 
 function respond(body: string, headers: Record<string, string> = {}): Response {
   return new Response(body, { status: 200, headers });
