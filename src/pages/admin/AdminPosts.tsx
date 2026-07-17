@@ -1073,6 +1073,7 @@ export default function AdminPosts() {
         }}
         onSeeDay={(p) => setDayModalPost(p)}
         onRenew={(p, h) => renewExpiration(p, h)}
+        canDelete={isAdmin}
       />
 
 
