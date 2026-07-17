@@ -673,6 +673,7 @@ interface SourceRow {
 
 async function captureFromSource(
   supabase: ReturnType<typeof createClient>,
+  ctx: RunContext,
   source: SourceRow,
   categoryBySlug: Map<string, string>,
   categoryById: Map<string, string>,
@@ -690,12 +691,15 @@ async function captureFromSource(
   if (kind === "rss" || kind === "feed" || kind === "xml" || kind === "sitemap") {
     let xml: string;
     try {
-      const r = await fetch(source.url, {
+      // Legacy closure — headers/timeout/erro IDÊNTICOS ao anterior à F3D.3A.2.
+      const rssLegacy = () => fetch(source.url!, {
         headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)" },
         signal: AbortSignal.timeout(15000),
+      }).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
       });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      xml = await r.text();
+      xml = await fetchSourceText(ctx, source.id, source.url, "feed", "xml", rssLegacy);
     } catch (e) {
       result.errors.push(`fetch falhou: ${e instanceof Error ? e.message : "erro"}`);
       return result;
@@ -703,7 +707,7 @@ async function captureFromSource(
     items = parseFeed(xml).slice(0, source.max_items_per_run);
   } else if (kind === "site" || kind === "html") {
     try {
-      items = await fetchSiteItems(source.url, source.max_items_per_run);
+      items = await fetchSiteItems(ctx, source.id, source.url, source.max_items_per_run);
     } catch (e) {
       result.errors.push(`scrape falhou: ${e instanceof Error ? e.message : "erro"}`);
       return result;
