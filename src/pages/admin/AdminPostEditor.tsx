@@ -1507,98 +1507,77 @@ export default function AdminPostEditor() {
             </div>
 
 
+            {/*
+              Controles antigos ocultos nesta passada:
+              - Destaque Permanente (is_evergreen)
+              - Destaque Principal / Manchete (is_main_featured + main_featured_expires_at)
+              - "Destaque na home" (is_featured) manual
+              - Campo genérico "Exibir na Home até" (home_expires_at manual)
+              - Presets P1/P2/P3 e seletor de slot
+
+              As colunas continuam no banco e valores antigos ficam intactos
+              (form.is_evergreen, form.is_main_featured, etc. seguem sendo
+              inicializados do registro e regravados pelo save() como estavam).
+            */}
+
             <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
               <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
-                Visibilidade na home
+                Plantão / Urgente
               </p>
               <label className="flex items-start gap-2 cursor-pointer">
                 <Checkbox
                   checked={form.is_urgent}
-                  onCheckedChange={(v) => setForm({ ...form, is_urgent: !!v })}
+                  onCheckedChange={(v) => setForm({
+                    ...form,
+                    is_urgent: !!v,
+                    // ao desmarcar, limpar validade para evitar restos inconsistentes na UI
+                    home_expires_at: v ? form.home_expires_at : "",
+                  })}
                   className="mt-0.5"
                 />
                 <span className="text-sm">
-                  <span className="font-bold text-red-700">Plantão / Urgente</span>
+                  <span className="font-bold text-red-700">Marcar como Plantão/Urgente</span>
                   <span className="block text-xs text-muted-foreground">
-                    Aparece na faixa vermelha de Plantão no topo do site.
+                    Aparece na faixa vermelha de Plantão no topo do site. Exige validade futura.
                   </span>
                 </span>
               </label>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={form.is_featured}
-                  onCheckedChange={(v) => setForm({ ...form, is_featured: !!v })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold text-amber-700">Destaque na home</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Entra como destaque secundário (P3). Captadas só viram destaque após esta marcação.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={!!form.is_main_featured}
-                  onCheckedChange={(v) => setForm({ ...form, is_main_featured: !!v, is_featured: v ? true : form.is_featured })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold text-rose-700">Destaque Principal (Manchete)</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Prioridade P2. Reservado para escolha editorial — ocupa a manchete principal da Home.
-                  </span>
-                </span>
-              </label>
-              {form.is_main_featured && (
-                <div className="ml-6 -mt-1 mb-1 rounded-md border border-rose-200 bg-rose-50/50 p-3 space-y-2">
-                  {!form.main_featured_expires_at && (
-                    <div className="rounded-md border border-rose-400 bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-900">
-                      ⚠ P2 sem validade definida. Esta notícia NÃO recebe o bônus +80 e não ocupará a manchete até você definir uma data abaixo.
-                    </div>
-                  )}
-                  <Label className="text-xs font-semibold text-rose-900">Exibir como manchete até</Label>
+
+              {form.is_urgent && (
+                <div className="ml-6 space-y-2">
+                  <Label className="text-xs font-bold">Plantão válido até</Label>
                   <Input
                     type="datetime-local"
-                    value={form.main_featured_expires_at ?? ""}
-                    onChange={(e) => setForm({ ...form, main_featured_expires_at: e.target.value })}
+                    value={form.home_expires_at ?? ""}
+                    onChange={(e) => setForm({ ...form, home_expires_at: e.target.value })}
                   />
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {[
-                      { label: "12 horas", h: 12 },
-                      { label: "24 horas", h: 24 },
-                      { label: "48 horas", h: 48 },
+                      { label: "2h", h: 2 },
+                      { label: "4h", h: 4 },
+                      { label: "6h", h: 6 },
+                      { label: "12h", h: 12 },
                     ].map((opt) => (
-                      <Button
-                        key={opt.h}
+                      <button
                         type="button"
-                        size="sm"
-                        variant="outline"
+                        key={opt.label}
                         onClick={() => {
                           const d = new Date(Date.now() + opt.h * 3600_000);
-                          setForm({ ...form, main_featured_expires_at: d.toISOString().slice(0, 16) });
+                          setForm({ ...form, home_expires_at: d.toISOString().slice(0, 16) });
                         }}
+                        className="text-[11px] font-bold uppercase tracking-wider bg-white hover:bg-urgent hover:text-white border border-border rounded-sm py-1.5 transition-colors"
                       >
                         +{opt.label}
-                      </Button>
+                      </button>
                     ))}
-                    {form.main_featured_expires_at && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setForm({ ...form, main_featured_expires_at: "" })}
-                      >
-                        Limpar
-                      </Button>
-                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Após esta data, o peso P2 (+80) é removido automaticamente e a Home recalcula a manchete.
+                    O Plantão sem validade futura é bloqueado no PublishDialog.
                   </p>
                 </div>
               )}
-              <label className="flex items-start gap-2 cursor-pointer">
+
+              <label className="flex items-start gap-2 cursor-pointer pt-2 border-t border-border">
                 <Checkbox
                   checked={form.is_denuncia}
                   onCheckedChange={(v) => setForm({ ...form, is_denuncia: !!v })}
@@ -1610,82 +1589,6 @@ export default function AdminPostEditor() {
               </label>
             </div>
 
-            {/* ============== Validade na Home ============== */}
-            <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
-              <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
-                Validade na Home
-              </p>
-
-              <label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={!!form.is_evergreen}
-                  onCheckedChange={(v) => setForm({ ...form, is_evergreen: !!v, home_expires_at: v ? "" : form.home_expires_at })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold text-emerald-700">Destaque Permanente</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Ignora a data de validade e mantém a notícia elegível para a Home indefinidamente.
-                  </span>
-                </span>
-              </label>
-
-              {!form.is_evergreen && (
-                <>
-                  <div>
-                    <Label className="text-xs font-bold">Exibir na Home até</Label>
-                    <Input
-                      type="datetime-local"
-                      value={form.home_expires_at ?? ""}
-                      onChange={(e) => setForm({ ...form, home_expires_at: e.target.value })}
-                    />
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                      Depois desta data a notícia sai automaticamente da Home, do Plantão e dos destaques.
-                      A página continua acessível e indexada pelo Google.
-                    </p>
-                  </div>
-
-                  {(form.is_urgent || form.is_featured) && (
-                    <div className="pt-1">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-                        Expirar Plantão em
-                      </p>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {[
-                          { label: "24h", hours: 24 },
-                          { label: "48h", hours: 48 },
-                          { label: "72h", hours: 72 },
-                          { label: "7 dias", hours: 24 * 7 },
-                        ].map((opt) => (
-                          <button
-                            type="button"
-                            key={opt.label}
-                            onClick={() => {
-                              const d = new Date();
-                              d.setHours(d.getHours() + opt.hours);
-                              setForm({ ...form, home_expires_at: d.toISOString().slice(0, 16) });
-                            }}
-                            className="text-[11px] font-bold uppercase tracking-wider bg-white hover:bg-urgent hover:text-white border border-border rounded-sm py-1.5 transition-colors"
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {form.home_expires_at && (
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, home_expires_at: "" })}
-                      className="text-[11px] font-bold text-muted-foreground hover:text-urgent underline"
-                    >
-                      Limpar validade
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
 
             <div className="flex flex-col gap-2 pt-2">
               <Button onClick={() => save()} disabled={saving} variant="outline" className="w-full">
