@@ -1010,6 +1010,16 @@ export type Database = {
       }
     }
     Functions: {
+      _auto_archive_candidates: {
+        Args: { _reference_time: string }
+        Returns: {
+          id: string
+          rule: string
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
       admin_dashboard_stats: { Args: never; Returns: Json }
       archive_post: {
         Args: { _post_id: string; _reason?: string }
