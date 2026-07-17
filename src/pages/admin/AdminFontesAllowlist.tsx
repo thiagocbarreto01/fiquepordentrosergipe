@@ -77,6 +77,7 @@ interface SourceLite {
 
 interface DryRunResult {
   dry_run: boolean;
+  status: string;
   candidates: number;
   would_insert: number;
   conflicts: number;
@@ -89,6 +90,16 @@ interface DryRunResult {
     action: string;
     validation_reason: string | null;
   }>;
+}
+
+interface RealResult {
+  dry_run: boolean;
+  status: string;
+  batch_id: string | null;
+  candidates: number;
+  inserted_count: number;
+  conflict_count: number;
+  invalid_count: number;
 }
 
 const PURPOSE_LABEL: Record<Purpose, string> = {
