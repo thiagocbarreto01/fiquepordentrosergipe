@@ -36,6 +36,10 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useAuth } from "@/hooks/useAuth";
+import { DeleteSourceDialog } from "@/components/admin/sources/DeleteSourceDialog";
+import { SourceAutomationSwitch } from "@/components/admin/sources/SourceAutomationSwitch";
+import { getSourcePermissions } from "@/components/admin/sources/permissions";
 
 
 type RunLog = {
