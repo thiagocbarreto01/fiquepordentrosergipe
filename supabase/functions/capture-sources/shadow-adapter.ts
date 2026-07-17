@@ -211,6 +211,12 @@ export interface ShadowFetchArgs {
   legacyFetch: () => Promise<string>; // fetch legado que devolve texto
   timeoutMs?: number;
   maxBytes?: number;
+  // Test seams — jamais usados pelo runtime real; existem apenas para
+  // permitir mocks determinísticos de rede/DNS em testes unitários.
+  // deno-lint-ignore no-explicit-any
+  _fetchFn?: any;
+  // deno-lint-ignore no-explicit-any
+  _resolveDns?: any;
 }
 
 // ─── Decodificação de texto: charset em whitelist estrita ────────────────
