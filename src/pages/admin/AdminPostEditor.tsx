@@ -800,7 +800,7 @@ export default function AdminPostEditor() {
         }}
         onConfirm={async () => { await save("publicada"); setPublishOpen(false); }}
         canSchedule={canPublish}
-        onSchedule={handleSchedulePublish}
+        onSchedule={async (iso) => { await handleSchedulePublish(iso); }}
       />
 
       {/* ArticlePreviewDialog — desktop/mobile */}
