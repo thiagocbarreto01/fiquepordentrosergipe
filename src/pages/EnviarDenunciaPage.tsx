@@ -47,6 +47,8 @@ export default function EnviarDenunciaPage() {
       contact_phone: parsed.data.is_anonymous ? null : (parsed.data.contact_phone || null),
       contact_email: parsed.data.is_anonymous ? null : (parsed.data.contact_email || null),
       is_anonymous: parsed.data.is_anonymous,
+      website_url_hp: form.website_url_hp,
+      form_opened_at: formOpenedAtRef.current,
     };
     const { data, error } = await supabase.functions.invoke("submit-denuncia", { body: payload });
     setLoading(false);
