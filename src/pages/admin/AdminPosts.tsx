@@ -1,35 +1,40 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Trash2, Edit, PlusCircle, Eye, CheckCircle2, Globe, ArchiveRestore, Archive,
-  Clock, RotateCw, Flame, Pin, AlertCircle, Home, Check, GitMerge, AlertOctagon,
-  CalendarDays, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X,
-  SlidersHorizontal, FileCheck2, ClipboardList,
+  PlusCircle, Flame, Archive, Clock, X,
+  SlidersHorizontal, FileCheck2, ClipboardList, Globe, CalendarDays,
 } from "lucide-react";
 import DayPostsModal from "@/components/admin/DayPostsModal";
 import { toast } from "sonner";
 import {
-  STATUS_ORDER, STATUS_LABEL, STATUS_COLOR, normalizeStatus, ARCHIVE_REASON_LABEL,
+  STATUS_ORDER, STATUS_LABEL,
   type EditorialStatus,
 } from "@/lib/statusFlow";
 import {
-  SourceBadge, OriginalLink, CaptureMethodChip, detectCaptureMethod,
+  SourceBadge,
 } from "@/components/admin/SourceBadge";
-import { classifyDuplicate, type DuplicateFilter } from "@/lib/duplicates";
-import { getPostImage, handleImgError } from "@/lib/postImage";
-import { RelevanceBadge } from "@/components/admin/RelevanceBadge";
+import { type DuplicateFilter } from "@/lib/duplicates";
 import { useAuth } from "@/hooks/useAuth";
 import { SourceGroupedView, type GroupSort } from "@/components/admin/SourceGroupedView";
 import { KanbanBoard } from "@/components/admin/KanbanBoard";
-import { List, FolderTree, KanbanSquare, Search, Share2 } from "lucide-react";
+import { List, FolderTree, KanbanSquare, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { getContentQuality } from "@/lib/contentQuality";
-import { QualityBadge } from "@/components/admin/QualityBadge";
 import { getSocialShareUrl } from "@/lib/socialShare";
+import { sanitizeSearch, escapeIlike, maceioDayBoundsIso } from "@/lib/postSearch";
+import { AdminPostsPagination, PER_PAGE_OPTIONS } from "@/components/admin/adminPost/AdminPostsPagination";
+import { AdminPostsDesktopTable } from "@/components/admin/adminPost/AdminPostsDesktopTable";
+import { AdminPostMobileCard } from "@/components/admin/adminPost/AdminPostMobileCard";
+import { AdminPostActionsMenu } from "@/components/admin/adminPost/AdminPostActionsMenu";
+import {
+  DEFAULT_SORT, DEFAULT_DIR, SORT_OPTIONS,
+  type PostSortColumn, type PostSortDir,
+} from "@/components/admin/adminPost/primaryAction";
+import { getPrimaryAction } from "@/components/admin/adminPost/primaryAction";
 
 type Filter = "all" | EditorialStatus;
 type HomeFilter = "all" | "active" | "expired" | "expiring_today";
@@ -38,8 +43,8 @@ type PeriodFilter = "today" | "last3" | "all";
 type ViewMode = "list" | "grouped" | "kanban";
 type RelevanceFilter = "all" | "baixa" | "media" | "alta" | "urgente";
 
-const PER_PAGE_OPTIONS = [25, 50, 100] as const;
 const DEFAULT_PER = 25;
+
 
 function formatExpiration(iso: string | null | undefined, isEvergreen: boolean) {
   if (isEvergreen) return { label: "Destaque permanente", tone: "evergreen" as const, expired: false };
@@ -71,32 +76,9 @@ const TONE_CLASS: Record<string, string> = {
   ok: "text-sky-700 bg-sky-50 border-sky-200",
 };
 
-// -----------------------------------------------------------
-// Fuso America/Maceio (UTC-3, sem horário de verão)
-// Retorna início e fim do dia solicitado como ISO em UTC.
-// offsetDays = 0 → hoje;  -N → N dias atrás
-// -----------------------------------------------------------
-function maceioDayBoundsIso(offsetDays = 0) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Maceio",
-    year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const y = Number(parts.find((p) => p.type === "year")!.value);
-  const m = Number(parts.find((p) => p.type === "month")!.value);
-  const d = Number(parts.find((p) => p.type === "day")!.value) + offsetDays;
-  // Maceió = UTC-3 fixo → 00:00 local = 03:00 UTC
-  const startIso = new Date(Date.UTC(y, m - 1, d, 3, 0, 0, 0)).toISOString();
-  const endIso = new Date(Date.UTC(y, m - 1, d + 1, 2, 59, 59, 999)).toISOString();
-  return { startIso, endIso };
-}
+// sanitizeSearch, escapeIlike e maceioDayBoundsIso vivem em @/lib/postSearch
+// (testados em src/lib/postSearch.test.ts).
 
-// Escapa caracteres reservados no filtro PostgREST .or() e .ilike()
-function sanitizeSearch(raw: string) {
-  return raw
-    .replace(/[,()"\\]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 // Mapa "em_revisao" agrega três status legados/nova nomenclatura
 const STATUS_MAP: Record<EditorialStatus, string[]> = {
@@ -191,20 +173,24 @@ function applyServerFilters(
   }
 
   // Busca: título ILIKE OU source_id IN OU category_id IN
+  // Escapamos %, _ e \ no padrão ILIKE para tratar o termo literalmente.
   if (searchTerm) {
-    const t = searchTerm.replace(/[%]/g, "");
+    const t = escapeIlike(searchTerm);
     const parts: string[] = [`title.ilike.%${t}%`];
     if (searchSourceIds.length) parts.push(`source_id.in.(${searchSourceIds.join(",")})`);
     if (searchCategoryIds.length) parts.push(`category_id.in.(${searchCategoryIds.join(",")})`);
     q = q.or(parts.join(","));
   }
 
+
   return q;
 }
 
 export default function AdminPosts() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
 
   // -------- URL-persisted state ----------
   const validStatus = new Set<Filter>([
@@ -223,6 +209,11 @@ export default function AdminPosts() {
   const initialPerRaw = parseInt(searchParams.get("per") || String(DEFAULT_PER), 10) || DEFAULT_PER;
   const initialPer = (PER_PAGE_OPTIONS as readonly number[]).includes(initialPerRaw) ? initialPerRaw : DEFAULT_PER;
   const initialAdv = searchParams.get("adv") === "1";
+  const rawSort = (searchParams.get("sort") as PostSortColumn) || DEFAULT_SORT;
+  const initialSort: PostSortColumn = (SORT_OPTIONS.some((o) => o.value === rawSort) ? rawSort : DEFAULT_SORT);
+  const rawDir = (searchParams.get("dir") as PostSortDir) || DEFAULT_DIR;
+  const initialDir: PostSortDir = rawDir === "asc" ? "asc" : "desc";
+
 
   const [filter, setFilter] = useState<Filter>(validStatus.has(initialStatus) ? initialStatus : "captada");
   const [period, setPeriod] = useState<PeriodFilter>(initialPeriod);
@@ -236,6 +227,10 @@ export default function AdminPosts() {
   const [page, setPage] = useState<number>(initialPage);
   const [perPage, setPerPage] = useState<number>(initialPer);
   const [advOpen, setAdvOpen] = useState<boolean>(initialAdv);
+  const [sort, setSort] = useState<PostSortColumn>(initialSort);
+  const [dir, setDir] = useState<PostSortDir>(initialDir);
+  const [actionsPost, setActionsPost] = useState<any | null>(null);
+
 
   // -------- não persistido ----------
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -279,8 +274,11 @@ export default function AdminPosts() {
     if (page !== 1) p.set("page", String(page));
     if (perPage !== DEFAULT_PER) p.set("per", String(perPage));
     if (advOpen) p.set("adv", "1");
+    if (sort !== DEFAULT_SORT) p.set("sort", sort);
+    if (dir !== DEFAULT_DIR) p.set("dir", dir);
     setSearchParams(p, { replace: true });
-  }, [filter, period, sourceFilter, searchTerm, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, page, perPage, advOpen, setSearchParams]);
+  }, [filter, period, sourceFilter, searchTerm, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, page, perPage, advOpen, sort, dir, setSearchParams]);
+
 
   // -------- debounce da busca (400 ms) -----------
   useEffect(() => {
@@ -334,7 +332,7 @@ export default function AdminPosts() {
   // Resolve IDs de fontes e categorias que casam com o termo de busca
   async function resolveSearchIds(term: string): Promise<{ sourceIds: string[]; categoryIds: string[] }> {
     if (!term) return { sourceIds: [], categoryIds: [] };
-    const like = `%${term.replace(/[%]/g, "")}%`;
+    const like = `%${escapeIlike(term)}%`;
     const [srcRes, catRes] = await Promise.all([
       supabase.from("news_sources").select("id").ilike("name", like).limit(50),
       supabase.from("categories").select("id").ilike("name", like).limit(50),
@@ -373,12 +371,15 @@ export default function AdminPosts() {
           searchSourceIds: sourceIds, searchCategoryIds: categoryIds,
           normalizedSourceIds: normalizedSourceIds(),
         });
+        // Ordenação escolhida + fallback determinístico (created_at DESC, id DESC).
+        const asc = dir === "asc";
         q = q
-          .order("published_at", { ascending: false, nullsFirst: false })
+          .order(sort, { ascending: asc, nullsFirst: false })
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .range(from, to)
           .abortSignal(controller.signal);
+
 
         const { data, count, error } = await q;
         if (cancelled || rid !== requestIdRef.current) return;
@@ -418,7 +419,7 @@ export default function AdminPosts() {
     })();
 
     return () => { cancelled = true; };
-  }, [filter, period, sourceFilter, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, searchTerm, page, perPage, sources, normalizedSourceIds]);
+  }, [filter, period, sourceFilter, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, searchTerm, page, perPage, sort, dir, sources, normalizedSourceIds]);
 
   // Refresh externo
   useEffect(() => {
@@ -546,7 +547,34 @@ export default function AdminPosts() {
   const from = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
   const to = Math.min(page * perPage, totalCount);
 
+  const sourcesById = useMemo(() => {
+    const m = new Map<string, string>();
+    sources.forEach((s: any) => m.set(s.id, s.name));
+    return m;
+  }, [sources]);
+
+  // Dispatcher da ação principal — usa helper compartilhado (getPrimaryAction).
+  // Preserva callbacks existentes: apenas roteia a decisão.
+  const handlePrimary = useCallback((p: any) => {
+    const spec = getPrimaryAction(p);
+    switch (spec.kind) {
+      case "approve":  updateStatus(p, "aprovada"); break;
+      case "publish":  updateStatus(p, "publicada"); break;
+      case "restore":  restoreOne(p); break;
+      case "open_portal":
+        if (p.slug) window.open(`/noticia/${p.slug}`, "_blank");
+        break;
+      case "review_duplicate":
+      case "edit":
+      case "continue_edit":
+      default:
+        navigate(`/admin/posts/${p.id}`);
+        break;
+    }
+  }, [navigate]);
+
   const activeChips: { key: string; label: string; onClear: () => void }[] = [];
+
   if (filter !== "captada") activeChips.push({ key: "status", label: `Status: ${filter === "all" ? "Todas" : STATUS_LABEL[filter as EditorialStatus]}`, onClear: () => setFilter("captada") });
   if (period !== "today") activeChips.push({ key: "period", label: `Período: ${period === "last3" ? "Últimos 3 dias" : "Todas"}`, onClear: () => setPeriod("today") });
   if (sourceFilter !== "all") {
@@ -793,7 +821,7 @@ export default function AdminPosts() {
         </div>
       )}
 
-      {/* Modo de visualização + paginação */}
+      {/* Modo de visualização + paginação (topo) */}
       <div className="flex flex-wrap gap-2 mb-4 items-center">
         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mr-1">Visualização:</span>
         <button onClick={() => setViewMode("list")}
@@ -809,302 +837,120 @@ export default function AdminPosts() {
             viewMode === "kanban" ? "bg-foreground text-background border-foreground" : "bg-white border-border hover:bg-secondary"
           }`}><KanbanSquare className="h-3 w-3" /> Kanban</button>
 
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <span className="text-[11px] font-bold text-muted-foreground">
-            {loading ? "Carregando…" : `Mostrando ${from.toLocaleString("pt-BR")}–${to.toLocaleString("pt-BR")} de ${totalCount.toLocaleString("pt-BR")}`}
-          </span>
-          <label className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider">
-            Por página:
+        {viewMode === "list" && (
+          <label className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider">
+            Ordenar por:
             <select
-              value={perPage}
-              onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-              className="h-9 border border-border rounded-sm px-2 text-xs bg-white"
-              aria-label="Registros por página"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as PostSortColumn)}
+              className="h-11 min-h-[44px] border border-border rounded-sm px-2 text-xs bg-white"
+              aria-label="Coluna de ordenação"
             >
-              {PER_PAGE_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+              {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select
+              value={dir}
+              onChange={(e) => setDir(e.target.value as PostSortDir)}
+              className="h-11 min-h-[44px] border border-border rounded-sm px-2 text-xs bg-white"
+              aria-label="Direção da ordenação"
+            >
+              <option value="desc">Descendente</option>
+              <option value="asc">Ascendente</option>
             </select>
           </label>
-          <div className="inline-flex items-center gap-1">
-            <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)} aria-label="Primeira página"><ChevronsLeft className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} aria-label="Página anterior"><ChevronLeft className="h-4 w-4" /></Button>
-            <span className="text-[11px] font-bold px-2 min-w-[92px] text-center">Página {page} de {totalPages}</span>
-            <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} aria-label="Próxima página"><ChevronRight className="h-4 w-4" /></Button>
-            <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Última página"><ChevronsRight className="h-4 w-4" /></Button>
-          </div>
-        </div>
+        )}
       </div>
+
+      {viewMode === "list" && (
+        <div className="mb-3">
+          <AdminPostsPagination
+            page={page}
+            perPage={perPage}
+            totalCount={totalCount}
+            loading={loading}
+            onPage={setPage}
+            onPerPage={(n) => { setPerPage(n); setPage(1); }}
+            ariaLabel="Paginação (topo)"
+          />
+        </div>
+      )}
 
       {viewMode === "kanban" ? (
         <KanbanBoard posts={filteredPosts} onChangeStatus={(p, st) => { void updateStatus(p, st); }} />
       ) : viewMode === "grouped" ? (
         <SourceGroupedView posts={filteredPosts} sort={groupSort} onSortChange={setGroupSort} />
       ) : (
-      <>
-      {/* Mobile: cards */}
-      <div className="md:hidden space-y-3">
-        {filteredPosts.length === 0 && !loading && (
-          <div className="bg-card border border-border p-8 text-center text-sm text-muted-foreground">Nenhuma notícia.</div>
-        )}
-        {filteredPosts.map((p) => {
-          const s = normalizeStatus(p.status);
-          const method = detectCaptureMethod({ source_id: p.source_id, source_url: p.source_url });
-          const sourceName = (p.source_id && sources.find((src) => src.id === p.source_id)?.name) || (method === "instagram" ? "Instagram" : "Manual");
-          const previewImg = getPostImage(p as any);
-          const dup = classifyDuplicate(p.similarity_score);
-          const dupTier = p.status === "duplicada" ? "duplicada" : dup.tier;
-          const dupMeta =
-            dupTier === "duplicada" ? { color: "bg-red-100 text-red-800 border-red-300", label: "Duplicada" }
-            : dupTier === "similar" ? { color: "bg-yellow-100 text-yellow-800 border-yellow-300", label: "Similar" }
-            : { color: "bg-emerald-100 text-emerald-800 border-emerald-300", label: "Nova" };
-          const quality = getContentQuality(p.content);
-          const capturedIso = p.captured_at ?? p.created_at;
-          return (
-            <div key={p.id} className="bg-card border border-border p-3 space-y-3">
-              <div className="flex gap-3">
-                <div className="relative w-24 h-24 shrink-0 bg-secondary border border-border overflow-hidden rounded-sm">
-                  <img src={previewImg} alt={`Miniatura: ${p.title}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => handleImgError(e, p as any)} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-display font-bold text-sm leading-tight line-clamp-3">{p.title}</div>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    <SourceBadge name={sourceName} />
-                    <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary/5 px-1.5 py-0.5 rounded-sm border border-primary/10">
-                      {p.categories?.name ?? "Geral"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-1">
-                <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border rounded-sm ${STATUS_COLOR[s]}`}>{STATUS_LABEL[s]}</span>
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border rounded-sm ${dupMeta.color}`}>
-                  {dupMeta.label}{dup.pct > 0 && <span className="font-mono opacity-80">· {dup.pct}%</span>}
-                </span>
-                <QualityBadge level={quality.level} chars={quality.chars} showChars />
-                {p.is_urgent && <span className="urgent-badge scale-90 origin-left"><span className="h-1 w-1 bg-white rounded-full pulse-dot shrink-0" />URGENTE</span>}
-              </div>
-
-              <div className="text-[11px] text-muted-foreground">
-                Capturada em <strong className="text-foreground">{new Date(capturedIso).toLocaleDateString("pt-BR")}</strong>{" "}
-                <span className="font-mono">{new Date(capturedIso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
-              </div>
-
-              <div className="grid gap-2">
-                <Button asChild variant="outline" className="w-full font-bold"><Link to={`/admin/posts/${p.id}`}><Edit className="h-4 w-4 mr-2" /> Editar</Link></Button>
-                {s === "aprovada" && (
-                  <Button onClick={() => updateStatus(p, "publicada")} className="w-full font-bold bg-emerald-600 hover:bg-emerald-700 text-white"><Globe className="h-4 w-4 mr-2" /> Publicar</Button>
-                )}
-                {(s === "captada" || s === "em_revisao") && (
-                  <Button onClick={() => updateStatus(p, "aprovada")} className="w-full font-bold" variant="outline"><CheckCircle2 className="h-4 w-4 mr-2" /> Aprovar</Button>
-                )}
-                {s === "publicada" && (
-                  <>
-                    <Button asChild variant="outline" className="w-full font-bold"><a target="_blank" rel="noreferrer" href={`/noticia/${p.slug}`}><Eye className="h-4 w-4 mr-2" /> Visualizar</a></Button>
-                    <Button variant="outline" className="w-full font-bold" onClick={async () => {
-                      try { await navigator.clipboard.writeText(getSocialShareUrl(p.slug)); toast.success("Link com prévia copiado"); }
-                      catch { toast.error("Falha ao copiar link"); }
-                    }}><Share2 className="h-4 w-4 mr-2" /> Compartilhar</Button>
-                  </>
-                )}
-                {s === "arquivada" ? (
-                  <Button onClick={() => restoreOne(p)} variant="outline" className="w-full font-bold border-emerald-500 text-emerald-700 hover:bg-emerald-50"><ArchiveRestore className="h-4 w-4 mr-2" /> Restaurar</Button>
-                ) : (
-                  <Button onClick={() => archiveNow(p)} variant="outline" className="w-full font-bold"><Archive className="h-4 w-4 mr-2" /> Arquivar</Button>
-                )}
-                <Button onClick={() => remove(p.id)} variant="outline" className="w-full font-bold border-urgent text-urgent hover:bg-urgent/10"><Trash2 className="h-4 w-4 mr-2" /> Excluir</Button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Desktop: tabela */}
-      <div className="hidden md:block bg-card border border-border overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary text-xs uppercase tracking-wider">
-            <tr>
-              <th className="text-left p-3 w-[90px]">Imagem</th>
-              <th className="text-left p-3">Título</th>
-              <th className="text-left p-3">Fonte / Origem</th>
-              <th className="text-left p-3">Categoria</th>
-              <th className="text-left p-3">Duplicidade</th>
-              <th className="text-left p-3">Capturada em</th>
-              <th className="text-left p-3">Status / Validade</th>
-              <th className="text-left p-3">Views</th>
-              <th className="text-right p-3">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredPosts.map((p) => {
-              const s = normalizeStatus(p.status);
-              const exp = formatExpiration(p.home_expires_at, !!p.is_evergreen);
-              const showRenew = s === "publicada" && !p.is_evergreen && (p.is_featured || p.is_urgent || (exp && (exp.expired || exp.tone === "critical" || exp.tone === "warn")));
-              const method = detectCaptureMethod({ source_id: p.source_id, source_url: p.source_url });
-              const sourceName = (p.source_id && sources.find((src) => src.id === p.source_id)?.name) || (method === "instagram" ? "Instagram" : "Manual");
-              const previewImg = getPostImage(p as any);
-              const hasOwnImage = !!(p as any).manual_image_url || !!(p as any).cover_image_url;
-              return (
-                <tr key={p.id} className="border-t border-border hover:bg-secondary/20 transition-colors align-top">
-                  <td className="p-3">
-                    <div className="relative w-[72px] h-[48px] bg-secondary border border-border overflow-hidden rounded-sm">
-                      <img src={previewImg} alt={`Miniatura: ${p.title}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => handleImgError(e, p as any)} />
-                      {!hasOwnImage && (
-                        <span className="absolute bottom-0 left-0 right-0 text-[8px] font-bold uppercase text-white bg-amber-600/90 text-center leading-tight py-0.5" title="Sem imagem própria">
-                          Sem imagem
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <SourceBadge name={sourceName} />
-                      <div className="font-display font-bold text-base text-foreground leading-tight">{p.title}</div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {p.is_urgent && <span className="urgent-badge scale-90 origin-left"><span className="h-1 w-1 bg-white rounded-full pulse-dot shrink-0" />URGENTE</span>}
-                      {p.is_featured && (
-                        <button onClick={() => toggleFeatured(p)} className="alert-badge scale-90 origin-left hover:bg-amber-200 transition-colors" title="Clique para remover destaque">DESTAQUE</button>
-                      )}
-                      {(p as any).relevance_level && <RelevanceBadge level={(p as any).relevance_level} score={(p as any).relevance_score} />}
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                        {p.published_at ? `Publicada ${new Date(p.published_at).toLocaleDateString("pt-BR")}` : "Não publicada"}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex flex-col gap-1.5">
-                      <CaptureMethodChip method={method} />
-                      <OriginalLink url={p.source_url} />
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className="text-xs font-bold text-primary uppercase tracking-wider bg-primary/5 px-2 py-1 rounded-sm border border-primary/10">
-                      {p.categories?.name ?? "Geral"}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    {(() => {
-                      const dup = classifyDuplicate(p.similarity_score);
-                      const tier = p.status === "duplicada" ? "duplicada" : dup.tier;
-                      const tierMeta = tier === "duplicada" ? { color: "bg-red-100 text-red-800 border-red-300", dot: "bg-red-500", label: "Possível Duplicada" }
-                        : tier === "similar" ? { color: "bg-yellow-100 text-yellow-800 border-yellow-300", dot: "bg-yellow-500", label: "Similar" }
-                        : { color: "bg-emerald-100 text-emerald-800 border-emerald-300", dot: "bg-emerald-500", label: "Nova" };
-                      const ref = p._ref;
-                      return (
-                        <div className="flex flex-col gap-1.5 max-w-[220px]">
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border rounded-sm w-fit ${tierMeta.color}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${tierMeta.dot}`} />
-                            {tierMeta.label} {dup.pct > 0 ? `· ${dup.pct}%` : ""}
-                          </span>
-                          {ref && (
-                            <div className="text-[10px] text-muted-foreground leading-tight">
-                              <div className="font-bold uppercase tracking-wider text-[9px]">Possível duplicada de:</div>
-                              <Link to={`/admin/posts/${p.similar_to || p.duplicate_of}`} className="line-clamp-2 hover:underline">{ref.title}</Link>
-                              {ref.published_at && <div className="font-mono text-[9px] mt-0.5">Publicada em {new Date(ref.published_at).toLocaleDateString("pt-BR")}</div>}
-                            </div>
-                          )}
-                          {ref && tier !== "nova" && (
-                            <div className="flex flex-wrap gap-1">
-                              <button onClick={() => decideKeep(p)} className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-1 rounded-sm border border-emerald-300 text-emerald-700 hover:bg-emerald-50"><Check className="h-2.5 w-2.5" />Manter</button>
-                              <button onClick={() => decideMerge(p)} className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-1 rounded-sm border border-sky-300 text-sky-700 hover:bg-sky-50"><GitMerge className="h-2.5 w-2.5" />Mesclar</button>
-                              {p.status !== "duplicada" && (
-                                <button onClick={() => decideMarkDuplicate(p)} className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-1 rounded-sm border border-red-300 text-red-700 hover:bg-red-50"><AlertOctagon className="h-2.5 w-2.5" />Duplicada</button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="p-4 text-xs text-muted-foreground">
-                    <div>{new Date(p.captured_at ?? p.created_at).toLocaleDateString("pt-BR")}</div>
-                    <div className="font-mono">{new Date(p.captured_at ?? p.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex flex-col gap-1.5">
-                      <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-widest border rounded-sm w-fit ${STATUS_COLOR[s]}`}>{STATUS_LABEL[s]}</span>
-                      {exp && (
-                        <span title={p.home_expires_at ? new Date(p.home_expires_at).toLocaleString("pt-BR") : undefined}
-                          className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm border w-fit ${TONE_CLASS[exp.tone]}`}>
-                          <Clock className="h-2.5 w-2.5" />{exp.label}
-                        </span>
-                      )}
-                      {showRenew && (
-                        <div className="flex gap-1 mt-1">
-                          <button onClick={() => renewExpiration(p, 24)} className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-1 rounded-sm border bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50"><RotateCw className="h-2.5 w-2.5" />+24h</button>
-                          <button onClick={() => renewExpiration(p, 24 * 7)} className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-1 rounded-sm border bg-white border-emerald-300 text-emerald-700 hover:bg-emerald-50"><RotateCw className="h-2.5 w-2.5" />+7d</button>
-                        </div>
-                      )}
-                      {p.archived_at && (
-                        <span title={ARCHIVE_REASON_LABEL[p.archived_reason] ?? p.archived_reason ?? ""}
-                          className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm border bg-zinc-100 text-zinc-700 border-zinc-300 w-fit">
-                          <Archive className="h-2.5 w-2.5" />
-                          Arquivada {new Date(p.archived_at).toLocaleDateString("pt-BR")}
-                          {p.archived_reason && <span className="ml-1 normal-case font-bold text-[8px] text-zinc-500">· {ARCHIVE_REASON_LABEL[p.archived_reason] ?? p.archived_reason}</span>}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-4 font-mono text-xs font-bold text-muted-foreground">{p.views?.toLocaleString("pt-BR") || 0}</td>
-                  <td className="p-4 text-right">
-                    <div className="inline-flex gap-1 items-center">
-                      {(s === "em_revisao" || s === "captada") && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus(p, "aprovada")} className="h-8 px-3 text-amber-700 border-amber-200 hover:bg-amber-50 hover:text-amber-800" title="Aprovar"><CheckCircle2 className="h-3.5 w-3.5 mr-1" />Aprovar</Button>
-                      )}
-                      {s === "aprovada" && (
-                        <Button variant="outline" size="sm" onClick={() => updateStatus(p, "publicada")} className="h-8 px-3 text-sky-700 border-sky-200 hover:bg-sky-50 hover:text-sky-800" title="Publicar"><Globe className="h-3.5 w-3.5 mr-1" />Publicar</Button>
-                      )}
-                      {s === "publicada" && (
-                        <>
-                          <Button asChild variant="outline" size="sm" className="h-8 px-3 text-sky-700 border-sky-200 hover:bg-sky-50 hover:text-sky-800" title="Editar publicada"><Link to={`/admin/posts/${p.id}`}><Edit className="h-3.5 w-3.5 mr-1" />Editar</Link></Button>
-                          <Button variant="ghost" size="sm" onClick={() => updateStatus(p, "em_revisao")} className="h-8 px-3 text-muted-foreground hover:bg-secondary" title="Despublicar"><ArchiveRestore className="h-3.5 w-3.5 mr-1" />Despublicar</Button>
-                        </>
-                      )}
-                      <div className="w-px h-4 bg-border mx-1" />
-                      {s === "publicada" && (
-                        <Button variant="ghost" size="icon" asChild className="h-8 w-8 hover:bg-secondary" title="Ver no site"><a target="_blank" rel="noreferrer" href={`/noticia/${p.slug}`}><Eye className="h-4 w-4" /></a></Button>
-                      )}
-                      <Button variant="ghost" size="icon" asChild className="h-8 w-8 hover:bg-secondary" title="Editar"><Link to={`/admin/posts/${p.id}`}><Edit className="h-4 w-4" /></Link></Button>
-                      {s === "arquivada" ? (
-                        <Button variant="ghost" size="icon" onClick={() => restoreOne(p)} className="h-8 w-8 text-emerald-700 hover:bg-emerald-50" title="Restaurar"><ArchiveRestore className="h-4 w-4" /></Button>
-                      ) : (
-                        <Button variant="ghost" size="icon" onClick={() => archiveNow(p)} className="h-8 w-8 text-zinc-700 hover:bg-zinc-100" title="Arquivar"><Archive className="h-4 w-4" /></Button>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => remove(p.id)} className="h-8 w-8 text-urgent hover:bg-urgent/10" title="Excluir"><Trash2 className="h-4 w-4" /></Button>
-                      <Button variant="outline" size="sm" onClick={() => setDayModalPost(p)} className="h-8 px-2 text-sky-700 border-sky-200 hover:bg-sky-50" title="Ver dia"><CalendarDays className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest">Dia</span></Button>
-                      <label className="ml-1 inline-flex items-center cursor-pointer" title="Selecionar para lote">
-                        <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelected(p.id)} className="h-4 w-4 accent-zinc-700" />
-                      </label>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+        <>
+          {/* Tablet / Mobile: cartões em uma coluna (< lg) */}
+          <div className="lg:hidden space-y-3">
             {filteredPosts.length === 0 && !loading && (
-              <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Nenhuma notícia.</td></tr>
+              <div className="bg-card border border-border p-8 text-center text-sm text-muted-foreground">Nenhuma notícia.</div>
             )}
             {loading && (
-              <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">Carregando…</td></tr>
+              <div className="bg-card border border-border p-8 text-center text-sm text-muted-foreground">Carregando…</div>
             )}
-          </tbody>
-        </table>
-      </div>
+            {filteredPosts.map((p) => {
+              const sourceName = sourcesById.get(p.source_id) ||
+                (p.source_url && /instagram\.com/i.test(p.source_url) ? "Instagram" : "Manual");
+              return (
+                <AdminPostMobileCard
+                  key={p.id}
+                  post={p}
+                  sourceName={sourceName}
+                  onPrimary={handlePrimary}
+                  onMore={setActionsPost}
+                />
+              );
+            })}
+          </div>
 
-      {/* Paginação inferior */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-        <span className="text-[11px] font-bold text-muted-foreground">
-          {loading ? "Carregando…" : `Mostrando ${from.toLocaleString("pt-BR")}–${to.toLocaleString("pt-BR")} de ${totalCount.toLocaleString("pt-BR")}`}
-        </span>
-        <div className="inline-flex items-center gap-1">
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)}><ChevronsLeft className="h-4 w-4" /></Button>
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}><ChevronLeft className="h-4 w-4" /></Button>
-          <span className="text-[11px] font-bold px-2 min-w-[92px] text-center">Página {page} de {totalPages}</span>
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}><ChevronRight className="h-4 w-4" /></Button>
-          <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)}><ChevronsRight className="h-4 w-4" /></Button>
-        </div>
-      </div>
-      </>
+          {/* Desktop: tabela (>= lg) */}
+          <div className="hidden lg:block">
+            <AdminPostsDesktopTable
+              posts={filteredPosts}
+              sourcesById={sourcesById}
+              loading={loading}
+              sort={sort}
+              dir={dir}
+              onSortChange={(s, d) => { setSort(s); setDir(d); }}
+              onPrimary={handlePrimary}
+              onMore={setActionsPost}
+            />
+          </div>
+
+          <div className="mt-4">
+            <AdminPostsPagination
+              page={page}
+              perPage={perPage}
+              totalCount={totalCount}
+              loading={loading}
+              onPage={setPage}
+              onPerPage={(n) => { setPerPage(n); setPage(1); }}
+              showPerPage={false}
+              ariaLabel="Paginação (rodapé)"
+            />
+          </div>
+        </>
       )}
+
+      <AdminPostActionsMenu
+        open={!!actionsPost}
+        onOpenChange={(o) => { if (!o) setActionsPost(null); }}
+        post={actionsPost}
+        onApprove={(p) => updateStatus(p, "aprovada")}
+        onPublish={(p) => updateStatus(p, "publicada")}
+        onUnpublish={(p) => updateStatus(p, "em_revisao")}
+        onArchive={(p) => archiveNow(p)}
+        onRestore={(p) => restoreOne(p)}
+        onDelete={(p) => remove(p.id)}
+        onShare={async (p) => {
+          try { await navigator.clipboard.writeText(getSocialShareUrl(p.slug)); toast.success("Link com prévia copiado"); }
+          catch { toast.error("Falha ao copiar link"); }
+        }}
+        onSeeDay={(p) => setDayModalPost(p)}
+        onRenew={(p, h) => renewExpiration(p, h)}
+      />
+
 
       <DayPostsModal
         open={!!dayModalPost}
