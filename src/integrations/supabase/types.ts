@@ -1434,6 +1434,7 @@ export type Database = {
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
       increment_post_views: { Args: { _post_id: string }; Returns: undefined }
+      is_editor_or_admin: { Args: { _user_id: string }; Returns: boolean }
       is_main_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       match_event_by_embedding: {
