@@ -623,7 +623,7 @@ export default function AdminPostEditor() {
       {/* Barra de ações fixa no topo para agilizar o fluxo editorial */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border -mx-4 px-4 py-3 mb-6 flex items-center justify-between gap-4 shadow-md">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => nav("/admin/posts")} className="mr-2">
+          <Button variant="ghost" size="sm" onClick={() => guard.attempt("/admin/posts")} className="mr-2">
             <RotateCcw className="h-4 w-4 mr-2" />
             Voltar
           </Button>
@@ -649,6 +649,10 @@ export default function AdminPostEditor() {
               <Film className="h-4 w-4" /> Gerar Reel
             </Button>
           )}
+          <Button onClick={() => setPreviewOpen(true)} variant="outline" size="sm" className="gap-1">
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Visualizar</span>
+          </Button>
           <Button onClick={() => save()} disabled={saving} variant="outline" size="sm">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Salvar rascunho
