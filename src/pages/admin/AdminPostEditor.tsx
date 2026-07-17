@@ -658,45 +658,13 @@ export default function AdminPostEditor() {
               className="gap-2"
               title="Gerar Reel vertical 1080x1920 a partir desta notícia"
             >
-              <Film className="h-4 w-4" /> Gerar Reel
+              <Film className="h-4 w-4" />
+              <span className="hidden sm:inline">Gerar Reel</span>
             </Button>
           )}
-          <Button onClick={() => setPreviewOpen(true)} variant="outline" size="sm" className="gap-1">
-            <Eye className="h-4 w-4" />
-            <span className="hidden sm:inline">Visualizar</span>
-          </Button>
-          <Button onClick={() => save()} disabled={saving} variant="outline" size="sm">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Salvar rascunho
-          </Button>
-
-          {canPublish && (
-            <div className="flex items-center gap-2 border-l pl-2 ml-2">
-              <Button
-                onClick={() => tryPublish()}
-                disabled={saving}
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-              >
-                <Globe className="h-4 w-4 mr-1" />
-                <span className="hidden xs:inline">PUBLICAR</span> AGORA
-              </Button>
-
-              {currentStatus === "publicada" && (
-                <Button
-                  onClick={() => save("em_revisao")}
-                  disabled={saving}
-                  size="sm"
-                  variant="outline"
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <ArchiveRestore className="h-4 w-4 mr-1" />
-                  Despublicar
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Ações de salvar/publicar ficam no painel "4. Publicação" e na barra mobile. */}
         </div>
+
       </div>
 
       {/* Indicador de estado de salvamento — 5 estados distintos */}
