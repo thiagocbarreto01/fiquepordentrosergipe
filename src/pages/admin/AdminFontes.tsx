@@ -823,6 +823,14 @@ export default function AdminFontes() {
           </tbody>
         </table>
       </div>
+
+      <DeleteSourceDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        sourceName={deleteTarget?.name ?? ""}
+        linkedPostsCount={deleteTarget?.linkedPosts ?? 0}
+        onConfirm={confirmDelete}
+      />
     </AdminLayout>
   );
 }
