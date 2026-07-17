@@ -547,7 +547,34 @@ export default function AdminPosts() {
   const from = totalCount === 0 ? 0 : (page - 1) * perPage + 1;
   const to = Math.min(page * perPage, totalCount);
 
+  const sourcesById = useMemo(() => {
+    const m = new Map<string, string>();
+    sources.forEach((s: any) => m.set(s.id, s.name));
+    return m;
+  }, [sources]);
+
+  // Dispatcher da ação principal — usa helper compartilhado (getPrimaryAction).
+  // Preserva callbacks existentes: apenas roteia a decisão.
+  const handlePrimary = useCallback((p: any) => {
+    const spec = getPrimaryAction(p);
+    switch (spec.kind) {
+      case "approve":  updateStatus(p, "aprovada"); break;
+      case "publish":  updateStatus(p, "publicada"); break;
+      case "restore":  restoreOne(p); break;
+      case "open_portal":
+        if (p.slug) window.open(`/noticia/${p.slug}`, "_blank");
+        break;
+      case "review_duplicate":
+      case "edit":
+      case "continue_edit":
+      default:
+        navigate(`/admin/posts/${p.id}`);
+        break;
+    }
+  }, [navigate]);
+
   const activeChips: { key: string; label: string; onClear: () => void }[] = [];
+
   if (filter !== "captada") activeChips.push({ key: "status", label: `Status: ${filter === "all" ? "Todas" : STATUS_LABEL[filter as EditorialStatus]}`, onClear: () => setFilter("captada") });
   if (period !== "today") activeChips.push({ key: "period", label: `Período: ${period === "last3" ? "Últimos 3 dias" : "Todas"}`, onClear: () => setPeriod("today") });
   if (sourceFilter !== "all") {
