@@ -85,8 +85,12 @@ export function getSecondaryActions(
   status: EditorialStatus,
 ): EditorSecondaryAction[] {
   const canPublish = canPublishFor(role);
+  // "Salvar rascunho" só faz sentido literal quando o status é rascunho.
+  // Em qualquer outro status, salvar NUNCA rebaixa para rascunho — passa a ser
+  // "Salvar alterações" e preserva o status atual (garantido no save()).
+  const saveLabel = status === "rascunho" ? "Salvar rascunho" : "Salvar alterações";
   const list: EditorSecondaryAction[] = [
-    { kind: "save_draft", label: "Salvar rascunho" },
+    { kind: "save_draft", label: saveLabel },
     { kind: "preview", label: "Visualizar prévia" },
   ];
 
@@ -103,8 +107,6 @@ export function getSecondaryActions(
       list.push({ kind: "unpublish", label: "Despublicar", destructive: true });
     }
   } else {
-    // Redator: pode reenviar para revisão se já estiver aprovada/rejeitada/captada,
-    // mas nunca aprovar/publicar/rejeitar diretamente.
     if (status === "rascunho") {
       // ação principal já cobre; nada extra aqui
     } else if (status !== "publicada") {

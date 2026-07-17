@@ -58,8 +58,10 @@ export interface EditorPublicationPanelProps {
   isDenuncia: boolean;
   onToggleDenuncia: (v: boolean) => void;
 
-  // Agendamento (bloqueado nesta passada)
-  scheduledAt: string;
+  // Agendamento
+  scheduledAt: string;                 // ISO se agendada, "" caso contrário
+  onCancelSchedule?: () => void;
+  cancellingSchedule?: boolean;
 
   // Fixação (renderizada pelo pai para evitar duplicação)
   pinningSlot?: ReactNode;
@@ -154,6 +156,8 @@ export function EditorPublicationPanel({
   isDenuncia,
   onToggleDenuncia,
   scheduledAt,
+  onCancelSchedule,
+  cancellingSchedule,
   pinningSlot,
   history,
   normalizeStatus,
@@ -275,23 +279,50 @@ export function EditorPublicationPanel({
         </div>
       </div>
 
-      <div className="rounded-md border border-dashed border-border bg-secondary/40 p-3">
-        <Label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1">
-          <CalendarClock className="h-3 w-3" /> Publicação agendada
-        </Label>
-        <Input
-          type="datetime-local"
-          value={scheduledAt}
-          disabled
-          aria-disabled="true"
-          readOnly
-          className="mt-1 cursor-not-allowed opacity-60"
-        />
-        <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-          Agendamento automático ainda não configurado. Enquanto isso, use{" "}
-          <strong>Publicar agora</strong>.
-        </p>
-      </div>
+      {scheduledAt ? (
+        <div className="rounded-md border border-blue-300 bg-blue-50 p-3 space-y-2">
+          <Label className="text-[10px] uppercase font-bold tracking-wider text-blue-900 flex items-center gap-1">
+            <CalendarClock className="h-3 w-3" /> Publicação agendada
+          </Label>
+          <p className="text-sm font-bold text-blue-900">
+            {(() => {
+              try {
+                return new Date(scheduledAt).toLocaleString("pt-BR", {
+                  timeZone: "America/Maceio",
+                  day: "2-digit", month: "2-digit", year: "numeric",
+                  hour: "2-digit", minute: "2-digit",
+                });
+              } catch { return scheduledAt; }
+            })()} <span className="font-normal text-xs">(Maceió)</span>
+          </p>
+          <p className="text-[11px] text-blue-900 leading-snug">
+            Salvar alterações não altera o agendamento. Para publicar antes,
+            cancele o agendamento e use “Publicar agora”.
+          </p>
+          {onCancelSchedule && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-[36px]"
+              disabled={cancellingSchedule}
+              onClick={onCancelSchedule}
+            >
+              {cancellingSchedule ? "Cancelando…" : "Cancelar agendamento"}
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-md border border-dashed border-border bg-secondary/40 p-3">
+          <Label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground flex items-center gap-1">
+            <CalendarClock className="h-3 w-3" /> Publicação agendada
+          </Label>
+          <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+            Nenhum agendamento. Use <strong>Publicar agora</strong> ou escolha{" "}
+            <strong>Agendar</strong> no diálogo de publicação.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
         <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">

@@ -405,7 +405,7 @@ export default function AdminPosts() {
         const from = (page - 1) * perPage;
         const to = from + perPage - 1;
         const cols =
-          "id,title,slug,status,is_urgent,is_featured,is_evergreen,home_expires_at,views,published_at,created_at,captured_at,source_id,source_url,similarity_score,similar_to,duplicate_of,duplicate_match_reason,cover_image_url,manual_image_url,cover_image_original,archived_at,archived_reason,content,relevance_level,relevance_score,categories!posts_category_id_fkey(name,default_cover_image_url)";
+          "id,title,slug,status,is_urgent,is_featured,is_evergreen,home_expires_at,views,published_at,scheduled_at,created_at,captured_at,source_id,source_url,similarity_score,similar_to,duplicate_of,duplicate_match_reason,cover_image_url,manual_image_url,cover_image_original,archived_at,archived_reason,content,relevance_level,relevance_score,categories!posts_category_id_fkey(name,default_cover_image_url)";
 
         let q = supabase.from("posts").select(cols, { count: "exact" });
         q = applyServerFilters(q, {

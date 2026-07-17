@@ -486,6 +486,8 @@ export type Database = {
           relevance_score: number | null
           resumo_gerado: string | null
           scheduled_at: string | null
+          scheduled_at_set_at: string | null
+          scheduled_by: string | null
           share_image_generated_at: string | null
           share_image_url: string | null
           similar_to: string | null
@@ -566,6 +568,8 @@ export type Database = {
           relevance_score?: number | null
           resumo_gerado?: string | null
           scheduled_at?: string | null
+          scheduled_at_set_at?: string | null
+          scheduled_by?: string | null
           share_image_generated_at?: string | null
           share_image_url?: string | null
           similar_to?: string | null
@@ -646,6 +650,8 @@ export type Database = {
           relevance_score?: number | null
           resumo_gerado?: string | null
           scheduled_at?: string | null
+          scheduled_at_set_at?: string | null
+          scheduled_by?: string | null
           share_image_generated_at?: string | null
           share_image_url?: string | null
           similar_to?: string | null
@@ -886,6 +892,50 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_publish_events: {
+        Row: {
+          attempt: number
+          created_at: string
+          id: string
+          post_id: string
+          processed_at: string | null
+          reason: string | null
+          result: string
+          scheduled_by: string | null
+          scheduled_for: string | null
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          id?: string
+          post_id: string
+          processed_at?: string | null
+          reason?: string | null
+          result: string
+          scheduled_by?: string | null
+          scheduled_for?: string | null
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          id?: string
+          post_id?: string
+          processed_at?: string | null
+          reason?: string | null
+          result?: string
+          scheduled_by?: string | null
+          scheduled_for?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_publish_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_settings: {
         Row: {
           contact_email: string | null
@@ -1045,6 +1095,7 @@ export type Database = {
       auto_archive_preview: { Args: never; Returns: Json }
       auto_repair_posts_public: { Args: never; Returns: number }
       can_approve_publish: { Args: { _user_id: string }; Returns: boolean }
+      cancel_scheduled_post: { Args: { _post_id: string }; Returns: Json }
       cluster_post_into_event: { Args: { _post_id: string }; Returns: string }
       detect_breaking_events: { Args: never; Returns: number }
       expire_breaking_events: { Args: never; Returns: number }
@@ -1103,9 +1154,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      publish_due_scheduled_posts: { Args: never; Returns: Json }
       recluster_all_posts: { Args: { _force?: boolean }; Returns: number }
       restore_post: { Args: { _post_id: string }; Returns: undefined }
       resync_posts_public: { Args: never; Returns: number }
+      schedule_post: {
+        Args: { _post_id: string; _scheduled_for: string }
+        Returns: Json
+      }
       unpin_post_from_home: { Args: { _post_id: string }; Returns: undefined }
     }
     Enums: {
