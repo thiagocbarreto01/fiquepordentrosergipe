@@ -4,13 +4,17 @@
 //   • modo determinado no servidor via SOURCE_SAFE_FETCH_MODE
 //     (valores válidos: "off" | "shadow"; qualquer outro cai em "off").
 //   • enforce NÃO é ativável nesta fase; o parser aceita o token mas
-//     mode() nunca retorna "enforce".
+//     readMode() nunca retorna "enforce".
 //   • em shadow: tenta safeFetch primeiro; se erro estruturado → fallback
 //     legado; se sucesso → usa bytes seguros sem 2º fetch.
-//   • telemetria estruturada e SEM PII (sem URL, sem path, sem qs, sem IP).
+//   • telemetria estruturada e SEM PII (sem URL, sem path, sem qs, sem IP,
+//     sem headers, sem conteúdo, sem UUID cru da fonte).
+//   • cache de allowlist é EXPLÍCITO por run/requisição — o caller cria com
+//     newAllowlistCache() no início e descarta ao final. Não há Map global.
 //
 // Fora de escopo (F3D.3A): download real de mídia (o fluxo atual só
-// armazena URLs); apenas validação lexical do hostname contra allowlist.
+// armazena URLs); apenas validação lexical do hostname contra allowlist,
+// reusando validateUrl/isHostAllowed de safe-fetch para evitar divergência.
 
 import {
   type AllowedHost,
@@ -22,14 +26,24 @@ import {
   safeFetch,
   SafeFetchError,
   type SafeFetchErrorCode,
+  validateUrl,
 } from "./safe-fetch.ts";
 
 export type SafeMode = "off" | "shadow" | "enforce";
 
+/**
+ * Lê o modo do ambiente do servidor. Somente `off` (default) e `shadow`
+ * são ativáveis nesta fase; qualquer outro valor (incluindo `enforce`,
+ * `SHADOW`, espaços ou lixo) cai em `off` de forma fail-closed.
+ *
+ * Fonte é EXCLUSIVAMENTE o env do servidor. Nenhum caminho aceita modo
+ * vindo de querystring, body ou header do cliente.
+ */
 export function readMode(env: Record<string, string | undefined>): SafeMode {
-  const raw = (env.SOURCE_SAFE_FETCH_MODE ?? "").trim().toLowerCase();
+  const raw = env.SOURCE_SAFE_FETCH_MODE;
+  if (typeof raw !== "string") return "off";
+  // Sem tolerância a espaços ou variações de caixa: token exato "shadow".
   if (raw === "shadow") return "shadow";
-  // enforce e valores inválidos caem para off nesta fase.
   return "off";
 }
 
@@ -38,7 +52,8 @@ export type SafeResult =
   | "allowed"
   | "would_block"
   | "not_evaluated"
-  | "allowlist_load_failed";
+  | "allowlist_load_failed"
+  | "invalid_url";
 
 export interface ShadowEvent {
   request_id: string;
@@ -52,10 +67,11 @@ export interface ShadowEvent {
   redirect_count?: number;
   bytes?: number;
   duration_ms?: number;
+  /** Presente SOMENTE quando o hostname foi confirmado pela allowlist. */
   final_hostname?: string;
 }
 
-/** Hash não reversível curto do source_id — não é PII do usuário. */
+/** Hash não reversível curto (48 bits) do source_id — não é PII do usuário. */
 export async function hashSourceId(sourceId: string): Promise<string> {
   try {
     const buf = new TextEncoder().encode(sourceId);
@@ -67,15 +83,42 @@ export async function hashSourceId(sourceId: string): Promise<string> {
   }
 }
 
-/**
- * Emite um evento de telemetria sanitizado. Somente console estruturado
- * nesta fase — sem tabela de persistência.
- */
-export function logShadow(ev: ShadowEvent): void {
-  // JSON de linha única, prefixo para grep. Nada de URL/IP/conteúdo.
-  console.log(`[shadow] ${JSON.stringify(ev)}`);
+/** Sink de log injetável para testes; default = console.log estruturado. */
+export type LogSink = (line: string) => void;
+let currentSink: LogSink = (l) => console.log(l);
+export function setLogSinkForTests(sink: LogSink | null): void {
+  currentSink = sink ?? ((l) => console.log(l));
 }
 
+/**
+ * Emite um evento de telemetria sanitizado. Somente as chaves declaradas
+ * em `ShadowEvent` são serializadas — sem URL/IP/headers/conteúdo.
+ * `final_hostname` só entra quando não-vazio (o caller já garante que só
+ * é passado após autorização pela allowlist).
+ */
+export function logShadow(ev: ShadowEvent): void {
+  const safe: Record<string, unknown> = {
+    request_id: ev.request_id,
+    source_id_hash: ev.source_id_hash,
+    purpose: ev.purpose,
+    response_kind: ev.response_kind,
+    mode: ev.mode,
+    safe_result: ev.safe_result,
+    transport: ev.transport,
+  };
+  if (ev.error_code) safe.error_code = ev.error_code;
+  if (typeof ev.redirect_count === "number") safe.redirect_count = ev.redirect_count;
+  if (typeof ev.bytes === "number") safe.bytes = ev.bytes;
+  if (typeof ev.duration_ms === "number") safe.duration_ms = ev.duration_ms;
+  if (ev.final_hostname) safe.final_hostname = ev.final_hostname;
+  currentSink(`[shadow] ${JSON.stringify(safe)}`);
+}
+
+/**
+ * Cache de allowlist ESTRITAMENTE por run/requisição. O caller cria com
+ * `newAllowlistCache()`, injeta em cada chamada do adaptador e descarta
+ * ao final do handler. Não existe Map global neste módulo.
+ */
 export interface AllowlistCache {
   bySource: Map<string, AllowedHost[]>;
   loadErrors: Set<string>;
@@ -86,8 +129,12 @@ export function newAllowlistCache(): AllowlistCache {
 }
 
 /**
- * Carrega a allowlist de uma fonte no cache (uma vez por run). Se falhar,
- * marca `loadErrors` — o caller decide (em shadow: fallback legado).
+ * Carrega a allowlist de uma fonte no cache da run. Se falhar, marca
+ * `loadErrors` — o caller decide (em shadow: fallback legado). Erros
+ * SQL/PostgREST são engolidos: nada do detalhe cru vaza para logs.
+ *
+ * O `supabase` recebido é o client interno da Edge Function (service role);
+ * ele nunca é criado a partir de credenciais do cliente HTTP.
  */
 export async function loadAllowlistForSource(
   supabase: {
@@ -112,23 +159,26 @@ export async function loadAllowlistForSource(
       .from("news_source_allowed_hosts")
       .select("hostname,purpose,allow_subdomains")
       .eq("source_id", sourceId);
-    if (error || !data) throw error ?? new Error("empty");
+    if (error || !data) throw new Error("load_failed");
     const hosts: AllowedHost[] = [];
     for (const row of data) {
       const h = normalizeHostname(row.hostname);
-      if (!h) continue;
+      if (!h) continue; // linha inválida ignorada, jamais amplia permissão
       const p = row.purpose as Purpose;
       if (p !== "feed" && p !== "article" && p !== "media") continue;
       hosts.push({
         source_id: sourceId,
         hostname: h,
         purpose: p,
-        allow_subdomains: !!row.allow_subdomains,
+        // preserva estritamente o valor booleano; nada de coerção larga.
+        allow_subdomains: row.allow_subdomains === true,
       });
     }
     cache.bySource.set(sourceId, hosts);
     return hosts;
   } catch {
+    // Marca a fonte como falha para não repetir a consulta na mesma run
+    // e para permitir fallback legado imediato nas chamadas seguintes.
     cache.loadErrors.add(sourceId);
     return null;
   }
@@ -161,25 +211,57 @@ export interface ShadowFetchArgs {
   legacyFetch: () => Promise<string>; // fetch legado que devolve texto
   timeoutMs?: number;
   maxBytes?: number;
+  // Test seams — jamais usados pelo runtime real; existem apenas para
+  // permitir mocks determinísticos de rede/DNS em testes unitários.
+  // deno-lint-ignore no-explicit-any
+  _fetchFn?: any;
+  // deno-lint-ignore no-explicit-any
+  _resolveDns?: any;
 }
 
-function decodeBytes(bytes: Uint8Array, contentType: string | null): string {
-  // Respeita charset declarado quando reconhecido; fallback UTF-8.
-  let charset = "utf-8";
-  if (contentType) {
-    const m = /charset=([^;]+)/i.exec(contentType);
-    if (m) charset = m[1].trim().toLowerCase();
-  }
+// ─── Decodificação de texto: charset em whitelist estrita ────────────────
+
+const SAFE_DECODERS: Record<string, string> = {
+  "utf-8": "utf-8",
+  "utf8": "utf-8",
+  "us-ascii": "utf-8", // superset seguro
+  "ascii": "utf-8",
+  "iso-8859-1": "windows-1252", // browsers tratam como cp1252
+  "latin1": "windows-1252",
+  "latin-1": "windows-1252",
+  "windows-1252": "windows-1252",
+  "cp1252": "windows-1252",
+};
+
+function pickDecoder(contentType: string | null): string {
+  if (!contentType) return "utf-8";
+  const m = /charset=([^;]+)/i.exec(contentType);
+  if (!m) return "utf-8";
+  const cs = m[1].trim().toLowerCase().replace(/^["']|["']$/g, "");
+  const mapped = SAFE_DECODERS[cs];
+  // charset desconhecido → fallback seguro (nunca aceita nome arbitrário
+  // como executável de TextDecoder sem validação).
+  return mapped ?? "utf-8";
+}
+
+function stripBom(s: string): string {
+  return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
+}
+
+/** Decodifica bytes usando um decoder da whitelist; fail-open em UTF-8. */
+export function decodeBytes(bytes: Uint8Array, contentType: string | null): string {
+  const label = pickDecoder(contentType);
   try {
-    return new TextDecoder(charset, { fatal: false }).decode(bytes);
+    return stripBom(new TextDecoder(label, { fatal: false }).decode(bytes));
   } catch {
-    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    return stripBom(new TextDecoder("utf-8", { fatal: false }).decode(bytes));
   }
 }
 
 /**
  * Ponto único de decisão. Em shadow: tenta safe primeiro, faz fallback
- * legado em erro estruturado. Em off: legado direto.
+ * legado em erro estruturado. Em off: legado direto (sem consulta a
+ * allowlist e sem chamar safeFetch).
  */
 export async function shadowFetchOrFallback(
   args: ShadowFetchArgs,
@@ -191,8 +273,13 @@ export async function shadowFetchOrFallback(
     return { transport: "legacy_fallback", safeResult: "not_evaluated", legacyText };
   }
 
-  // shadow (enforce não é ativável nesta fase — tratado como shadow apenas
-  // para segurança; nunca chega aqui pois readMode não retorna "enforce").
+  // shadow. enforce nunca chega aqui: readMode() jamais retorna "enforce"
+  // nesta fase; a checagem abaixo é defesa em profundidade.
+  if (args.mode !== "shadow") {
+    const legacyText = await args.legacyFetch();
+    return { transport: "legacy_fallback", safeResult: "not_evaluated", legacyText };
+  }
+
   if (!args.allowlist) {
     logShadow({
       request_id: args.requestId,
@@ -221,6 +308,8 @@ export async function shadowFetchOrFallback(
       allowedMimeTypes: DEFAULT_ALLOWED_MIMES_BY_KIND[args.responseKind],
       timeoutMs: args.timeoutMs,
       maxBytes: args.maxBytes,
+      fetchFn: args._fetchFn,
+      resolveDns: args._resolveDns,
     });
     const text = decodeBytes(r.bytes, r.contentType);
     logShadow({
@@ -246,6 +335,8 @@ export async function shadowFetchOrFallback(
       redirectCount: r.redirectCount,
     };
   } catch (e) {
+    // Erro inesperado (não-SafeFetchError) é normalizado como "legacy_error"
+    // e a mensagem crua NUNCA é logada.
     const code: SafeFetchErrorCode | "legacy_error" =
       e instanceof SafeFetchError ? e.code : "legacy_error";
     logShadow({
@@ -258,6 +349,8 @@ export async function shadowFetchOrFallback(
       transport: "legacy_fallback",
       error_code: code,
       duration_ms: Math.round(performance.now() - start),
+      // deliberadamente SEM final_hostname aqui (host não autorizado ou
+      // DNS bloqueado — não confirmar hostname no log).
     });
     // Fallback legado (único fetch adicional).
     const legacyText = await args.legacyFetch();
@@ -271,8 +364,10 @@ export async function shadowFetchOrFallback(
 }
 
 /**
- * Verificação lexical de mídia (sem download). Usada quando o fluxo real
- * apenas armazena a URL da imagem — não introduz nova requisição.
+ * Verificação lexical de mídia (sem download). Reutiliza validateUrl +
+ * isHostAllowed para garantir a mesma superfície de segurança do safeFetch:
+ * HTTPS, porta 443, sem credenciais, hostname normalizado, IP literal
+ * bloqueado, hostname reservado bloqueado, allow_subdomains exato.
  */
 export function evaluateMediaHostShadow(args: {
   requestId: string;
@@ -283,6 +378,8 @@ export function evaluateMediaHostShadow(args: {
   mode: SafeMode;
 }): SafeResult {
   if (args.mode === "off") return "not_evaluated";
+  if (!args.imageUrl) return "not_evaluated";
+
   if (!args.allowlist) {
     logShadow({
       request_id: args.requestId,
@@ -295,25 +392,55 @@ export function evaluateMediaHostShadow(args: {
     });
     return "allowlist_load_failed";
   }
-  if (!args.imageUrl) return "not_evaluated";
-  let host: string | null = null;
+
+  let hostname: string | null = null;
+  let errorCode: SafeFetchErrorCode | null = null;
   try {
-    host = normalizeHostname(new URL(args.imageUrl).hostname);
-  } catch {
-    host = null;
+    const v = validateUrl(args.imageUrl);
+    hostname = v.hostname;
+  } catch (e) {
+    errorCode = e instanceof SafeFetchError ? e.code : "invalid_url";
   }
-  const allowed = !!host &&
-    isHostAllowed(host, args.sourceId, "media", args.allowlist);
-  const result: SafeResult = allowed ? "allowed" : "would_block";
+
+  if (!hostname) {
+    logShadow({
+      request_id: args.requestId,
+      source_id_hash: args.sourceIdHash,
+      purpose: "media",
+      response_kind: "image",
+      mode: args.mode,
+      safe_result: "invalid_url",
+      transport: "legacy_fallback",
+      error_code: errorCode ?? "invalid_url",
+      // sem final_hostname: URL inválida / destino inseguro.
+    });
+    return "invalid_url";
+  }
+
+  const allowed = isHostAllowed(hostname, args.sourceId, "media", args.allowlist);
+  if (allowed) {
+    logShadow({
+      request_id: args.requestId,
+      source_id_hash: args.sourceIdHash,
+      purpose: "media",
+      response_kind: "image",
+      mode: args.mode,
+      safe_result: "allowed",
+      transport: "legacy_fallback",
+      final_hostname: hostname,
+    });
+    return "allowed";
+  }
   logShadow({
     request_id: args.requestId,
     source_id_hash: args.sourceIdHash,
     purpose: "media",
     response_kind: "image",
     mode: args.mode,
-    safe_result: result,
+    safe_result: "would_block",
     transport: "legacy_fallback",
-    final_hostname: allowed ? host! : undefined,
+    error_code: "host_not_allowed",
+    // sem final_hostname: host não autorizado.
   });
-  return result;
+  return "would_block";
 }
