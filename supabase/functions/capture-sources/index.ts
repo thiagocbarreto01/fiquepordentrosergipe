@@ -1157,8 +1157,10 @@ Deno.serve(async (req) => {
       let source: "extracted" | "category_fallback" = "extracted";
       
       if (post.source_url) {
-        const media = await fetchPageMedia(post.source_url);
+        const media = await fetchPageMedia(ctx, post.source_id ?? "", post.source_url);
         newCover = media.ogImage;
+        // Avaliação lexical de mídia (sem download).
+        await evaluateMediaHost(ctx, post.source_id ?? "", newCover);
       }
 
       // 3. Fallback: categoria
