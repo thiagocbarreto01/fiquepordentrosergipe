@@ -33,18 +33,16 @@ export interface RunContext {
   requestId: string;
   mode: SafeMode;
   allowlistCache: AllowlistCache;
-  // Aceita qualquer SupabaseClient — o adapter só depende do subset
-  // .from().select().eq(). Tipagem larga aqui evita acoplamento a um
-  // schema gerado.
+  // Tipagem larga deliberada — o adapter só consome .from().select().eq().
+  // Evita acoplar este módulo ao schema gerado pelo Supabase.
   // deno-lint-ignore no-explicit-any
-  supabase: SupabaseClient<any, any, any>;
+  supabase: any;
   /** Hash memoizado por source_id, evita recomputar SHA-256 por chamada. */
   sourceIdHashCache: Map<string, string>;
 }
 
 export function createRunContext(
-  // deno-lint-ignore no-explicit-any
-  supabase: SupabaseClient<any, any, any>,
+  supabase: SupabaseClient,
   requestId: string,
   env: Record<string, string | undefined> = Deno.env.toObject(),
 ): RunContext {
