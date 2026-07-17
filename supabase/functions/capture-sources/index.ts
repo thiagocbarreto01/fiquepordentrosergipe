@@ -299,13 +299,16 @@ function parseFeed(xml: string): FeedItem[] {
 // e enriquece cada um com Open Graph / metadados da página alvo.
 // ============================================================
 async function fetchSiteItems(
+  ctx: RunContext,
+  sourceId: string,
   homeUrl: string,
   maxItems: number,
 ): Promise<FeedItem[]> {
   const base = new URL(homeUrl);
   const baseHost = base.host.replace(/^www\./, "");
 
-  const homeHtml = await fetch(homeUrl, {
+  // Legacy closure — comportamento IDÊNTICO ao anterior à F3D.3A.2.
+  const homeLegacy = () => fetch(homeUrl, {
     headers: {
       "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
       Accept: "text/html,application/xhtml+xml",
@@ -315,6 +318,8 @@ async function fetchSiteItems(
     if (!r.ok) throw new Error(`HTTP ${r.status} ao baixar home`);
     return r.text();
   });
+  // hostPurpose=feed: página principal de fonte SITE é listagem, não artigo.
+  const homeHtml = await fetchSourceText(ctx, sourceId, homeUrl, "feed", "html", homeLegacy);
 
   // Extrai todos os <a href="..."> da home
   const linkRe = /<a\b[^>]*href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi;
