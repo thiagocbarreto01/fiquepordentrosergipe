@@ -597,21 +597,34 @@ export default function AdminFontesAllowlist() {
       </div>
 
       {/* Dry-run confirmation dialog */}
-      <AlertDialog open={dryRunOpen} onOpenChange={setDryRunOpen}>
+      <AlertDialog
+        open={dryRunOpen}
+        onOpenChange={(o) => {
+          if (executing) return; // não permite fechar durante a execução real
+          setDryRunOpen(o);
+        }}
+      >
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar backfill da allowlist</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
-                <p>Resultado do dry-run:</p>
-                {dryRun && (
-                  <ul className="text-sm space-y-1">
-                    <li>• Candidatos: <strong>{dryRun.candidates}</strong></li>
-                    <li>• Serão inseridos: <strong>{dryRun.would_insert}</strong></li>
-                    <li>• Conflitos (já existem): <strong>{dryRun.conflicts}</strong></li>
-                    <li>• Inválidos: <strong>{dryRun.invalid}</strong></li>
-                  </ul>
-                )}
+                <p>Resultado do dry-run (ainda nada foi gravado):</p>
+                {dryRun && (() => {
+                  const byPurpose = (p: Purpose) =>
+                    dryRun.items.filter((i) => i.purpose === p && i.action !== "invalid").length;
+                  return (
+                    <ul className="text-sm space-y-1">
+                      <li>• Candidatos totais: <strong>{dryRun.candidates}</strong></li>
+                      <li className="pl-4">– Feed: <strong>{byPurpose("feed")}</strong></li>
+                      <li className="pl-4">– Página original: <strong>{byPurpose("article")}</strong></li>
+                      <li className="pl-4">– Mídia: <strong>{byPurpose("media")}</strong></li>
+                      <li>• Serão inseridos: <strong>{dryRun.would_insert}</strong></li>
+                      <li>• Conflitos (já existem): <strong>{dryRun.conflicts}</strong></li>
+                      <li>• Inválidos: <strong>{dryRun.invalid}</strong></li>
+                    </ul>
+                  );
+                })()}
                 <p className="text-xs text-muted-foreground">
                   Ao confirmar, os hosts válidos ausentes serão inseridos em um único
                   lote atômico. Conflitos não serão sobrescritos. Nenhuma captação
