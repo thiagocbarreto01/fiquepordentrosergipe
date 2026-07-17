@@ -1245,7 +1245,7 @@ Deno.serve(async (req) => {
       toRun.map(async (source) => {
         console.log(`[capture-sources] ▶ captando ${source.name} (${source.url})`);
         try {
-          const r = await captureFromSource(supabase, source, categoryBySlug, categoryById);
+          const r = await captureFromSource(supabase, ctx, source, categoryBySlug, categoryById);
           console.log(
             `[capture-sources] ✅ ${source.name} | captadas=${r.captured} duplicatas=${r.duplicates} skipped=${r.skipped} erros=${r.errors.length}`,
           );
