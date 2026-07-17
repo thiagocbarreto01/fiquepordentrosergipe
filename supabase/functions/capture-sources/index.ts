@@ -25,6 +25,13 @@ import {
   fetchSourceText,
   type RunContext,
 } from "./run-context.ts";
+import {
+  evaluateMediaHostShadow,
+  hashSourceId,
+  loadAllowlistForSource,
+  shadowFetchOrFallback,
+} from "./shadow-adapter.ts";
+
 
 function slugify(s: string) {
   return s
