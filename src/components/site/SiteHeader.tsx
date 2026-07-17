@@ -13,6 +13,8 @@ import { useMenuCategories } from "@/hooks/useMenuCategories";
 export default function SiteHeader() {
   const { user } = useAuth();
   const s = useSiteSettings();
+  const menu = useMenuCategories();
+  const NAV = menu.map((c) => ({ label: c.name, to: `/categoria/${c.slug}` }));
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
