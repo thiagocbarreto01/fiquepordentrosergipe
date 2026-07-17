@@ -94,6 +94,12 @@ function timeAgo(iso: string | null) {
 }
 
 export default function AdminFontes() {
+  const { isAdmin, isStaff, role } = useAuth();
+  const perms = useMemo(
+    () => getSourcePermissions({ isAdmin, isStaff, role }),
+    [isAdmin, isStaff, role],
+  );
+
   const [sources, setSources] = useState<Source[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
@@ -102,6 +108,9 @@ export default function AdminFontes() {
   const [runAllLoading, setRunAllLoading] = useState(false);
   const [lastRunLogs, setLastRunLogs] = useState<RunLog[] | null>(null);
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<
+    { id: string; name: string; linkedPosts: number } | null
+  >(null);
 
   // filtros
   const [search, setSearch] = useState("");
