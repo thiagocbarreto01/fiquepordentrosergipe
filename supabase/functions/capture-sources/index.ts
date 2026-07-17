@@ -794,7 +794,7 @@ async function captureFromSource(
       let fullArticleText = "";
       if (sourceUrl) {
         try {
-          prefetched = await fetchPage(sourceUrl);
+          prefetched = await fetchPage(ctx, source.id, sourceUrl);
           fullArticleText = prefetched.articleText ?? "";
         } catch { /* ignorar; segue com o que veio do RSS */ }
       }
