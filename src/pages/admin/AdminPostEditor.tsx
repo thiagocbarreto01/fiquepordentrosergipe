@@ -35,6 +35,15 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useEditorAutosave } from "@/hooks/useEditorAutosave";
+import { useNavigationGuard } from "@/hooks/useNavigationGuard";
+import { PublishDialog } from "@/components/admin/editor/PublishDialog";
+import { ArticlePreviewDialog } from "@/components/admin/editor/ArticlePreviewDialog";
+import { UnsavedChangesDialog } from "@/components/admin/editor/UnsavedChangesDialog";
+import { RecoverDraftDialog } from "@/components/admin/editor/RecoverDraftDialog";
+import { EditorMobileActionBar } from "@/components/admin/editor/EditorMobileActionBar";
+import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
+import { fillMissingSeo } from "@/lib/seoAuto";
 
 function slugify(s: string) {
   return s
