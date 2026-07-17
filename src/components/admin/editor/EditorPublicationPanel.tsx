@@ -156,6 +156,8 @@ export function EditorPublicationPanel({
   isDenuncia,
   onToggleDenuncia,
   scheduledAt,
+  onCancelSchedule,
+  cancellingSchedule,
   pinningSlot,
   history,
   normalizeStatus,
