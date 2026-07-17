@@ -629,6 +629,50 @@ export default function AdminPostEditor() {
   }
 
   const currentStatus = normalizeStatus(form.status);
+  const editorRole = deriveEditorRole({ isAdmin });
+
+  // Manipulador único de ações — usado pelo painel de publicação e pela barra mobile.
+  const handleEditorAction = (
+    kind: EditorPrimaryActionKind | EditorSecondaryActionKind,
+  ) => {
+    switch (kind) {
+      case "save":
+      case "save_draft":
+        save();
+        return;
+      case "submit_review":
+      case "send_to_review":
+        save("em_revisao");
+        return;
+      case "approve":
+        if (!canPublish) {
+          toast.error("Apenas editor/admin pode aprovar");
+          return;
+        }
+        save("aprovada");
+        return;
+      case "publish":
+        if (!canPublish) {
+          toast.error("Apenas editor/admin pode publicar");
+          return;
+        }
+        tryPublish();
+        return;
+      case "unpublish":
+        if (!canPublish) return;
+        save("em_revisao");
+        return;
+      case "preview":
+        setPreviewOpen(true);
+        return;
+      case "open_public": {
+        const s = form.slug || slugify(form.title);
+        if (s) window.open(`/noticia/${s}`, "_blank", "noopener,noreferrer");
+        return;
+      }
+    }
+  };
+
 
   return (
     <AdminLayout>
