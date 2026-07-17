@@ -340,13 +340,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
     const err = validate();
     if (err) return toast.error(err);
 
-    if (opts.publishNow && preview?.confidence === "baixa") {
-      return toast.error("Confiança baixa: publicação automática bloqueada. Salve como rascunho e revise.");
-    }
-    if (opts.publishNow && preview && preview.quality_ok === false) {
-      return toast.error("Matéria não passou na validação de qualidade. Corrija os problemas listados ou salve como rascunho.");
-    }
-
+    // Publicação direta desabilitada: importação sempre gera rascunho.
     setLoadingSave(true);
     setSavingMode(opts.mode);
     const { data, error } = await supabase.functions.invoke("import-instagram-post", {
@@ -356,7 +350,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
         image_url_override: imageUrl.trim() || undefined,
         category_id: categoryId || preview?.category_id || null,
         also_generate_instagram: !!opts.alsoIg,
-        publish_now: !!opts.publishNow,
+        publish_now: false,
       },
     });
     setLoadingSave(false);
