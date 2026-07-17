@@ -831,6 +831,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
           </div>
         )}
       </div>
-    </AdminLayout>
   );
+
+  return embedded ? inner : <AdminLayout>{inner}</AdminLayout>;
 }
