@@ -981,7 +981,7 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
       let coverSource: "rss" | "extracted" | "category_fallback" = "rss";
 
       // Reutiliza o fetch feito antes (Fase 5) para evitar 2ª requisição na mesma URL.
-      const media = prefetched ?? (sourceUrl ? await fetchPage(sourceUrl) : null);
+      const media = prefetched ?? (sourceUrl ? await fetchPage(ctx, source.id, sourceUrl) : null);
       if (!coverOriginal) {
         coverSource = "extracted";
         if (media) {
@@ -993,6 +993,10 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
         videoUrlPrincipal = media.mainVideo;
         videosRelacionados = media.relatedVideos;
       }
+
+      // F3D.3A.2 — Avaliação lexical de mídia (sem download). Em mode=off,
+      // no-op; em shadow, apenas emite telemetria. Nunca altera a URL.
+      await evaluateMediaHost(ctx, source.id, coverOriginal);
 
       let finalCoverUrl = coverOriginal;
       if (!finalCoverUrl) {
