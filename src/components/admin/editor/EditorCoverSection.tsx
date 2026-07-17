@@ -104,7 +104,7 @@ export function EditorCoverSection({
     >
       <div className="flex items-center justify-between gap-2">
         <Label className="font-bold uppercase tracking-wider text-xs">
-          Imagem de capa
+          2. Imagem de capa
         </Label>
         {values.cover_image_source && (
           <span className="text-[10px] px-2 py-0.5 bg-secondary border border-border rounded-full font-bold uppercase text-muted-foreground">

@@ -50,7 +50,7 @@ export function EditorPrincipalSection({
       className="bg-card border border-border p-4 space-y-4"
     >
       <h3 className="font-bold uppercase tracking-wider text-xs">
-        Informações principais
+        1. Informações principais
       </h3>
 
       <div>

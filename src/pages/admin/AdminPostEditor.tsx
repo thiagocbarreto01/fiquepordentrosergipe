@@ -47,6 +47,8 @@ import { EditorPrincipalSection } from "@/components/admin/editor/EditorPrincipa
 import { EditorCoverSection } from "@/components/admin/editor/EditorCoverSection";
 import { EditorContentSection } from "@/components/admin/editor/EditorContentSection";
 import { EditorAdvancedSection } from "@/components/admin/editor/EditorAdvancedSection";
+import { EditorPublicationPanel } from "@/components/admin/editor/EditorPublicationPanel";
+import { deriveEditorRole, getPrimaryAction, type EditorPrimaryActionKind, type EditorSecondaryActionKind } from "@/lib/editorActions";
 import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
 import { fillMissingSeo } from "@/lib/seoAuto";
 
@@ -166,6 +168,8 @@ export default function AdminPostEditor() {
           video_url_principal: (data as any).video_url_principal ?? "",
           videos_relacionados_text: ((data as any).videos_relacionados ?? []).join("\n"),
         });
+        const serverStamp = (data as any).updated_at ?? (data as any).created_at;
+        if (serverStamp) setLastServerSavedAt(new Date(serverStamp));
         // Hidratação inicial não conta como alteração do usuário.
         setDirty(false);
         setHydrated(true);
@@ -254,6 +258,7 @@ export default function AdminPostEditor() {
     | { kind: "saved"; at: Date }
     | { kind: "error"; message: string };
   const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  const [lastServerSavedAt, setLastServerSavedAt] = useState<Date | null>(null);
   useEffect(() => {
     if (saveState.kind === "saving" || saveState.kind === "saved" || saveState.kind === "error") return;
     if (dirty && localSavedAtDisplay) setSaveState({ kind: "local", at: localSavedAtDisplay });
@@ -403,7 +408,9 @@ export default function AdminPostEditor() {
     clearDraft();
     setDirty(false);
     setLocalSavedAtDisplay(null);
-    setSaveState({ kind: "saved", at: new Date() });
+    const savedAt = new Date();
+    setSaveState({ kind: "saved", at: savedAt });
+    setLastServerSavedAt(savedAt);
 
     const labels: Partial<Record<EditorialStatus, string>> = {
       publicada: "Publicada!",
@@ -622,6 +629,50 @@ export default function AdminPostEditor() {
   }
 
   const currentStatus = normalizeStatus(form.status);
+  const editorRole = deriveEditorRole({ isAdmin });
+
+  // Manipulador único de ações — usado pelo painel de publicação e pela barra mobile.
+  const handleEditorAction = (
+    kind: EditorPrimaryActionKind | EditorSecondaryActionKind,
+  ) => {
+    switch (kind) {
+      case "save":
+      case "save_draft":
+        save();
+        return;
+      case "submit_review":
+      case "send_to_review":
+        save("em_revisao");
+        return;
+      case "approve":
+        if (!canPublish) {
+          toast.error("Apenas editor/admin pode aprovar");
+          return;
+        }
+        save("aprovada");
+        return;
+      case "publish":
+        if (!canPublish) {
+          toast.error("Apenas editor/admin pode publicar");
+          return;
+        }
+        tryPublish();
+        return;
+      case "unpublish":
+        if (!canPublish) return;
+        save("em_revisao");
+        return;
+      case "preview":
+        setPreviewOpen(true);
+        return;
+      case "open_public": {
+        const s = form.slug || slugify(form.title);
+        if (s) window.open(`/noticia/${s}`, "_blank", "noopener,noreferrer");
+        return;
+      }
+    }
+  };
+
 
   return (
     <AdminLayout>
@@ -651,45 +702,13 @@ export default function AdminPostEditor() {
               className="gap-2"
               title="Gerar Reel vertical 1080x1920 a partir desta notícia"
             >
-              <Film className="h-4 w-4" /> Gerar Reel
+              <Film className="h-4 w-4" />
+              <span className="hidden sm:inline">Gerar Reel</span>
             </Button>
           )}
-          <Button onClick={() => setPreviewOpen(true)} variant="outline" size="sm" className="gap-1">
-            <Eye className="h-4 w-4" />
-            <span className="hidden sm:inline">Visualizar</span>
-          </Button>
-          <Button onClick={() => save()} disabled={saving} variant="outline" size="sm">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Salvar rascunho
-          </Button>
-
-          {canPublish && (
-            <div className="flex items-center gap-2 border-l pl-2 ml-2">
-              <Button
-                onClick={() => tryPublish()}
-                disabled={saving}
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-              >
-                <Globe className="h-4 w-4 mr-1" />
-                <span className="hidden xs:inline">PUBLICAR</span> AGORA
-              </Button>
-
-              {currentStatus === "publicada" && (
-                <Button
-                  onClick={() => save("em_revisao")}
-                  disabled={saving}
-                  size="sm"
-                  variant="outline"
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <ArchiveRestore className="h-4 w-4 mr-1" />
-                  Despublicar
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Ações de salvar/publicar ficam no painel "4. Publicação" e na barra mobile. */}
         </div>
+
       </div>
 
       {/* Indicador de estado de salvamento — 5 estados distintos */}
@@ -1299,291 +1318,79 @@ export default function AdminPostEditor() {
         </div>
 
 
-        <aside className="space-y-4 lg:sticky lg:top-24 h-fit">
-          <div className="bg-card border border-border p-4 space-y-3 shadow-sm">
-            <h3 className="font-bold uppercase tracking-wider text-xs">Fluxo editorial</h3>
-            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="rascunho">Rascunho</SelectItem>
-                <SelectItem value="captada">Captada</SelectItem>
-                <SelectItem value="em_revisao">Em revisão</SelectItem>
-                <SelectItem value="aprovada" disabled={!canPublish}>
-                  Aprovada {!canPublish && "(editor/admin)"}
-                </SelectItem>
-                <SelectItem value="rejeitada" disabled={!canPublish}>
-                  Rejeitada {!canPublish && "(editor/admin)"}
-                </SelectItem>
-                <SelectItem value="publicada" disabled={!canPublish}>
-                  Publicada {!canPublish && "(editor/admin)"}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="rounded-md border border-dashed border-border bg-secondary/40 p-3">
-              <Label className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
-                Publicação agendada
-              </Label>
-              <Input
-                type="datetime-local"
-                value={form.scheduled_at ?? ""}
-                disabled
-                aria-disabled="true"
-                readOnly
-                className="mt-1 cursor-not-allowed opacity-60"
+        <aside className="space-y-4 lg:sticky lg:top-24 h-fit lg:max-h-[calc(100dvh-8rem)] lg:overflow-y-auto">
+          <EditorPublicationPanel
+            role={editorRole}
+            status={currentStatus}
+            isNew={isNew}
+            saving={saving}
+            saveState={saveState}
+            lastServerSavedAt={lastServerSavedAt}
+            isUrgent={!!form.is_urgent}
+            urgentValidUntil={form.home_expires_at ?? ""}
+            onToggleUrgent={(v) =>
+              setForm((f: any) => ({
+                ...f,
+                is_urgent: v,
+                home_expires_at: v ? f.home_expires_at : "",
+              }))
+            }
+            onUrgentValidUntilChange={(iso) =>
+              setForm((f: any) => ({ ...f, home_expires_at: iso }))
+            }
+            isDenuncia={!!form.is_denuncia}
+            onToggleDenuncia={(v) => setForm((f: any) => ({ ...f, is_denuncia: v }))}
+            scheduledAt={form.scheduled_at ?? ""}
+            history={history}
+            normalizeStatus={normalizeStatus}
+            onAction={handleEditorAction}
+            pinningSlot={
+              <EditorPinningSection
+                postId={isNew ? null : (id ?? null)}
+                isPublished={form.status === "publicada"}
+                canManage={isStaff}
+                pinnedUntil={form.pinned_until ?? null}
+                pinnedReason={form.pinned_reason ?? null}
+                onChanged={async () => {
+                  if (isNew || !id) return;
+                  const { data } = await supabase
+                    .from("posts")
+                    .select("pinned_until,pinned_reason,pinned_slot,pinned_by")
+                    .eq("id", id)
+                    .maybeSingle();
+                  if (data) {
+                    setForm((f: any) => ({
+                      ...f,
+                      pinned_until: (data as any).pinned_until,
+                      pinned_reason: (data as any).pinned_reason,
+                      pinned_slot: (data as any).pinned_slot,
+                      pinned_by: (data as any).pinned_by,
+                    }));
+                  }
+                }}
               />
-              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                Agendamento automático será ativado após a configuração segura do serviço.
-                Enquanto isso, use <strong>PUBLICAR AGORA</strong> quando a matéria estiver pronta.
-              </p>
-            </div>
-
-
-            {/*
-              Controles antigos ocultos nesta passada:
-              - Destaque Permanente (is_evergreen)
-              - Destaque Principal / Manchete (is_main_featured + main_featured_expires_at)
-              - "Destaque na home" (is_featured) manual
-              - Campo genérico "Exibir na Home até" (home_expires_at manual)
-              - Presets P1/P2/P3 e seletor de slot
-
-              As colunas continuam no banco e valores antigos ficam intactos
-              (form.is_evergreen, form.is_main_featured, etc. seguem sendo
-              inicializados do registro e regravados pelo save() como estavam).
-            */}
-
-            <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
-              <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
-                Plantão / Urgente
-              </p>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={form.is_urgent}
-                  onCheckedChange={(v) => setForm({
-                    ...form,
-                    is_urgent: !!v,
-                    // ao desmarcar, limpar validade para evitar restos inconsistentes na UI
-                    home_expires_at: v ? form.home_expires_at : "",
-                  })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold text-red-700">Marcar como Plantão/Urgente</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Aparece na faixa vermelha de Plantão no topo do site. Exige validade futura.
-                  </span>
-                </span>
-              </label>
-
-              {form.is_urgent && (
-                <div className="ml-6 space-y-2">
-                  <Label className="text-xs font-bold">Plantão válido até</Label>
-                  <Input
-                    type="datetime-local"
-                    value={form.home_expires_at ?? ""}
-                    onChange={(e) => setForm({ ...form, home_expires_at: e.target.value })}
-                  />
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      { label: "2h", h: 2 },
-                      { label: "4h", h: 4 },
-                      { label: "6h", h: 6 },
-                      { label: "12h", h: 12 },
-                    ].map((opt) => (
-                      <button
-                        type="button"
-                        key={opt.label}
-                        onClick={() => {
-                          const d = new Date(Date.now() + opt.h * 3600_000);
-                          setForm({ ...form, home_expires_at: d.toISOString().slice(0, 16) });
-                        }}
-                        className="text-[11px] font-bold uppercase tracking-wider bg-white hover:bg-urgent hover:text-white border border-border rounded-sm py-1.5 transition-colors"
-                      >
-                        +{opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    O Plantão sem validade futura é bloqueado no PublishDialog.
-                  </p>
-                </div>
-              )}
-
-              <label className="flex items-start gap-2 cursor-pointer pt-2 border-t border-border">
-                <Checkbox
-                  checked={form.is_denuncia}
-                  onCheckedChange={(v) => setForm({ ...form, is_denuncia: !!v })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold">É uma denúncia</span>
-                </span>
-              </label>
-            </div>
-
-            {/* Fixação temporária da manchete (RPCs seguras) */}
-            <EditorPinningSection
-              postId={isNew ? null : (id ?? null)}
-              isPublished={form.status === "publicada"}
-              canManage={isStaff}
-              pinnedUntil={form.pinned_until ?? null}
-              pinnedReason={form.pinned_reason ?? null}
-              onChanged={async () => {
-                if (isNew || !id) return;
-                const { data } = await supabase
-                  .from("posts")
-                  .select("pinned_until,pinned_reason,pinned_slot,pinned_by")
-                  .eq("id", id)
-                  .maybeSingle();
-                if (data) {
-                  setForm((f: any) => ({
-                    ...f,
-                    pinned_until: (data as any).pinned_until,
-                    pinned_reason: (data as any).pinned_reason,
-                    pinned_slot: (data as any).pinned_slot,
-                    pinned_by: (data as any).pinned_by,
-                  }));
-                }
-              }}
-            />
-
-
-
-
-            <div className="flex flex-col gap-2 pt-2">
-              <Button onClick={() => save()} disabled={saving} variant="outline" className="w-full">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Salvar (status atual)
-              </Button>
-              
-              {canPublish && (
-                <div className="pt-4 border-t-2 border-border mt-2 space-y-3">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Publicação Rápida</p>
-                  
-                  <Button
-                    onClick={() => tryPublish()}
-                    disabled={saving}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-7 text-lg shadow-md group transition-all"
-                  >
-                    <Globe className="h-5 w-5 mr-2 group-hover:animate-pulse" />
-                    PUBLICAR AGORA
-                  </Button>
-                  
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      onClick={() => save("aprovada")}
-                      disabled={saving || currentStatus === "aprovada"}
-                      variant="outline"
-                      size="sm"
-                      className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 font-bold"
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Aprovar
-                    </Button>
-                    
-                    <Button
-                      onClick={() => save("em_revisao")}
-                      disabled={saving || currentStatus === "em_revisao"}
-                      variant="outline"
-                      size="sm"
-                      className="font-bold"
-                    >
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Revisão
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Categoria & tags foram movidos para EditorPrincipalSection (coluna principal). */}
-
-
-
-          {/* SEO foi movido para "5. Opções avançadas" na coluna principal. */}
-
-
-          {!isNew && history.length > 0 && (
-            <div className="bg-card border border-border p-4 space-y-3">
-              <h3 className="font-bold uppercase tracking-wider text-xs flex items-center gap-2">
-                <History className="h-3.5 w-3.5" /> Histórico
-              </h3>
-              <ul className="space-y-2 text-xs">
-                {history.map((h, i) => {
-                  const from = h.from_status ? normalizeStatus(h.from_status) : null;
-                  const to = normalizeStatus(h.to_status);
-                  return (
-                    <li key={i} className="border-l-2 border-primary pl-2">
-                      <div className="font-mono text-muted-foreground">
-                        {new Date(h.created_at).toLocaleString("pt-BR")}
-                      </div>
-                      <div>
-                        {from ? (
-                          <>
-                            <span className="text-muted-foreground">{STATUS_LABEL[from]}</span> →{" "}
-                            <strong>{STATUS_LABEL[to]}</strong>
-                          </>
-                        ) : (
-                          <strong>Criada como {STATUS_LABEL[to]}</strong>
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
+            }
+          />
         </aside>
+
       </div>
 
-      {/* Barra fixa mobile: Salvar / Visualizar / Publicar */}
-      {!isNew && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg admin-editor-bottombar px-3 pt-2">
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              onClick={() => save()}
-              disabled={saving}
-              variant="outline"
-              size="sm"
-              className="font-bold"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
-            </Button>
-            <Button
-              onClick={() => {
-                const s = form.slug || slugify(form.title);
-                if (s) window.open(`/noticia/${s}`, "_blank");
-              }}
-              variant="outline"
-              size="sm"
-              className="font-bold"
-            >
-              Visualizar
-            </Button>
-            <Button
-              onClick={() => tryPublish()}
-              disabled={saving || !canPublish}
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black"
-            >
-              Publicar
-            </Button>
-          </div>
-        </div>
-      )}
-      {/* Barra mobile fixa inferior — ações mínimas com safe-area */}
-      <EditorMobileActionBar
-        primaryLabel={canPublish ? "PUBLICAR AGORA" : "Salvar rascunho"}
-        onPrimary={() => (canPublish ? tryPublish() : save())}
-        primaryDisabled={saving}
-        onPreview={() => setPreviewOpen(true)}
-        onSaveDraft={() => save()}
-        canUnpublish={canPublish && currentStatus === "publicada"}
-        onUnpublish={() => save("em_revisao")}
-      />
+      {/* Barra mobile fixa inferior — ação contextual (fonte única: editorActions). */}
+      {(() => {
+        const primary = getPrimaryAction(editorRole, currentStatus);
+        return (
+          <EditorMobileActionBar
+            primaryLabel={primary.label}
+            onPrimary={() => handleEditorAction(primary.kind)}
+            primaryDisabled={saving}
+            onPreview={() => setPreviewOpen(true)}
+            onSaveDraft={primary.kind === "save" ? undefined : () => handleEditorAction("save_draft")}
+            canUnpublish={canPublish && currentStatus === "publicada"}
+            onUnpublish={() => handleEditorAction("unpublish")}
+          />
+        );
+      })()}
+
       {/* Padding inferior para o conteúdo não ficar coberto pela barra mobile */}
       <div className="md:hidden h-24" aria-hidden />
     </AdminLayout>
