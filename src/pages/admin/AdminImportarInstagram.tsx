@@ -700,7 +700,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
               </div>
             )}
 
-            <div className="grid sm:grid-cols-3 gap-3 pt-3 border-t border-border">
+            <div className="grid sm:grid-cols-2 gap-3 pt-3 border-t border-border">
               <Button
                 variant="outline"
                 disabled={loadingSave}
