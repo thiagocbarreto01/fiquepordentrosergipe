@@ -172,13 +172,15 @@ function applyServerFilters(
   }
 
   // Busca: título ILIKE OU source_id IN OU category_id IN
+  // Escapamos %, _ e \ no padrão ILIKE para tratar o termo literalmente.
   if (searchTerm) {
-    const t = searchTerm.replace(/[%]/g, "");
+    const t = escapeIlike(searchTerm);
     const parts: string[] = [`title.ilike.%${t}%`];
     if (searchSourceIds.length) parts.push(`source_id.in.(${searchSourceIds.join(",")})`);
     if (searchCategoryIds.length) parts.push(`category_id.in.(${searchCategoryIds.join(",")})`);
     q = q.or(parts.join(","));
   }
+
 
   return q;
 }
