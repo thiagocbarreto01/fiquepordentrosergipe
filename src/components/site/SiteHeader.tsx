@@ -7,21 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { Button } from "@/components/ui/button";
 import WeatherTime from "./WeatherTime";
+import { useMenuCategories } from "@/hooks/useMenuCategories";
 
-const NAV = [
-  { label: "Polícia", to: "/categoria/policia" },
-  { label: "Política", to: "/categoria/politica" },
-  { label: "Sergipe", to: "/categoria/sergipe" },
-  { label: "Aracaju", to: "/categoria/aracaju" },
-  { label: "Interior", to: "/categoria/interior" },
-  { label: "Brasil", to: "/categoria/brasil" },
-  { label: "Mundo", to: "/categoria/mundo" },
-  { label: "Economia", to: "/categoria/economia" },
-  { label: "Saúde", to: "/categoria/saude" },
-  { label: "Educação", to: "/categoria/educacao" },
-  { label: "Esportes", to: "/categoria/esportes" },
-  { label: "Entretenimento", to: "/categoria/entretenimento" },
-];
 
 export default function SiteHeader() {
   const { user } = useAuth();
