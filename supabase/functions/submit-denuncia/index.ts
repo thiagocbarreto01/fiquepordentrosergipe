@@ -1,4 +1,4 @@
-// Public endpoint to submit "denuncias". POST only. No read.
+// Public endpoint to submit "denuncias". POST only. Rate-limited, honeypot + timing guarded.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const CORS = {
@@ -10,6 +10,8 @@ const CORS = {
 };
 
 const MAX_BODY = 32 * 1024;
+const MIN_FORM_MS = 3000;
+const MAX_FORM_AGE_MS = 6 * 60 * 60 * 1000; // 6h
 
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
@@ -29,6 +31,10 @@ function clean(s: unknown, max: number): string | null {
   const t = s.trim();
   if (!t) return null;
   return t.length > max ? t.slice(0, max) : t;
+}
+
+function normalizeIp(ip: string): string {
+  return ip.trim().toLowerCase();
 }
 
 Deno.serve(async (req) => {
@@ -65,10 +71,29 @@ Deno.serve(async (req) => {
     return json(400, { success: false, code: "invalid_json", message: "JSON inválido.", request_id: requestId });
   }
 
+  // Honeypot: campo oculto deve estar vazio
+  const hp = body.website_url_hp;
+  if (typeof hp === "string" && hp.trim() !== "") {
+    return json(400, { success: false, code: "invalid_submission", message: "Envio inválido.", request_id: requestId });
+  }
+
+  // Tempo mínimo de preenchimento
+  const opened = Number(body.form_opened_at);
+  if (!Number.isFinite(opened) || opened <= 0) {
+    return json(400, { success: false, code: "invalid_submission", message: "Envio inválido.", request_id: requestId });
+  }
+  const age = Date.now() - opened;
+  if (age < 0 || age > MAX_FORM_AGE_MS) {
+    return json(400, { success: false, code: "invalid_submission", message: "Envio inválido.", request_id: requestId });
+  }
+  if (age < MIN_FORM_MS) {
+    return json(400, { success: false, code: "too_fast", message: "Aguarde alguns segundos antes de enviar.", request_id: requestId });
+  }
+
+  const is_anonymous = body.is_anonymous !== false;
   const title = clean(body.title, 200);
   const description = clean(body.description, 5000);
   const city = clean(body.city, 100);
-  const is_anonymous = body.is_anonymous !== false;
   const contact_name = is_anonymous ? null : clean(body.contact_name, 100);
   const contact_phone = is_anonymous ? null : clean(body.contact_phone, 30);
   const contact_email_raw = is_anonymous ? null : clean(body.contact_email, 255);
@@ -85,9 +110,8 @@ Deno.serve(async (req) => {
   }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const ua = req.headers.get("user-agent") || "unknown";
-  const salt = Deno.env.get("DENUNCIA_HASH_SALT") || "fpds-denuncia";
-  const [ip_hash, user_agent_hash] = await Promise.all([sha256Hex(salt + ":" + ip), sha256Hex(salt + ":" + ua)]);
+  const salt = Deno.env.get("DENUNCIA_RATE_LIMIT_SALT") || "fpds-denuncia-fallback-salt";
+  const requesterHash = await sha256Hex(salt + ":" + normalizeIp(ip));
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -95,11 +119,26 @@ Deno.serve(async (req) => {
     { auth: { persistSession: false } },
   );
 
+  // Rate limit: máx 5/h, com advisory lock (server-side)
+  const rl = await supabase.rpc("denuncia_rate_limit_hit", { _requester_hash: requesterHash });
+  if (rl.error) {
+    const msg = rl.error.message || "";
+    if (msg.includes("hourly_limit")) {
+      return json(429, { success: false, code: "hourly_limit", message: "Muitos envios. Tente novamente em uma hora.", request_id: requestId });
+    }
+    console.error("submit-denuncia rate limit error", requestId, msg);
+    return json(500, { success: false, code: "rate_limit_failed", message: "Falha ao processar envio.", request_id: requestId });
+  }
+
+  // Nunca persistir identificador técnico no relato editorial
   const { data, error } = await supabase.from("denuncias").insert({
     title, description, city,
     contact_name, contact_phone, contact_email,
-    is_anonymous, status: "nova",
-    ip_hash, user_agent_hash,
+    is_anonymous,
+    status: "nova",
+    assigned_to: null,
+    ip_hash: null,
+    user_agent_hash: null,
   }).select("id").single();
 
   if (error) {

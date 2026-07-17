@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import SiteLayout from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,9 +25,10 @@ export default function EnviarDenunciaPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const formOpenedAtRef = useRef<number>(Date.now());
   const [form, setForm] = useState({
     title: "", description: "", city: "", contact_name: "",
-    contact_phone: "", contact_email: "", is_anonymous: true,
+    contact_phone: "", contact_email: "", is_anonymous: true, website_url_hp: "",
   });
 
   async function submit(e: React.FormEvent) {
@@ -46,6 +47,8 @@ export default function EnviarDenunciaPage() {
       contact_phone: parsed.data.is_anonymous ? null : (parsed.data.contact_phone || null),
       contact_email: parsed.data.is_anonymous ? null : (parsed.data.contact_email || null),
       is_anonymous: parsed.data.is_anonymous,
+      website_url_hp: form.website_url_hp,
+      form_opened_at: formOpenedAtRef.current,
     };
     const { data, error } = await supabase.functions.invoke("submit-denuncia", { body: payload });
     setLoading(false);
@@ -76,12 +79,24 @@ export default function EnviarDenunciaPage() {
             <ShieldCheck className="h-12 w-12 text-primary mx-auto mb-3" />
             <h2 className="font-display text-2xl font-black">Recebemos sua denúncia.</h2>
             <p className="mt-2 text-muted-foreground">Nossa equipe vai apurar e, se confirmada, será publicada com responsabilidade editorial.</p>
-            <button onClick={() => { setSent(false); setForm({ title:"", description:"", city:"", contact_name:"", contact_phone:"", contact_email:"", is_anonymous:true }); }} className="mt-6 px-5 py-2 bg-primary text-primary-foreground font-bold uppercase text-xs">
+            <button onClick={() => { setSent(false); formOpenedAtRef.current = Date.now(); setForm({ title:"", description:"", city:"", contact_name:"", contact_phone:"", contact_email:"", is_anonymous:true, website_url_hp:"" }); }} className="mt-6 px-5 py-2 bg-primary text-primary-foreground font-bold uppercase text-xs">
               Enviar outra
             </button>
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4 bg-card border border-border p-6">
+            {/* Honeypot: humanos não veem, bots preenchem */}
+            <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", top: "auto", width: 1, height: 1, overflow: "hidden" }}>
+              <label htmlFor="website_url_hp">Não preencha este campo</label>
+              <input
+                id="website_url_hp"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website_url_hp}
+                onChange={(e) => setForm({ ...form, website_url_hp: e.target.value })}
+              />
+            </div>
             <div>
               <Label>Título da denúncia *</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Resumo curto do fato" />

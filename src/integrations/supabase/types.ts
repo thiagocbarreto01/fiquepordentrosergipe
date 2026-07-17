@@ -98,6 +98,24 @@ export type Database = {
         }
         Relationships: []
       }
+      denuncia_rate_limits: {
+        Row: {
+          attempted_at: string
+          id: string
+          requester_hash: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          requester_hash: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          requester_hash?: string
+        }
+        Relationships: []
+      }
       denuncia_status_history: {
         Row: {
           changed_at: string
@@ -1359,6 +1377,11 @@ export type Database = {
         Args: { _confirm: string; _id: string }
         Returns: undefined
       }
+      denuncia_rate_limit_hit: {
+        Args: { _requester_hash: string }
+        Returns: undefined
+      }
+      denuncia_rate_limits_cleanup: { Args: never; Returns: undefined }
       denuncia_restore: { Args: { _id: string }; Returns: undefined }
       denuncia_set_status: {
         Args: {
