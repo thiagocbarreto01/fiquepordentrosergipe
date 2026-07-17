@@ -272,6 +272,20 @@ export default function AdminPosts() {
   const [cards, setCards] = useState({ publicadas: 0, em_revisao: 0, plantoes: 0, arquivadas: 0 });
   const [reclassifying, setReclassifying] = useState(false);
 
+  // ---- Estado dos diálogos (substitui window.confirm) ----
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<any | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<any | null>(null);
+  const [archiveBatchOpen, setArchiveBatchOpen] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<{ p: any; kind: StatusKind } | null>(null);
+  const [reclassifyOpen, setReclassifyOpen] = useState(false);
+  const [autoArchiveOpen, setAutoArchiveOpen] = useState(false);
+  const [autoArchivePreview, setAutoArchivePreview] = useState<AutoArchivePreview | null>(null);
+  const [autoArchivePrevTotal, setAutoArchivePrevTotal] = useState<number | null>(null);
+  const [autoArchiveLoadingPreview, setAutoArchiveLoadingPreview] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+
   // Agrupamento de fontes duplicadas (Etapa 7)
   // Para a fonte selecionada, retorna todos os source_id com mesmo nome normalizado.
   const normalizedSourceIds = useCallback((): string[] | null => {
