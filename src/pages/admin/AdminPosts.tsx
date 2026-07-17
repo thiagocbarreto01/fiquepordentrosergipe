@@ -1081,6 +1081,62 @@ export default function AdminPosts() {
         onOpenChange={(o) => !o && setDayModalPost(null)}
         referencePost={dayModalPost}
       />
+
+      {/* ===== Diálogos profissionais (substituem window.confirm) ===== */}
+      <DeletePostDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        title={deleteTarget?.title || ""}
+        submitting={submitting}
+        onConfirm={() => deleteTarget && void deletePerform(deleteTarget)}
+      />
+      <ArchivePostDialog
+        open={!!archiveTarget}
+        onOpenChange={(o) => { if (!o) setArchiveTarget(null); }}
+        title={archiveTarget?.title || ""}
+        submitting={submitting}
+        onConfirm={() => archiveTarget && void archivePerform(archiveTarget)}
+      />
+      <RestorePostDialog
+        open={!!restoreTarget}
+        onOpenChange={(o) => { if (!o) setRestoreTarget(null); }}
+        title={restoreTarget?.title || ""}
+        submitting={submitting}
+        onConfirm={() => restoreTarget && void restorePerform(restoreTarget)}
+      />
+      <ArchiveBatchDialog
+        open={archiveBatchOpen}
+        onOpenChange={setArchiveBatchOpen}
+        count={selected.size}
+        sampleTitles={posts.filter((p) => selected.has(p.id)).slice(0, 5).map((p) => p.title)}
+        submitting={submitting}
+        onConfirm={() => void archiveBatchPerform()}
+      />
+      <StatusChangeDialog
+        open={!!statusTarget}
+        onOpenChange={(o) => { if (!o) setStatusTarget(null); }}
+        title={statusTarget?.p?.title || ""}
+        kind={statusTarget?.kind || "aprovada"}
+        checklist={statusTarget ? buildChecklist(statusTarget.p, statusTarget.kind) : { missing: [], warnings: [] }}
+        submitting={submitting}
+        onConfirm={() => statusTarget && void statusPerform(statusTarget.p, statusTarget.kind)}
+      />
+      <ReclassifyDialog
+        open={reclassifyOpen}
+        onOpenChange={(o) => { if (!o) setReclassifyOpen(false); }}
+        submitting={submitting || reclassifying}
+        onConfirm={() => void reclassifyPerform()}
+      />
+      <AutoArchiveDialog
+        open={autoArchiveOpen}
+        onOpenChange={(o) => { if (!o) setAutoArchiveOpen(false); }}
+        preview={autoArchivePreview}
+        previousTotal={autoArchivePrevTotal}
+        loadingPreview={autoArchiveLoadingPreview}
+        submitting={submitting}
+        onReview={() => void loadAutoArchivePreview(autoArchivePreview?.total ?? null)}
+        onConfirm={() => void autoArchivePerform()}
+      />
     </AdminLayout>
   );
 }
