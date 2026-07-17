@@ -435,3 +435,26 @@ Deno.test("SafeFetchError não vaza URL/querystring/IP/headers/conteúdo", async
     }
   }
 });
+
+// ─────────── F3D.2B — testes adicionais ───────────
+Deno.test("safeFetch: responseKind=feed rejeita text/html (site cadastrado como RSS)", async () => {
+  const { fn } = mockFetch(() => ok("<html/>", "text/html"));
+  const err = await assertRejects(() => safeFetch("https://example.com/feed", {
+    sourceId: SID_A, hostPurpose: "feed", responseKind: "feed",
+    allowedHosts: HOSTS, fetchFn: fn, resolveDns: publicDns,
+  }), SafeFetchError);
+  assertEquals(err.code, "unsupported_content_type");
+});
+
+Deno.test("safeFetch: redirect que muda finalidade (feed -> media) sem autorização é bloqueado", async () => {
+  const { fn } = mockFetch((_, i) => i === 0 ? redirect("https://cdn.example.com/x") : ok("<rss/>", "application/rss+xml"));
+  const err = await assertRejects(() => safeFetch("https://example.com/feed", {
+    sourceId: SID_A, hostPurpose: "feed", responseKind: "feed",
+    allowedHosts: HOSTS, fetchFn: fn, resolveDns: publicDns,
+  }), SafeFetchError);
+  assertEquals(err.code, "redirect_blocked");
+});
+
+Deno.test("safeFetch: allow_subdomains=false nao libera subdominio distinto", () => {
+  assert(!isHostAllowed("m.example.com", SID_A, "feed", HOSTS));
+});
