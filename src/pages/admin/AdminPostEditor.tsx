@@ -314,11 +314,18 @@ export default function AdminPostEditor() {
     }
 
     setSaving(true);
+    setSaveState({ kind: "saving" });
     const slug = form.slug || slugify(form.title);
     const videosRelacionados: string[] = (form.videos_relacionados_text ?? "")
       .split(/\r?\n/)
       .map((s: string) => s.trim())
       .filter(Boolean);
+    // Auto-SEO: preenche meta_title/meta_description apenas se ainda vazios.
+    // Preserva overrides manuais. Não afeta notícias antigas apenas por abrir o editor.
+    const seoPatch = fillMissingSeo({
+      title: form.title, subtitle: form.subtitle, content: form.content,
+      meta_title: form.meta_title, meta_description: form.meta_description,
+    });
     const payload: any = {
       title: form.title.trim(),
       subtitle: form.subtitle || null,
@@ -349,8 +356,8 @@ export default function AdminPostEditor() {
       main_featured_expires_at: form.is_main_featured && form.main_featured_expires_at
         ? new Date(form.main_featured_expires_at).toISOString()
         : null,
-      meta_title: form.meta_title || null,
-      meta_description: form.meta_description || null,
+      meta_title: seoPatch.meta_title ?? form.meta_title ?? null,
+      meta_description: seoPatch.meta_description ?? form.meta_description ?? null,
       video_url_principal: (form.video_url_principal || "").trim() || null,
       videos_relacionados: videosRelacionados,
       published_at:
@@ -366,7 +373,18 @@ export default function AdminPostEditor() {
     if (isNew) res = await supabase.from("posts").insert(payload).select("id").maybeSingle();
     else res = await supabase.from("posts").update(payload).eq("id", id).select("id").maybeSingle();
     setSaving(false);
-    if (res.error) return toast.error(res.error.message);
+    if (res.error) {
+      setSaveState({ kind: "error", message: res.error.message });
+      return toast.error(res.error.message);
+    }
+    // Se o auto-SEO preencheu algo, reflete no formulário para o usuário ver.
+    if (seoPatch.meta_title || seoPatch.meta_description) {
+      setForm((f: any) => ({
+        ...f,
+        meta_title: seoPatch.meta_title ?? f.meta_title,
+        meta_description: seoPatch.meta_description ?? f.meta_description,
+      }));
+    }
 
     // Salvamento real bem-sucedido → limpa o rascunho local desta chave
     clearDraft();
