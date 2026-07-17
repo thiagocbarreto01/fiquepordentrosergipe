@@ -36,6 +36,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import AllowlistCorrectionCard from "@/components/admin/AllowlistCorrectionCard";
 
 type Purpose = "feed" | "article" | "media";
 
@@ -371,6 +372,8 @@ export default function AdminFontesAllowlist() {
             tone={stats.missing > 0 ? "warn" : "ok"}
           />
         </div>
+
+        <AllowlistCorrectionCard onDone={load} />
 
         <Tabs defaultValue="preview" className="space-y-4">
           <TabsList>

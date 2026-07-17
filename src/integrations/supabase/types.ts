@@ -1091,6 +1091,8 @@ export type Database = {
           id: string
           inserted_count: number
           invalid_count: number
+          kind: string
+          metadata: Json | null
           reference_time: string
           status: string
         }
@@ -1102,6 +1104,8 @@ export type Database = {
           id?: string
           inserted_count?: number
           invalid_count?: number
+          kind?: string
+          metadata?: Json | null
           reference_time: string
           status?: string
         }
@@ -1113,6 +1117,8 @@ export type Database = {
           id?: string
           inserted_count?: number
           invalid_count?: number
+          kind?: string
+          metadata?: Json | null
           reference_time?: string
           status?: string
         }
@@ -1220,6 +1226,10 @@ export type Database = {
         Args: { _hostname: string }
         Returns: string
       }
+      admin_apply_correction_f3d2d: {
+        Args: { _dry_run?: boolean }
+        Returns: Json
+      }
       admin_backfill_source_allowed_hosts: {
         Args: { _dry_run?: boolean }
         Returns: Json
@@ -1228,6 +1238,10 @@ export type Database = {
       admin_delete_source_allowed_host: {
         Args: { _id: string }
         Returns: boolean
+      }
+      admin_remove_legacy_tjse_host: {
+        Args: { _dry_run?: boolean }
+        Returns: Json
       }
       admin_rollback_source_allowed_hosts_batch: {
         Args: { _batch_id: string }
