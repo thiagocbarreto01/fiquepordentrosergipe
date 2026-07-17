@@ -699,7 +699,7 @@ async function captureFromSource(
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.text();
       });
-      xml = await fetchSourceText(ctx, source.id, source.url, "feed", "xml", rssLegacy);
+      xml = await fetchSourceText(ctx, source.id, source.url, "feed", "feed", rssLegacy);
     } catch (e) {
       result.errors.push(`fetch falhou: ${e instanceof Error ? e.message : "erro"}`);
       return result;
