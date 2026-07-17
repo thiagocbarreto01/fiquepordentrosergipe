@@ -13,7 +13,7 @@ export type CaptureActor = {
 
 export type AuthResult =
   | { ok: true; actor: CaptureActor }
-  | { ok: false; status: 401 | 403; code: string; message: string };
+  | { ok: false; status: 401 | 403 | 500 | 503; code: string; message: string };
 
 export async function authenticateRequest(
   req: Request,
@@ -39,8 +39,41 @@ export async function authenticateRequest(
     };
   }
 
-  const { data: userData, error: userErr } = await admin.auth.getUser(token);
-  if (userErr || !userData?.user) {
+  let userData: Awaited<ReturnType<typeof admin.auth.getUser>>["data"] | null = null;
+  try {
+    const { data, error } = await admin.auth.getUser(token);
+    if (error) {
+      // Erros de token inválido/expirado do GoTrue: 401.
+      const status = (error as { status?: number }).status ?? 401;
+      if (status === 401 || status === 403) {
+        return {
+          ok: false,
+          status: 401,
+          code: "invalid_token",
+          message: "Token de acesso inválido ou expirado.",
+        };
+      }
+      // Qualquer outro erro é falha técnica.
+      console.error("[capture-sources/auth] getUser falhou:", error);
+      return {
+        ok: false,
+        status: 503,
+        code: "authorization_check_failed",
+        message: "Não foi possível validar a autorização no momento.",
+      };
+    }
+    userData = data;
+  } catch (e) {
+    console.error("[capture-sources/auth] getUser lançou:", e);
+    return {
+      ok: false,
+      status: 503,
+      code: "authorization_check_failed",
+      message: "Não foi possível validar a autorização no momento.",
+    };
+  }
+
+  if (!userData?.user) {
     return {
       ok: false,
       status: 401,
@@ -50,16 +83,27 @@ export async function authenticateRequest(
   }
 
   const userId = userData.user.id;
-  const { data: staffOk, error: staffErr } = await admin.rpc("is_staff", {
-    _user_id: userId,
-  });
 
-  if (staffErr) {
+  let staffOk: boolean | null = null;
+  try {
+    const { data, error } = await admin.rpc("is_staff", { _user_id: userId });
+    if (error) {
+      console.error("[capture-sources/auth] is_staff falhou:", error);
+      return {
+        ok: false,
+        status: 503,
+        code: "authorization_check_failed",
+        message: "Não foi possível validar a autorização no momento.",
+      };
+    }
+    staffOk = !!data;
+  } catch (e) {
+    console.error("[capture-sources/auth] is_staff lançou:", e);
     return {
       ok: false,
-      status: 403,
+      status: 503,
       code: "authorization_check_failed",
-      message: "Não foi possível validar suas permissões.",
+      message: "Não foi possível validar a autorização no momento.",
     };
   }
 
