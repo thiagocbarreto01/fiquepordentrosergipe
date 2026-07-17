@@ -1,35 +1,39 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Trash2, Edit, PlusCircle, Eye, CheckCircle2, Globe, ArchiveRestore, Archive,
-  Clock, RotateCw, Flame, Pin, AlertCircle, Home, Check, GitMerge, AlertOctagon,
-  CalendarDays, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X,
-  SlidersHorizontal, FileCheck2, ClipboardList,
+  PlusCircle, Flame, Archive, Clock, X,
+  SlidersHorizontal, FileCheck2, ClipboardList, Globe, CalendarDays,
 } from "lucide-react";
 import DayPostsModal from "@/components/admin/DayPostsModal";
 import { toast } from "sonner";
 import {
-  STATUS_ORDER, STATUS_LABEL, STATUS_COLOR, normalizeStatus, ARCHIVE_REASON_LABEL,
+  STATUS_ORDER, STATUS_LABEL,
   type EditorialStatus,
 } from "@/lib/statusFlow";
 import {
-  SourceBadge, OriginalLink, CaptureMethodChip, detectCaptureMethod,
+  SourceBadge,
 } from "@/components/admin/SourceBadge";
-import { classifyDuplicate, type DuplicateFilter } from "@/lib/duplicates";
-import { getPostImage, handleImgError } from "@/lib/postImage";
-import { RelevanceBadge } from "@/components/admin/RelevanceBadge";
+import { type DuplicateFilter } from "@/lib/duplicates";
 import { useAuth } from "@/hooks/useAuth";
 import { SourceGroupedView, type GroupSort } from "@/components/admin/SourceGroupedView";
 import { KanbanBoard } from "@/components/admin/KanbanBoard";
-import { List, FolderTree, KanbanSquare, Search, Share2 } from "lucide-react";
+import { List, FolderTree, KanbanSquare, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { getContentQuality } from "@/lib/contentQuality";
-import { QualityBadge } from "@/components/admin/QualityBadge";
 import { getSocialShareUrl } from "@/lib/socialShare";
+import { sanitizeSearch, escapeIlike, maceioDayBoundsIso } from "@/lib/postSearch";
+import { AdminPostsPagination, PER_PAGE_OPTIONS } from "@/components/admin/adminPost/AdminPostsPagination";
+import { AdminPostsDesktopTable } from "@/components/admin/adminPost/AdminPostsDesktopTable";
+import { AdminPostMobileCard } from "@/components/admin/adminPost/AdminPostMobileCard";
+import { AdminPostActionsMenu } from "@/components/admin/adminPost/AdminPostActionsMenu";
+import {
+  DEFAULT_SORT, DEFAULT_DIR, SORT_OPTIONS,
+  type PostSortColumn, type PostSortDir,
+} from "@/components/admin/adminPost/primaryAction";
+import { getPrimaryAction } from "@/components/admin/adminPost/primaryAction";
 
 type Filter = "all" | EditorialStatus;
 type HomeFilter = "all" | "active" | "expired" | "expiring_today";
@@ -38,8 +42,8 @@ type PeriodFilter = "today" | "last3" | "all";
 type ViewMode = "list" | "grouped" | "kanban";
 type RelevanceFilter = "all" | "baixa" | "media" | "alta" | "urgente";
 
-const PER_PAGE_OPTIONS = [25, 50, 100] as const;
 const DEFAULT_PER = 25;
+
 
 function formatExpiration(iso: string | null | undefined, isEvergreen: boolean) {
   if (isEvergreen) return { label: "Destaque permanente", tone: "evergreen" as const, expired: false };
