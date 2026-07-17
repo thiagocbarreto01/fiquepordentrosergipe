@@ -43,6 +43,8 @@ import { UnsavedChangesDialog } from "@/components/admin/editor/UnsavedChangesDi
 import { RecoverDraftDialog } from "@/components/admin/editor/RecoverDraftDialog";
 import { EditorMobileActionBar } from "@/components/admin/editor/EditorMobileActionBar";
 import { EditorPinningSection } from "@/components/admin/editor/EditorPinningSection";
+import { EditorPrincipalSection } from "@/components/admin/editor/EditorPrincipalSection";
+import { EditorCoverSection } from "@/components/admin/editor/EditorCoverSection";
 import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
 import { fillMissingSeo } from "@/lib/seoAuto";
 
@@ -1170,22 +1172,25 @@ export default function AdminPostEditor() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <div>
-            <Label>Título *</Label>
-            <Input
-              value={form.title}
-              onChange={(e) =>
-                setForm({ ...form, title: e.target.value, slug: form.slug || slugify(e.target.value) })
-              }
-            />
-          </div>
-          <div>
-            <Label>Subtítulo</Label>
-            <Input
-              value={form.subtitle ?? ""}
-              onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
-            />
-          </div>
+          <EditorPrincipalSection
+            values={{
+              title: form.title ?? "",
+              subtitle: form.subtitle ?? "",
+              category_id: form.category_id ?? "",
+              tags: form.tags ?? "",
+            }}
+            categories={cats}
+            onChange={(patch) => {
+              setForm((f: any) => {
+                const next = { ...f, ...patch };
+                if (patch.title !== undefined && !f.slug) {
+                  next.slug = slugify(patch.title);
+                }
+                return next;
+              });
+            }}
+          />
+
           <div>
             <Label className="flex items-center justify-between">
               <span>Manchete Instagram (curta, usada só na arte)</span>
@@ -1246,140 +1251,32 @@ export default function AdminPostEditor() {
             <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })} />
           </div>
 
-          
-          <div className="bg-card border border-border p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="font-bold uppercase tracking-wider text-xs">Imagem de capa</Label>
-              {form.cover_image_source && (
-                <span className="text-[10px] px-2 py-0.5 bg-secondary border border-border rounded-full font-bold uppercase text-muted-foreground">
-                  Origem: {
-                    form.cover_image_source === 'manual' ? 'Manual' :
-                    form.cover_image_source === 'rss' ? 'Feed RSS' :
-                    form.cover_image_source === 'extracted' ? 'Extraída da URL' :
-                    form.cover_image_source === 'category_fallback' ? 'Padrão da Categoria' : form.cover_image_source
-                  }
-                </span>
-              )}
-            </div>
-            
-            <div className="relative group mb-4 border border-border bg-secondary/30">
-              <AdaptiveCoverImage
-                src={form.manual_image_url || form.cover_image_url || "https://placehold.co/600x400?text=Sem+imagem"}
-                alt="preview"
-                maxHeight={480}
-              />
-              {form.manual_image_url && (
-                <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 uppercase">
-                  Substituição Manual Ativa
-                </div>
-              )}
-              {!isNew && !form.manual_image_url && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={reprocessImage}
-                  disabled={uploading}
-                  className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  {uploading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <><RotateCcw className="h-3.5 w-3.5 mr-1" /> Reprocessar automática</>
-                  )}
-                </Button>
-              )}
-            </div>
 
-            <ImageActionButtons
-              imageUrl={form.manual_image_url || form.cover_image_url || ""}
-              slug={form.slug || "noticia"}
-              title={form.title || ""}
-              instagramHeadline={form.instagram_headline || ""}
-              subtitle={form.subtitle || form.excerpt || ""}
-              isUrgent={!!form.is_urgent}
-              sourceName={sourceName || ""}
-              publishedAt={(form as any).published_at || undefined}
-              categoryName={cats.find((c) => c.id === form.category_id)?.name || ""}
-            />
+          <EditorCoverSection
+            values={{
+              cover_image_url: form.cover_image_url ?? "",
+              manual_image_url: form.manual_image_url ?? "",
+              cover_image_original: form.cover_image_original ?? "",
+              cover_image_source: form.cover_image_source ?? null,
+              image_caption: form.image_caption ?? "",
+              image_credit: form.image_credit ?? "",
+              slug: form.slug ?? "",
+              title: form.title ?? "",
+              subtitle: form.subtitle ?? "",
+              excerpt: form.excerpt ?? "",
+              instagram_headline: form.instagram_headline ?? "",
+              is_urgent: !!form.is_urgent,
+              published_at: (form as any).published_at ?? null,
+            }}
+            categoryName={cats.find((c) => c.id === form.category_id)?.name || ""}
+            sourceName={sourceName || ""}
+            uploading={uploading}
+            isNew={isNew}
+            onChange={(patch) => setForm((f: any) => ({ ...f, ...patch }))}
+            onUpload={uploadCover}
+            onReprocess={reprocessImage}
+          />
 
-
-
-
-            <div className="space-y-4">
-              <div>
-                <Label className="text-xs uppercase text-muted-foreground">Substituir imagem manualmente</Label>
-                <div className="flex gap-2 mt-1">
-                  <label className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-2 border border-border bg-secondary cursor-pointer text-sm hover:bg-secondary/80 transition-colors">
-                    <Upload className="h-4 w-4" /> {uploading ? "Enviando…" : "Upload"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])}
-                    />
-                  </label>
-                  <Input
-                    placeholder="URL da imagem manual..."
-                    value={form.manual_image_url ?? ""}
-                    onChange={(e) => setForm({ ...form, manual_image_url: e.target.value })}
-                  />
-                  {form.manual_image_url && (
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      title="Remover substituição"
-                      onClick={() => setForm({ ...form, manual_image_url: "" })}
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Se preenchido, esta imagem será exibida no site no lugar da imagem captada automaticamente.
-                </p>
-              </div>
-
-              {!form.manual_image_url && (
-                <div>
-                  <Label className="text-xs uppercase text-muted-foreground">Imagem captada automaticamente</Label>
-                  <Input
-                    className="mt-1 bg-secondary/50"
-                    placeholder="URL automática..."
-                    value={form.cover_image_url ?? ""}
-                    onChange={(e) => setForm({ ...form, cover_image_url: e.target.value, cover_image_source: "manual" })}
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-border">
-                <div>
-                  <Label className="text-xs uppercase text-muted-foreground">Legenda da imagem</Label>
-                  <Input
-                    className="mt-1"
-                    placeholder="Ex: Vista aérea da orla de Aracaju"
-                    value={form.image_caption ?? ""}
-                    onChange={(e) => setForm({ ...form, image_caption: e.target.value })}
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Exibida abaixo da imagem principal. Se vazia, nada é mostrado.
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-xs uppercase text-muted-foreground">Crédito da imagem</Label>
-                  <Input
-                    className="mt-1"
-                    placeholder="Ex: Assessoria de Comunicação / TV Barretão"
-                    value={form.image_credit ?? ""}
-                    onChange={(e) => setForm({ ...form, image_credit: e.target.value })}
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Exibido abaixo da legenda (opcional).
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
 
 
           <div className="border border-border bg-card p-4 space-y-3">
@@ -1666,32 +1563,9 @@ export default function AdminPostEditor() {
             </div>
           </div>
 
-          <div className="bg-card border border-border p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="font-bold uppercase tracking-wider text-xs">Categoria & tags</h3>
-              {form.ai_review_status === "reescrito_ia" && (
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-primary/10 text-primary border border-primary/30">
-                  Sugerida pela IA
-                </span>
-              )}
-            </div>
-            <Select value={form.category_id ?? ""} onValueChange={(v) => setForm({ ...form, category_id: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {cats.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div>
-              <Label>Tags (vírgulas)</Label>
-              <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
-            </div>
-          </div>
+          {/* Categoria & tags foram movidos para EditorPrincipalSection (coluna principal). */}
+
+
 
           <div className="bg-card border border-border p-4 space-y-3">
             <h3 className="font-bold uppercase tracking-wider text-xs">SEO</h3>
