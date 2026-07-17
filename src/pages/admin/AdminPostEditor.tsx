@@ -712,32 +712,78 @@ export default function AdminPostEditor() {
         );
       })()}
 
-      {/* AlertDialog: publicar matéria curta */}
-      <AlertDialog open={shortPublishOpen} onOpenChange={setShortPublishOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Publicar matéria curta?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2 text-sm">
-                <p>
-                  A matéria tem <strong>{shortPublishInfo?.chars ?? 0}</strong> caracteres
-                  e <strong>{shortPublishInfo?.words ?? 0}</strong> palavras — abaixo do recomendado.
-                </p>
-                <p>Você quer publicar mesmo assim?</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={(e) => { e.preventDefault(); setShortPublishOpen(false); save("publicada"); }}
-            >
-              Publicar mesmo assim
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* PublishDialog unificado com checklist */}
+      <PublishDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        submitting={saving}
+        canOverrideCover={canPublish}
+        form={{
+          title: form.title,
+          subtitle: form.subtitle,
+          category_id: form.category_id,
+          content: form.content,
+          cover_image_url: form.cover_image_url,
+          manual_image_url: form.manual_image_url,
+          image_caption: form.image_caption,
+          image_credit: form.image_credit,
+          tags: form.tags,
+          meta_title: form.meta_title,
+          meta_description: form.meta_description,
+          is_urgent: form.is_urgent,
+          home_expires_at: form.home_expires_at,
+          is_pinned: false,
+          pinned_until: null,
+          pinned_reason: null,
+        }}
+        onConfirm={async () => { await save("publicada"); setPublishOpen(false); }}
+      />
+
+      {/* ArticlePreviewDialog — desktop/mobile */}
+      <ArticlePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        snapshot={{
+          title: form.title,
+          subtitle: form.subtitle,
+          content: form.content,
+          cover_image_url: form.cover_image_url,
+          manual_image_url: form.manual_image_url,
+          image_caption: form.image_caption,
+          image_credit: form.image_credit,
+          categoryName: cats.find((c) => c.id === form.category_id)?.name ?? null,
+          authorLabel: "Redação Fique Por Dentro Sergipe",
+          publishedAtIso: form.published_at ?? null,
+        }}
+      />
+
+      {/* Bloqueio de navegação SPA */}
+      <UnsavedChangesDialog
+        open={guard.hasPending}
+        onContinueEditing={guard.cancel}
+        onDiscard={guard.confirmDiscard}
+      />
+
+      {/* Recuperação de rascunho local (nunca aplica sozinho) */}
+      <RecoverDraftDialog
+        open={recoverOpen}
+        savedAt={recoveredPayload?.savedAt ?? null}
+        onRecover={() => {
+          if (recoveredPayload?.data) {
+            setForm(recoveredPayload.data);
+            setDirty(true);
+            toast.success("Rascunho local recuperado — nada foi enviado ao servidor.");
+          }
+          setRecoverOpen(false);
+        }}
+        onDiscard={() => {
+          clearDraft();
+          setLocalSavedAtDisplay(null);
+          setRecoverOpen(false);
+          toast.info("Rascunho local descartado.");
+        }}
+      />
+
 
 
       {!isNew && (
