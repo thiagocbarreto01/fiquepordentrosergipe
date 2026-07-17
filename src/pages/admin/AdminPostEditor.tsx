@@ -420,26 +420,14 @@ export default function AdminPostEditor() {
     }
   }
 
-  // Diálogo de "matéria curta" — substitui window.confirm por AlertDialog acessível.
-  const [shortPublishOpen, setShortPublishOpen] = useState(false);
-  const [shortPublishInfo, setShortPublishInfo] = useState<{ chars: number; words: number } | null>(null);
+  // Diálogos unificados
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Fase 7: publicação segura — bloqueia incompleto, abre AlertDialog em curto.
-  async function tryPublish() {
-    const q = getContentQuality(form.content || "");
-    if (q.level === "incompleto") {
-      toast.error(
-        `Conteúdo muito curto (${q.chars} chars). Complete a matéria antes de publicar — recomendado ≥ 500 caracteres.`,
-        { duration: 6000 }
-      );
-      return;
-    }
-    if (q.level === "curto") {
-      setShortPublishInfo({ chars: q.chars, words: q.words });
-      setShortPublishOpen(true);
-      return;
-    }
-    await save("publicada");
+  // tryPublish agora abre o PublishDialog com checklist unificado.
+  // A validação incompleto/curto vive dentro do checklist (via getContentQuality).
+  function tryPublish() {
+    setPublishOpen(true);
   }
 
   async function gerarComIA() {
