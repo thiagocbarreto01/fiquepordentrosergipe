@@ -405,7 +405,9 @@ export default function AdminPostEditor() {
     clearDraft();
     setDirty(false);
     setLocalSavedAtDisplay(null);
-    setSaveState({ kind: "saved", at: new Date() });
+    const savedAt = new Date();
+    setSaveState({ kind: "saved", at: savedAt });
+    setLastServerSavedAt(savedAt);
 
     const labels: Partial<Record<EditorialStatus, string>> = {
       publicada: "Publicada!",
