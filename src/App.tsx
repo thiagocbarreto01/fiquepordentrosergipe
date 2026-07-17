@@ -26,6 +26,7 @@ import AdminFontes from "./pages/admin/AdminFontes";
 import AdminFontesAllowlist from "./pages/admin/AdminFontesAllowlist";
 import AdminInstagram from "./pages/admin/AdminInstagram";
 import AdminImportarInstagram from "./pages/admin/AdminImportarInstagram";
+void AdminImportarInstagram;
 import AdminControleHome from "./pages/admin/AdminControleHome";
 import AdminConfiguracoes from "./pages/admin/AdminConfiguracoes";
 import AdminSync from "./pages/admin/AdminSync";
