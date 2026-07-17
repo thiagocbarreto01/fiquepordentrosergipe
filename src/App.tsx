@@ -23,6 +23,7 @@ import AdminBanners from "./pages/admin/AdminBanners";
 import AdminDenuncias from "./pages/admin/AdminDenuncias";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import AdminFontes from "./pages/admin/AdminFontes";
+import AdminFontesAllowlist from "./pages/admin/AdminFontesAllowlist";
 import AdminInstagram from "./pages/admin/AdminInstagram";
 import AdminImportarInstagram from "./pages/admin/AdminImportarInstagram";
 import AdminControleHome from "./pages/admin/AdminControleHome";
