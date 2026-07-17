@@ -256,6 +256,7 @@ export default function AdminPostEditor() {
     | { kind: "saved"; at: Date }
     | { kind: "error"; message: string };
   const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  const [lastServerSavedAt, setLastServerSavedAt] = useState<Date | null>(null);
   useEffect(() => {
     if (saveState.kind === "saving" || saveState.kind === "saved" || saveState.kind === "error") return;
     if (dirty && localSavedAtDisplay) setSaveState({ kind: "local", at: localSavedAtDisplay });
