@@ -204,6 +204,11 @@ export default function AdminPosts() {
   const initialPerRaw = parseInt(searchParams.get("per") || String(DEFAULT_PER), 10) || DEFAULT_PER;
   const initialPer = (PER_PAGE_OPTIONS as readonly number[]).includes(initialPerRaw) ? initialPerRaw : DEFAULT_PER;
   const initialAdv = searchParams.get("adv") === "1";
+  const rawSort = (searchParams.get("sort") as PostSortColumn) || DEFAULT_SORT;
+  const initialSort: PostSortColumn = (SORT_OPTIONS.some((o) => o.value === rawSort) ? rawSort : DEFAULT_SORT);
+  const rawDir = (searchParams.get("dir") as PostSortDir) || DEFAULT_DIR;
+  const initialDir: PostSortDir = rawDir === "asc" ? "asc" : "desc";
+
 
   const [filter, setFilter] = useState<Filter>(validStatus.has(initialStatus) ? initialStatus : "captada");
   const [period, setPeriod] = useState<PeriodFilter>(initialPeriod);
