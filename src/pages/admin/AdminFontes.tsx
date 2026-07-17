@@ -796,13 +796,16 @@ export default function AdminFontes() {
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => remove(s.id)}
-                        className="p-2 hover:bg-urgent/10 text-urgent"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {perms.canDelete && (
+                        <button
+                          onClick={() => requestDelete(s)}
+                          className="p-2 hover:bg-urgent/10 text-urgent min-w-[44px] min-h-[44px] inline-flex items-center justify-center"
+                          title="Excluir"
+                          aria-label={`Excluir fonte ${s.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
