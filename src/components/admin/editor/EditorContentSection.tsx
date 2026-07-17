@@ -38,7 +38,7 @@ export const EditorContentSection = forwardRef<HTMLTextAreaElement, EditorConten
       >
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <Label htmlFor="editor-content" className="font-bold uppercase tracking-wider text-xs">
-            Conteúdo *
+            3. Conteúdo *
           </Label>
           {aiActions && (
             <div className="flex items-center gap-2 flex-wrap">{aiActions}</div>
