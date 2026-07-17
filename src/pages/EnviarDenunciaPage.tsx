@@ -85,6 +85,18 @@ export default function EnviarDenunciaPage() {
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4 bg-card border border-border p-6">
+            {/* Honeypot: humanos não veem, bots preenchem */}
+            <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", top: "auto", width: 1, height: 1, overflow: "hidden" }}>
+              <label htmlFor="website_url_hp">Não preencha este campo</label>
+              <input
+                id="website_url_hp"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website_url_hp}
+                onChange={(e) => setForm({ ...form, website_url_hp: e.target.value })}
+              />
+            </div>
             <div>
               <Label>Título da denúncia *</Label>
               <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Resumo curto do fato" />
