@@ -81,6 +81,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/trecho-do-conjunto-castelo-branco-tem-sentido-alterado-em-aracaju</loc>
+    <lastmod>2026-07-17T10:40:33.276Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/camara-municipal-aprova-a-ldo-de-aracaju-para-o-exercicio-de-2027</loc>
     <lastmod>2026-07-17T10:40:08.965Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -867,7 +873,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/cotidiano-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/politica-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entretenimento-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -879,13 +891,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/politica-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/franca-x-greenpeace-o-dia-em-que-paris-bombardeou-os-ativistas</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -897,7 +903,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/franca-x-greenpeace-o-dia-em-que-paris-bombardeou-os-ativistas</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/cotidiano-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -909,19 +915,19 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/confira-a-programacao-desta-semana-do-cinema-nos-shoppings-em-aracaju</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/variedades-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entretenimento-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/confira-a-programacao-desta-semana-do-cinema-nos-shoppings-em-aracaju</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
