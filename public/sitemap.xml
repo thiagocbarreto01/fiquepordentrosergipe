@@ -885,13 +885,37 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/variedades-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/economia-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/brasil-e-mundo-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/esporte-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/franca-x-greenpeace-o-dia-em-que-paris-bombardeou-os-ativistas</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/variedades-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -916,30 +940,6 @@
   </url>
   <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/cotidiano-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/esporte-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/brasil-e-mundo-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/economia-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
