@@ -31,6 +31,10 @@ import {
 } from "@/lib/statusFlow";
 import { SourceBadge, CaptureMethodChip, OriginalLink, detectCaptureMethod } from "@/components/admin/SourceBadge";
 import { AdaptiveCoverImage } from "@/components/site/AdaptiveCoverImage";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function slugify(s: string) {
   return s
@@ -76,7 +80,9 @@ export default function AdminPostEditor() {
     cover_image_source: null,
     category_id: "",
     tags: "",
-    status: "captada" as EditorialStatus,
+    // Novas notícias manuais iniciam como "rascunho".
+    // Captação automática (RSS/Auto Sync/CMS API/Instagram) continua entrando como "captada".
+    status: "rascunho" as EditorialStatus,
     is_featured: false,
     is_main_featured: false,
     is_urgent: false,
@@ -86,6 +92,9 @@ export default function AdminPostEditor() {
     main_featured_expires_at: "",
     meta_title: "",
     meta_description: "",
+    // scheduled_at: agendamento automático fica bloqueado nesta passada.
+    // A coluna existe no banco, mas o editor não grava mais valor aqui até
+    // que a Passada 4.2 configure pg_cron e RPCs seguras.
     scheduled_at: "",
     titulo_original: "",
     conteudo_original: "",
@@ -100,83 +109,128 @@ export default function AdminPostEditor() {
     video_url_principal: "",
     videos_relacionados_text: "",
   });
+  const [hydrated, setHydrated] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     document.title = isNew ? "Nova notícia — Painel" : "Editar notícia — Painel";
     supabase.from("categories").select("*").order("position").then(({ data }) => setCats(data ?? []));
-    if (!isNew) {
-      supabase
-        .from("posts")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle()
-        .then(async ({ data }) => {
-          if (!data) return;
-          const normalized = normalizeStatus(data.status);
-          let currentStatus: EditorialStatus = normalized;
-          if (normalized === "captada") {
-            const { error } = await supabase
-              .from("posts")
-              .update({ status: "em_revisao" as any })
-              .eq("id", id);
-            if (!error) currentStatus = "em_revisao";
-          }
-          setForm({
-            ...data,
-            status: currentStatus,
-            tags: (data.tags ?? []).join(", "),
-            scheduled_at: data.scheduled_at
-              ? new Date(data.scheduled_at).toISOString().slice(0, 16)
-              : "",
-            home_expires_at: (data as any).home_expires_at
-              ? new Date((data as any).home_expires_at).toISOString().slice(0, 16)
-              : "",
-            main_featured_expires_at: (data as any).main_featured_expires_at
-              ? new Date((data as any).main_featured_expires_at).toISOString().slice(0, 16)
-              : "",
-            is_evergreen: !!(data as any).is_evergreen,
-            is_main_featured: !!(data as any).is_main_featured,
-            video_url_principal: (data as any).video_url_principal ?? "",
-            videos_relacionados_text: ((data as any).videos_relacionados ?? []).join("\n"),
-          });
-
-          if ((data as any).duplicate_of) {
-            const { data: orig } = await supabase
-              .from("posts")
-              .select("id, title, slug, status, published_at, created_at, source_url")
-              .eq("id", (data as any).duplicate_of)
-              .maybeSingle();
-            setDuplicateOriginal(orig);
-          }
-
-          const { data: matches } = await supabase.rpc("find_duplicate_post", {
-            _title: data.title,
-            _slug: data.slug,
-            _source_url: data.source_url ?? null,
-            _exclude_id: data.id,
-          });
-          setDuplicateMatches((matches as any[]) ?? []);
-
-          if ((data as any).source_id) {
-            const { data: src } = await supabase
-              .from("news_sources")
-              .select("name")
-              .eq("id", (data as any).source_id)
-              .maybeSingle();
-            setSourceName(src?.name ?? null);
-          }
-        });
-
-
-
-      supabase
-        .from("post_status_history")
-        .select("from_status,to_status,note,created_at,changed_by")
-        .eq("post_id", id)
-        .order("created_at", { ascending: false })
-        .then(({ data }) => setHistory(data ?? []));
+    if (isNew) {
+      // Notícia nova: nenhum fetch, apenas marca como hidratada
+      // (sem alterações) para o autosave/dirty-guard começarem limpos.
+      setHydrated(true);
+      setDirty(false);
+      return;
     }
+    supabase
+      .from("posts")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (!data) { setHydrated(true); return; }
+        // CRÍTICO: abrir uma notícia NUNCA pode alterar seu status.
+        // Removido o antigo UPDATE captada → em_revisao. Só ações
+        // explícitas do usuário mudam status.
+        const currentStatus: EditorialStatus = normalizeStatus(data.status);
+        setForm({
+          ...data,
+          status: currentStatus,
+          tags: (data.tags ?? []).join(", "),
+          // scheduled_at é apenas exibido (read-only) — nunca gravado nesta passada
+          scheduled_at: data.scheduled_at
+            ? new Date(data.scheduled_at).toISOString().slice(0, 16)
+            : "",
+          home_expires_at: (data as any).home_expires_at
+            ? new Date((data as any).home_expires_at).toISOString().slice(0, 16)
+            : "",
+          main_featured_expires_at: (data as any).main_featured_expires_at
+            ? new Date((data as any).main_featured_expires_at).toISOString().slice(0, 16)
+            : "",
+          is_evergreen: !!(data as any).is_evergreen,
+          is_main_featured: !!(data as any).is_main_featured,
+          video_url_principal: (data as any).video_url_principal ?? "",
+          videos_relacionados_text: ((data as any).videos_relacionados ?? []).join("\n"),
+        });
+        // Hidratação inicial não conta como alteração do usuário.
+        setDirty(false);
+        setHydrated(true);
+
+        if ((data as any).duplicate_of) {
+          const { data: orig } = await supabase
+            .from("posts")
+            .select("id, title, slug, status, published_at, created_at, source_url")
+            .eq("id", (data as any).duplicate_of)
+            .maybeSingle();
+          setDuplicateOriginal(orig);
+        }
+
+        const { data: matches } = await supabase.rpc("find_duplicate_post", {
+          _title: data.title,
+          _slug: data.slug,
+          _source_url: data.source_url ?? null,
+          _exclude_id: data.id,
+        });
+        setDuplicateMatches((matches as any[]) ?? []);
+
+        if ((data as any).source_id) {
+          const { data: src } = await supabase
+            .from("news_sources")
+            .select("name")
+            .eq("id", (data as any).source_id)
+            .maybeSingle();
+          setSourceName(src?.name ?? null);
+        }
+      });
+
+    supabase
+      .from("post_status_history")
+      .select("from_status,to_status,note,created_at,changed_by")
+      .eq("post_id", id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setHistory(data ?? []));
   }, [id, isNew]);
+
+  // -------- Wrap setForm para marcar dirty apenas após hidratação --------
+  const updateForm = (updater: any) => {
+    setForm((prev: any) => {
+      const next = typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
+      return next;
+    });
+    if (hydrated) setDirty(true);
+  };
+
+  // -------- Autosave local + beforeunload guard --------
+  const autosaveKey = `fpds:draft:${user?.id ?? "anon"}:${isNew ? "new" : id}`;
+  const autosaveTimer = useRef<number | null>(null);
+  const [localSavedAt, setLocalSavedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (!hydrated || !dirty || !user?.id) return;
+    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          autosaveKey,
+          JSON.stringify({ savedAt: new Date().toISOString(), data: form }),
+        );
+        setLocalSavedAt(new Date());
+      } catch { /* quota/disabled */ }
+    }, 1200);
+    return () => {
+      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    };
+  }, [form, hydrated, dirty, autosaveKey, user?.id]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
 
   async function uploadCover(file: File) {
     setUploading(true);
@@ -275,7 +329,9 @@ export default function AdminPostEditor() {
         finalStatus === "publicada"
           ? form.published_at ?? new Date().toISOString()
           : null,
-      scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
+      // scheduled_at: Passada 4.1 desativa gravação direta.
+      // A publicação agendada só volta na Passada 4.2, quando pg_cron
+      // e as RPCs seguras estiverem instalados.
     };
 
     let res;
@@ -284,12 +340,18 @@ export default function AdminPostEditor() {
     setSaving(false);
     if (res.error) return toast.error(res.error.message);
 
+    // Salvamento real bem-sucedido → limpa o rascunho local desta chave
+    try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ }
+    setDirty(false);
+    setLocalSavedAt(null);
+
     const labels: Partial<Record<EditorialStatus, string>> = {
       publicada: "Publicada!",
       aprovada: "Aprovada",
       rejeitada: "Rejeitada",
       em_revisao: "Salva em revisão",
       captada: "Salva como captada",
+      rascunho: "Rascunho salvo",
     };
     toast.success(labels[finalStatus] ?? "Salva");
     if (isNew && res.data?.id) {
@@ -303,7 +365,11 @@ export default function AdminPostEditor() {
     }
   }
 
-  // Fase 7: publicação segura — bloqueia incompleto, confirma curto, publica completo.
+  // Diálogo de "matéria curta" — substitui window.confirm por AlertDialog acessível.
+  const [shortPublishOpen, setShortPublishOpen] = useState(false);
+  const [shortPublishInfo, setShortPublishInfo] = useState<{ chars: number; words: number } | null>(null);
+
+  // Fase 7: publicação segura — bloqueia incompleto, abre AlertDialog em curto.
   async function tryPublish() {
     const q = getContentQuality(form.content || "");
     if (q.level === "incompleto") {
@@ -314,10 +380,9 @@ export default function AdminPostEditor() {
       return;
     }
     if (q.level === "curto") {
-      const ok = window.confirm(
-        `Atenção: matéria curta (${q.chars} caracteres, ${q.words} palavras). Publicar mesmo assim?`
-      );
-      if (!ok) return;
+      setShortPublishInfo({ chars: q.chars, words: q.words });
+      setShortPublishOpen(true);
+      return;
     }
     await save("publicada");
   }
@@ -574,6 +639,55 @@ export default function AdminPostEditor() {
           )}
         </div>
       </div>
+
+      {/* Indicador de rascunho local (autosave) */}
+      {(dirty || localSavedAt) && (
+        <div className="mb-4 -mt-2 flex items-center justify-between gap-3 flex-wrap text-xs bg-blue-50 border border-blue-200 text-blue-900 px-3 py-2 rounded-sm">
+          <span>
+            {dirty
+              ? <><strong>Alterações não salvas.</strong> {localSavedAt && <>Rascunho local salvo às {localSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}</>
+              : <>Rascunho local salvo às {localSavedAt?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}
+            <span className="ml-1 opacity-75">O rascunho fica apenas neste navegador — nada é enviado ao banco.</span>
+          </span>
+          {localSavedAt && (
+            <button
+              type="button"
+              onClick={() => { try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ } setLocalSavedAt(null); }}
+              className="underline text-blue-900 font-bold"
+            >
+              Descartar rascunho local
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* AlertDialog: publicar matéria curta */}
+      <AlertDialog open={shortPublishOpen} onOpenChange={setShortPublishOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publicar matéria curta?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  A matéria tem <strong>{shortPublishInfo?.chars ?? 0}</strong> caracteres
+                  e <strong>{shortPublishInfo?.words ?? 0}</strong> palavras — abaixo do recomendado.
+                </p>
+                <p>Você quer publicar mesmo assim?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={(e) => { e.preventDefault(); setShortPublishOpen(false); save("publicada"); }}
+            >
+              Publicar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       {!isNew && (
         <ReelGeneratorDialog
@@ -1258,6 +1372,7 @@ export default function AdminPostEditor() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="rascunho">Rascunho</SelectItem>
                 <SelectItem value="captada">Captada</SelectItem>
                 <SelectItem value="em_revisao">Em revisão</SelectItem>
                 <SelectItem value="aprovada" disabled={!canPublish}>
@@ -1272,14 +1387,24 @@ export default function AdminPostEditor() {
               </SelectContent>
             </Select>
 
-            <div>
-              <Label>Agendar para</Label>
+            <div className="rounded-md border border-dashed border-border bg-secondary/40 p-3">
+              <Label className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
+                Publicação agendada
+              </Label>
               <Input
                 type="datetime-local"
                 value={form.scheduled_at ?? ""}
-                onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                disabled
+                aria-disabled="true"
+                readOnly
+                className="mt-1 cursor-not-allowed opacity-60"
               />
+              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                Agendamento automático será ativado após a configuração segura do serviço.
+                Enquanto isso, use <strong>PUBLICAR AGORA</strong> quando a matéria estiver pronta.
+              </p>
             </div>
+
 
             <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
               <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
