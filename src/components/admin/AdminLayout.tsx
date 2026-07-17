@@ -16,7 +16,6 @@ const ITEMS = [
   { to: "/admin/categorias", label: "Categorias", icon: FolderTree },
   { to: "/admin/banners", label: "Banners", icon: Megaphone },
   { to: "/admin/instagram", label: "Instagram", icon: Instagram },
-  { to: "/admin/importar-instagram", label: "Importar do Instagram", icon: Instagram },
   { to: "/admin/denuncias", label: "Denúncias", icon: AlertTriangle },
   { to: "/admin/sync", label: "Auto Sync", icon: RefreshCw },
   { to: "/admin/configuracoes", label: "Configurações", icon: Settings, adminOnly: true },
