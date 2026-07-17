@@ -340,13 +340,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
     const err = validate();
     if (err) return toast.error(err);
 
-    if (opts.publishNow && preview?.confidence === "baixa") {
-      return toast.error("Confiança baixa: publicação automática bloqueada. Salve como rascunho e revise.");
-    }
-    if (opts.publishNow && preview && preview.quality_ok === false) {
-      return toast.error("Matéria não passou na validação de qualidade. Corrija os problemas listados ou salve como rascunho.");
-    }
-
+    // Publicação direta desabilitada: importação sempre gera rascunho.
     setLoadingSave(true);
     setSavingMode(opts.mode);
     const { data, error } = await supabase.functions.invoke("import-instagram-post", {
@@ -356,7 +350,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
         image_url_override: imageUrl.trim() || undefined,
         category_id: categoryId || preview?.category_id || null,
         also_generate_instagram: !!opts.alsoIg,
-        publish_now: !!opts.publishNow,
+        publish_now: false,
       },
     });
     setLoadingSave(false);
@@ -706,7 +700,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
               </div>
             )}
 
-            <div className="grid sm:grid-cols-3 gap-3 pt-3 border-t border-border">
+            <div className="grid sm:grid-cols-2 gap-3 pt-3 border-t border-border">
               <Button
                 variant="outline"
                 disabled={loadingSave}
@@ -731,18 +725,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
                   <><Pencil className="h-4 w-4 mr-2" /> Editar antes de publicar</>
                 )}
               </Button>
-              <Button
-                disabled={loadingSave || publishBlocked}
-                onClick={() => confirmar({ mode: "publish", publishNow: true })}
-                className="w-full"
-                title={publishBlocked ? "Confiança baixa — publicação bloqueada" : undefined}
-              >
-                {savingMode === "publish" ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publicando…</>
-                ) : (
-                  <><Send className="h-4 w-4 mr-2" /> Publicar agora</>
-                )}
-              </Button>
+              {/* Publicação direta desabilitada — importação sempre cria rascunho para revisão editorial. */}
             </div>
 
             <Button
