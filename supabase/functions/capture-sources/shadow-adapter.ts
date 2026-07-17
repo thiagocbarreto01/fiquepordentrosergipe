@@ -308,6 +308,8 @@ export async function shadowFetchOrFallback(
       allowedMimeTypes: DEFAULT_ALLOWED_MIMES_BY_KIND[args.responseKind],
       timeoutMs: args.timeoutMs,
       maxBytes: args.maxBytes,
+      fetchFn: args._fetchFn,
+      resolveDns: args._resolveDns,
     });
     const text = decodeBytes(r.bytes, r.contentType);
     logShadow({
