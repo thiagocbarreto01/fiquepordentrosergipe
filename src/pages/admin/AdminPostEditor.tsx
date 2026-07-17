@@ -31,6 +31,10 @@ import {
 } from "@/lib/statusFlow";
 import { SourceBadge, CaptureMethodChip, OriginalLink, detectCaptureMethod } from "@/components/admin/SourceBadge";
 import { AdaptiveCoverImage } from "@/components/site/AdaptiveCoverImage";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function slugify(s: string) {
   return s
