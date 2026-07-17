@@ -131,8 +131,9 @@ export async function evaluateMediaHost(
   if (ctx.mode === "off" || !imageUrl) return "not_evaluated";
 
   const sourceIdHash = await ensureHash(ctx, sourceId);
+  // deno-lint-ignore no-explicit-any
   const allowlist = await loadAllowlistForSource(
-    ctx.supabase,
+    ctx.supabase as any,
     sourceId,
     ctx.allowlistCache,
   );
