@@ -35,6 +35,33 @@ import {
   type PostSortColumn, type PostSortDir,
 } from "@/components/admin/adminPost/primaryAction";
 import { getPrimaryAction } from "@/components/admin/adminPost/primaryAction";
+import {
+  DeletePostDialog, ArchivePostDialog, RestorePostDialog, ArchiveBatchDialog,
+  StatusChangeDialog, ReclassifyDialog, AutoArchiveDialog,
+  type StatusKind, type AutoArchivePreview,
+} from "@/components/admin/adminPost/AdminPostDialogs";
+
+// Checklist editorial reutilizado por Aprovar/Publicar.
+function buildChecklist(p: any, kind: StatusKind) {
+  const missing: string[] = [];
+  const warnings: string[] = [];
+  if (kind === "em_revisao") return { missing, warnings };
+  if (!p?.title?.trim()) missing.push("Título");
+  if (!p?.categories && !p?.category_id) warnings.push("Sem categoria detectada — verifique antes de publicar");
+  if (!p?.content?.trim()) missing.push("Conteúdo");
+  const hasCover = p?.cover_image_url || p?.manual_image_url || p?.cover_image_original;
+  if (!hasCover) missing.push("Imagem de capa");
+  if (!p?.subtitle) warnings.push("Sem subtítulo");
+  if (!p?.image_caption) warnings.push("Sem legenda da imagem");
+  if (!p?.image_credit) warnings.push("Sem crédito da imagem");
+  if (!p?.meta_description) warnings.push("Sem meta description (SEO)");
+  if (typeof p?.content === "string" && p.content.length < 300) warnings.push("Texto muito curto");
+  if (kind === "publicada" && p?.is_urgent) {
+    const exp = p?.home_expires_at ? new Date(p.home_expires_at).getTime() : 0;
+    if (!exp || exp <= Date.now()) missing.push("Plantão exige validade futura em home_expires_at");
+  }
+  return { missing, warnings };
+}
 
 type Filter = "all" | EditorialStatus;
 type HomeFilter = "all" | "active" | "expired" | "expiring_today";
@@ -245,6 +272,20 @@ export default function AdminPosts() {
   const [cards, setCards] = useState({ publicadas: 0, em_revisao: 0, plantoes: 0, arquivadas: 0 });
   const [reclassifying, setReclassifying] = useState(false);
 
+  // ---- Estado dos diálogos (substitui window.confirm) ----
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<any | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<any | null>(null);
+  const [archiveBatchOpen, setArchiveBatchOpen] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<{ p: any; kind: StatusKind } | null>(null);
+  const [reclassifyOpen, setReclassifyOpen] = useState(false);
+  const [autoArchiveOpen, setAutoArchiveOpen] = useState(false);
+  const [autoArchivePreview, setAutoArchivePreview] = useState<AutoArchivePreview | null>(null);
+  const [autoArchivePrevTotal, setAutoArchivePrevTotal] = useState<number | null>(null);
+  const [autoArchiveLoadingPreview, setAutoArchiveLoadingPreview] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+
   // Agrupamento de fontes duplicadas (Etapa 7)
   // Para a fonte selecionada, retorna todos os source_id com mesmo nome normalizado.
   const normalizedSourceIds = useCallback((): string[] | null => {
@@ -428,58 +469,132 @@ export default function AdminPosts() {
     return () => window.removeEventListener("posts:refresh", handler);
   }, []);
 
-  // ---------- ações (inalteradas nesta passada) ----------
-  async function archiveNow(p: any) {
-    if (!confirm(`Arquivar "${p.title}"?`)) return;
-    const { error } = await supabase.rpc("archive_post", { _post_id: p.id, _reason: "manual" });
-    if (error) toast.error(error.message);
-    else { toast.success("Notícia arquivada"); setSelected(new Set()); loadCards(); requestIdRef.current++; setPage((v) => v); }
+  // ---------- ações (Passada 3 — diálogos AlertDialog + submittingRef) ----------
+  // Guarda global contra clique duplo. Cada *Perform seta submittingRef antes
+  // do await e limpa no finally, para nunca deixar a UI travada em erro.
+  async function withSubmit(fn: () => Promise<void>) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    try { await fn(); }
+    finally { submittingRef.current = false; setSubmitting(false); }
   }
-  async function restoreOne(p: any) {
-    const { error } = await supabase.rpc("restore_post", { _post_id: p.id });
-    if (error) toast.error(error.message);
-    else { toast.success("Notícia restaurada"); loadCards(); requestIdRef.current++; setPage((v) => v); }
+
+  // Abridores de diálogo (chamados pelo menu/tabela/cartão)
+  function archiveNow(p: any)   { setArchiveTarget(p); }
+  function restoreOne(p: any)   { setRestoreTarget(p); }
+  function remove(id: string)   {
+    const p = posts.find((x) => x.id === id) || { id, title: "Notícia" };
+    setDeleteTarget(p);
   }
-  async function archiveSelected() {
+  function updateStatus(p: any, newStatus: EditorialStatus) {
+    if (newStatus === "aprovada" || newStatus === "publicada" || newStatus === "em_revisao") {
+      setStatusTarget({ p, kind: newStatus });
+    }
+  }
+  function archiveSelected() {
+    if (!selected.size) return;
+    setArchiveBatchOpen(true);
+  }
+  function runAutoArchive() {
+    setAutoArchivePrevTotal(null);
+    setAutoArchivePreview(null);
+    setAutoArchiveOpen(true);
+    void loadAutoArchivePreview(null);
+  }
+  function reclassify() { setReclassifyOpen(true); }
+
+  // Executores reais (server-side) — usados pelos diálogos
+  async function archivePerform(p: any) {
+    await withSubmit(async () => {
+      const { error } = await supabase.rpc("archive_post", { _post_id: p.id, _reason: "manual" });
+      if (error) { toast.error(error.message); return; }
+      toast.success("Notícia arquivada");
+      setArchiveTarget(null); setSelected(new Set());
+      loadCards(); requestIdRef.current++; setPage((v) => v);
+    });
+  }
+  async function restorePerform(p: any) {
+    await withSubmit(async () => {
+      const { error } = await supabase.rpc("restore_post", { _post_id: p.id });
+      if (error) { toast.error(error.message); return; }
+      toast.success("Notícia restaurada");
+      setRestoreTarget(null);
+      loadCards(); requestIdRef.current++; setPage((v) => v);
+    });
+  }
+  async function archiveBatchPerform() {
     const ids = Array.from(selected);
     if (!ids.length) return;
-    if (!confirm(`Arquivar ${ids.length} notícia(s) selecionada(s)?`)) return;
-    let ok = 0;
-    for (const id of ids) {
-      const { error } = await supabase.rpc("archive_post", { _post_id: id, _reason: "manual" });
-      if (!error) ok++;
-    }
-    toast.success(`${ok}/${ids.length} arquivada(s)`);
-    setSelected(new Set()); loadCards(); requestIdRef.current++; setPage((v) => v);
+    await withSubmit(async () => {
+      let ok = 0;
+      for (const id of ids) {
+        const { error } = await supabase.rpc("archive_post", { _post_id: id, _reason: "manual" });
+        if (!error) ok++;
+      }
+      toast.success(`${ok}/${ids.length} arquivada(s)`);
+      setArchiveBatchOpen(false); setSelected(new Set());
+      loadCards(); requestIdRef.current++; setPage((v) => v);
+    });
   }
-  async function runAutoArchive() {
-    const { data, error } = await supabase.rpc("auto_archive_posts");
-    if (error) return toast.error(error.message);
-    const n = Array.isArray(data) ? (data[0] as any)?.archived_count ?? 0 : (data as any)?.archived_count ?? 0;
-    toast.success(`${n} notícia(s) arquivada(s) automaticamente`);
-    loadCards(); requestIdRef.current++; setPage((v) => v);
+  async function loadAutoArchivePreview(prev: number | null) {
+    setAutoArchiveLoadingPreview(true);
+    try {
+      const { data, error } = await supabase.rpc("auto_archive_preview");
+      if (error) { toast.error(`Falha na prévia: ${error.message}`); return; }
+      const pv = data as unknown as AutoArchivePreview;
+      setAutoArchivePrevTotal(prev);
+      setAutoArchivePreview(pv);
+    } finally { setAutoArchiveLoadingPreview(false); }
+  }
+  async function autoArchivePerform() {
+    if (!autoArchivePreview) return;
+    const prevTotal = autoArchivePreview.total;
+    await withSubmit(async () => {
+      // Recalcula antes de executar para evitar deriva silenciosa
+      const { data: fresh, error: pErr } = await supabase.rpc("auto_archive_preview");
+      if (pErr) { toast.error(`Falha ao revalidar prévia: ${pErr.message}`); return; }
+      const freshPv = fresh as unknown as AutoArchivePreview;
+      if (freshPv.total !== prevTotal) {
+        setAutoArchivePrevTotal(prevTotal);
+        setAutoArchivePreview(freshPv);
+        toast.warning("A contagem mudou. Revise novamente antes de arquivar.");
+        return;
+      }
+      const { data, error } = await supabase.rpc("auto_archive_posts");
+      if (error) { toast.error(error.message); return; }
+      const n = Array.isArray(data) ? (data[0] as any)?.archived_count ?? 0 : (data as any)?.archived_count ?? 0;
+      toast.success(`${n} notícia(s) arquivada(s) automaticamente`);
+      setAutoArchiveOpen(false);
+      loadCards(); requestIdRef.current++; setPage((v) => v);
+    });
   }
   function toggleSelected(id: string) {
     setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
-  async function remove(id: string) {
-    if (!confirm("Excluir esta notícia?")) return;
-    const { error } = await supabase.from("posts").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Excluída"); loadCards(); requestIdRef.current++; setPage((v) => v); }
+  async function deletePerform(p: any) {
+    await withSubmit(async () => {
+      const { error } = await supabase.from("posts").delete().eq("id", p.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success("Notícia excluída");
+      setDeleteTarget(null);
+      loadCards(); requestIdRef.current++; setPage((v) => v);
+    });
   }
-  async function updateStatus(p: any, newStatus: EditorialStatus) {
-    let msg = "";
-    if (newStatus === "aprovada") msg = `Aprovar "${p.title}"?`;
-    if (newStatus === "publicada") msg = `Publicar "${p.title}"?`;
-    if (newStatus === "em_revisao") msg = `Despublicar "${p.title}"?`;
-    if (msg && !confirm(msg)) return;
-    const payload: any = { status: newStatus };
-    if (newStatus === "publicada") payload.published_at = p.published_at ?? new Date().toISOString();
-    const { error } = await supabase.from("posts").update(payload).eq("id", p.id);
-    if (error) return toast.error(error.message);
-    toast.success(newStatus === "publicada" ? "Notícia publicada" : newStatus === "aprovada" ? "Notícia aprovada" : "Notícia movida para revisão");
-    loadCards(); requestIdRef.current++; setPage((v) => v);
+  async function statusPerform(p: any, newStatus: EditorialStatus) {
+    await withSubmit(async () => {
+      const payload: any = { status: newStatus };
+      if (newStatus === "publicada") payload.published_at = p.published_at ?? new Date().toISOString();
+      const { error } = await supabase.from("posts").update(payload).eq("id", p.id);
+      if (error) { toast.error(error.message); return; }
+      toast.success(
+        newStatus === "publicada" ? "Notícia publicada" :
+        newStatus === "aprovada"  ? "Notícia aprovada"  :
+                                    "Notícia movida para revisão"
+      );
+      setStatusTarget(null);
+      loadCards(); requestIdRef.current++; setPage((v) => v);
+    });
   }
   async function toggleFeatured(p: any) {
     const { error } = await supabase.from("posts").update({ is_featured: !p.is_featured }).eq("id", p.id);
@@ -492,16 +607,25 @@ export default function AdminPosts() {
     if (error) toast.error(error.message);
     else { toast.success(`Destaque renovado por mais ${hours >= 24 ? `${hours / 24}d` : `${hours}h`}`); loadCards(); requestIdRef.current++; setPage((v) => v); }
   }
-  async function reclassify() {
-    if (!confirm("Isso irá analisar as últimas notícias e reclassificar suas categorias com base na nova IA. Continuar?")) return;
-    setReclassifying(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("reclassify-categories");
-      if (error) throw error;
-      toast.success(`${data.atualizados} notícias foram reclassificadas.`);
-      requestIdRef.current++; setPage((v) => v);
-    } catch (err: any) { toast.error("Erro ao reclassificar: " + err.message); }
-    finally { setReclassifying(false); }
+  async function reclassifyPerform() {
+    await withSubmit(async () => {
+      setReclassifying(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("reclassify-categories");
+        if (error) {
+          const msg = String(error?.message || "").toLowerCase();
+          if (msg.includes("credit") || msg.includes("payment") || msg.includes("402")) {
+            toast.error("Créditos de IA indisponíveis. Adicione créditos e tente novamente.");
+          } else {
+            toast.error("Erro ao reclassificar: " + (error.message || "falha desconhecida"));
+          }
+          return;
+        }
+        toast.success(`${(data as any)?.atualizados ?? 0} notícias reclassificadas.`);
+        setReclassifyOpen(false);
+        requestIdRef.current++; setPage((v) => v);
+      } finally { setReclassifying(false); }
+    });
   }
   async function recordDecision(p: any, decision: "manter" | "mesclar" | "marcar_duplicada") {
     const refId = p.similar_to || p.duplicate_of || null;
@@ -956,6 +1080,62 @@ export default function AdminPosts() {
         open={!!dayModalPost}
         onOpenChange={(o) => !o && setDayModalPost(null)}
         referencePost={dayModalPost}
+      />
+
+      {/* ===== Diálogos profissionais (substituem window.confirm) ===== */}
+      <DeletePostDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+        title={deleteTarget?.title || ""}
+        submitting={submitting}
+        onConfirm={() => deleteTarget && void deletePerform(deleteTarget)}
+      />
+      <ArchivePostDialog
+        open={!!archiveTarget}
+        onOpenChange={(o) => { if (!o) setArchiveTarget(null); }}
+        title={archiveTarget?.title || ""}
+        submitting={submitting}
+        onConfirm={() => archiveTarget && void archivePerform(archiveTarget)}
+      />
+      <RestorePostDialog
+        open={!!restoreTarget}
+        onOpenChange={(o) => { if (!o) setRestoreTarget(null); }}
+        title={restoreTarget?.title || ""}
+        submitting={submitting}
+        onConfirm={() => restoreTarget && void restorePerform(restoreTarget)}
+      />
+      <ArchiveBatchDialog
+        open={archiveBatchOpen}
+        onOpenChange={setArchiveBatchOpen}
+        count={selected.size}
+        sampleTitles={posts.filter((p) => selected.has(p.id)).slice(0, 5).map((p) => p.title)}
+        submitting={submitting}
+        onConfirm={() => void archiveBatchPerform()}
+      />
+      <StatusChangeDialog
+        open={!!statusTarget}
+        onOpenChange={(o) => { if (!o) setStatusTarget(null); }}
+        title={statusTarget?.p?.title || ""}
+        kind={statusTarget?.kind || "aprovada"}
+        checklist={statusTarget ? buildChecklist(statusTarget.p, statusTarget.kind) : { missing: [], warnings: [] }}
+        submitting={submitting}
+        onConfirm={() => statusTarget && void statusPerform(statusTarget.p, statusTarget.kind)}
+      />
+      <ReclassifyDialog
+        open={reclassifyOpen}
+        onOpenChange={(o) => { if (!o) setReclassifyOpen(false); }}
+        submitting={submitting || reclassifying}
+        onConfirm={() => void reclassifyPerform()}
+      />
+      <AutoArchiveDialog
+        open={autoArchiveOpen}
+        onOpenChange={(o) => { if (!o) setAutoArchiveOpen(false); }}
+        preview={autoArchivePreview}
+        previousTotal={autoArchivePrevTotal}
+        loadingPreview={autoArchiveLoadingPreview}
+        submitting={submitting}
+        onReview={() => void loadAutoArchivePreview(autoArchivePreview?.total ?? null)}
+        onConfirm={() => void autoArchivePerform()}
       />
     </AdminLayout>
   );
