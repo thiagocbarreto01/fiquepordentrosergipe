@@ -45,6 +45,8 @@ import { EditorMobileActionBar } from "@/components/admin/editor/EditorMobileAct
 import { EditorPinningSection } from "@/components/admin/editor/EditorPinningSection";
 import { EditorPrincipalSection } from "@/components/admin/editor/EditorPrincipalSection";
 import { EditorCoverSection } from "@/components/admin/editor/EditorCoverSection";
+import { EditorContentSection } from "@/components/admin/editor/EditorContentSection";
+import { EditorAdvancedSection } from "@/components/admin/editor/EditorAdvancedSection";
 import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
 import { fillMissingSeo } from "@/lib/seoAuto";
 
@@ -1191,65 +1193,8 @@ export default function AdminPostEditor() {
             }}
           />
 
-          <div>
-            <Label className="flex items-center justify-between">
-              <span>Manchete Instagram (curta, usada só na arte)</span>
-              <span
-                className={`text-[10px] font-mono ${
-                  (form.instagram_headline ?? "").length > 80
-                    ? "text-destructive"
-                    : (form.instagram_headline ?? "").length > 60
-                      ? "text-amber-500"
-                      : "text-muted-foreground"
-                }`}
-              >
-                {(form.instagram_headline ?? "").length}/80 (ideal ≤60)
-              </span>
-            </Label>
-            <div className="flex gap-2 mt-1">
-              <Input
-                value={form.instagram_headline ?? ""}
-                maxLength={80}
-                placeholder="Ex.: Pré-candidatos devem deixar rádio e TV em junho"
-                onChange={(e) => setForm({ ...form, instagram_headline: e.target.value })}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={genIgHeadline || !form.title}
-                onClick={async () => {
-                  if (!form.title) return toast.error("Informe o título antes");
-                  setGenIgHeadline(true);
-                  try {
-                    const { data, error } = await supabase.functions.invoke(
-                      "generate-instagram-headline",
-                      { body: { title: form.title, subtitle: form.subtitle, excerpt: form.excerpt } },
-                    );
-                    if (error) throw error;
-                    if (!data?.headline) throw new Error("Sem manchete");
-                    setForm((f: any) => ({ ...f, instagram_headline: data.headline }));
-                    toast.success("Manchete Instagram gerada");
-                  } catch (e: any) {
-                    toast.error(`Falha: ${e?.message ?? e}`);
-                  } finally {
-                    setGenIgHeadline(false);
-                  }
-                }}
-              >
-                {genIgHeadline ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-                Gerar com IA
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Se vazio, a arte usa o título completo com ajuste automático de fonte e reticências.
-            </p>
+          {/* Slug, SEO, vídeos e manchete Instagram foram movidos para "5. Opções avançadas". */}
 
-          </div>
-          <div>
-            <Label>Slug (URL)</Label>
-            <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })} />
-          </div>
 
 
           <EditorCoverSection
@@ -1279,36 +1224,12 @@ export default function AdminPostEditor() {
 
 
 
-          <div className="border border-border bg-card p-4 space-y-3">
-            <div>
-              <Label>Vídeo principal (URL)</Label>
-              <p className="text-xs text-muted-foreground mb-1">
-                YouTube, Instagram (post/reel), Vimeo ou embed. Quando preenchido, o vídeo aparece no topo da matéria, acima da imagem de capa.
-              </p>
-              <Input
-                placeholder="https://www.youtube.com/watch?v=… ou https://www.instagram.com/reel/…"
-                value={form.video_url_principal ?? ""}
-                onChange={(e) => setForm({ ...form, video_url_principal: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Vídeos relacionados (uma URL por linha)</Label>
-              <p className="text-xs text-muted-foreground mb-1">
-                Aparecem abaixo do conteúdo da matéria. Útil para galerias de vídeos curtos.
-              </p>
-              <Textarea
-                rows={3}
-                placeholder="https://www.youtube.com/watch?v=...&#10;https://www.instagram.com/reel/..."
-                value={form.videos_relacionados_text ?? ""}
-                onChange={(e) => setForm({ ...form, videos_relacionados_text: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
-              <Label>Conteúdo *</Label>
-              <div className="flex items-center gap-2 flex-wrap">
+          <EditorContentSection
+            values={{ content: form.content ?? "" }}
+            textareaRef={contentRef}
+            onChange={(patch) => setForm((f: any) => ({ ...f, ...patch }))}
+            aiActions={
+              <>
                 {!isNew && isStaff && (
                   <CompletePostAIDialog
                     postId={id}
@@ -1328,40 +1249,55 @@ export default function AdminPostEditor() {
                   <RecaptureDialog
                     postId={id}
                     currentContent={form.content || ""}
-                    onReplace={(newContent) => setForm({ ...form, previous_content: form.content, content: newContent })}
+                    onReplace={(newContent) =>
+                      setForm({ ...form, previous_content: form.content, content: newContent })
+                    }
                   />
                 )}
-              </div>
-            </div>
-            <ContentToolbar
-              onWrap={(open, close) => {
-                const el = contentRef.current;
-                if (!el) return;
-                const start = el.selectionStart ?? 0;
-                const end = el.selectionEnd ?? 0;
-                const before = form.content.slice(0, start);
-                const sel = form.content.slice(start, end);
-                const after = form.content.slice(end);
-                const next = `${before}${open}${sel}${close}${after}`;
-                setForm({ ...form, content: next });
-                requestAnimationFrame(() => {
-                  el.focus();
-                  const pos = start + open.length + sel.length + close.length;
-                  el.setSelectionRange(pos, pos);
-                });
-              }}
-            />
-            <Textarea
-              ref={contentRef}
-              rows={18}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Dica: parágrafos separados por linha em branco são preservados na publicação. Use a barra acima para formatação rápida.
-            </p>
-          </div>
+              </>
+            }
+          />
+
+          {/* 5. Opções avançadas — slug, SEO, vídeos, Instagram (recolhido por padrão) */}
+          <EditorAdvancedSection
+            values={{
+              slug: form.slug ?? "",
+              meta_title: form.meta_title ?? "",
+              meta_description: form.meta_description ?? "",
+              video_url_principal: form.video_url_principal ?? "",
+              videos_relacionados_text: form.videos_relacionados_text ?? "",
+              instagram_headline: form.instagram_headline ?? "",
+              title: form.title ?? "",
+              subtitle: form.subtitle ?? "",
+              content: form.content ?? "",
+            }}
+            slugLocked={form.status === "publicada"}
+            isNew={isNew}
+            genIgHeadline={genIgHeadline}
+            canGenIgHeadline={!!form.title}
+            slugify={slugify}
+            onChange={(patch) => setForm((f: any) => ({ ...f, ...patch }))}
+            onGenerateIgHeadline={async () => {
+              if (!form.title) { toast.error("Informe o título antes"); return; }
+              setGenIgHeadline(true);
+              try {
+                const { data, error } = await supabase.functions.invoke(
+                  "generate-instagram-headline",
+                  { body: { title: form.title, subtitle: form.subtitle, excerpt: form.excerpt } },
+                );
+                if (error) throw error;
+                if (!data?.headline) throw new Error("Sem manchete");
+                setForm((f: any) => ({ ...f, instagram_headline: data.headline }));
+                toast.success("Manchete Instagram gerada");
+              } catch (e: any) {
+                toast.error(`Falha: ${e?.message ?? e}`);
+              } finally {
+                setGenIgHeadline(false);
+              }
+            }}
+          />
         </div>
+
 
         <aside className="space-y-4 lg:sticky lg:top-24 h-fit">
           <div className="bg-card border border-border p-4 space-y-3 shadow-sm">
@@ -1567,24 +1503,8 @@ export default function AdminPostEditor() {
 
 
 
-          <div className="bg-card border border-border p-4 space-y-3">
-            <h3 className="font-bold uppercase tracking-wider text-xs">SEO</h3>
-            <div>
-              <Label>Meta title</Label>
-              <Input
-                value={form.meta_title ?? ""}
-                onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Meta description</Label>
-              <Textarea
-                rows={3}
-                value={form.meta_description ?? ""}
-                onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
-              />
-            </div>
-          </div>
+          {/* SEO foi movido para "5. Opções avançadas" na coluna principal. */}
+
 
           {!isNew && history.length > 0 && (
             <div className="bg-card border border-border p-4 space-y-3">
