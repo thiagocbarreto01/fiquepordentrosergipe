@@ -125,7 +125,7 @@ function PreparePanel() {
         const to = from + PREP_PAGE_SIZE - 1;
         let q = supabase
           .from("posts")
-          .select("id,title,slug,cover_image_url,published_at,categories(name)", { count: "exact" })
+          .select("id,title,slug,cover_image_url,published_at,categories!posts_category_id_fkey(name)", { count: "exact" })
           .eq("status", "publicada")
           .order("published_at", { ascending: false })
           .range(from, to)
