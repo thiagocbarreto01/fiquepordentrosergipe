@@ -168,6 +168,8 @@ export default function AdminPostEditor() {
           video_url_principal: (data as any).video_url_principal ?? "",
           videos_relacionados_text: ((data as any).videos_relacionados ?? []).join("\n"),
         });
+        const serverStamp = (data as any).updated_at ?? (data as any).created_at;
+        if (serverStamp) setLastServerSavedAt(new Date(serverStamp));
         // Hidratação inicial não conta como alteração do usuário.
         setDirty(false);
         setHydrated(true);
