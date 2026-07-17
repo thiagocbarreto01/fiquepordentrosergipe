@@ -669,26 +669,34 @@ export default function AdminPostEditor() {
         </div>
       </div>
 
-      {/* Indicador de rascunho local (autosave) */}
-      {(dirty || localSavedAt) && (
-        <div className="mb-4 -mt-2 flex items-center justify-between gap-3 flex-wrap text-xs bg-blue-50 border border-blue-200 text-blue-900 px-3 py-2 rounded-sm">
-          <span>
-            {dirty
-              ? <><strong>Alterações não salvas.</strong> {localSavedAt && <>Rascunho local salvo às {localSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}</>
-              : <>Rascunho local salvo às {localSavedAt?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}
-            <span className="ml-1 opacity-75">O rascunho fica apenas neste navegador — nada é enviado ao banco.</span>
-          </span>
-          {localSavedAtDisplay && (
-            <button
-              type="button"
-              onClick={() => { clearDraft(); setLocalSavedAtDisplay(null); }}
-              className="underline text-blue-900 font-bold"
-            >
-              Descartar rascunho local
-            </button>
-          )}
-        </div>
-      )}
+      {/* Indicador de estado de salvamento — 5 estados distintos */}
+      {(() => {
+        const st = saveState;
+        if (st.kind === "idle") return null;
+        const map: Record<string, { cls: string; label: React.ReactNode }> = {
+          dirty: { cls: "bg-blue-50 border-blue-200 text-blue-900", label: <><strong>Alterações não salvas.</strong> Nada foi enviado ao servidor ainda.</> },
+          local: { cls: "bg-blue-50 border-blue-200 text-blue-900", label: <><strong>Rascunho local salvo</strong> às {(st as any).at?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Somente neste navegador — o servidor ainda não recebeu.</> },
+          saving: { cls: "bg-amber-50 border-amber-200 text-amber-900", label: <><Loader2 className="inline h-3.5 w-3.5 animate-spin mr-1" /> Salvando no servidor…</> },
+          saved: { cls: "bg-emerald-50 border-emerald-200 text-emerald-900", label: <><CheckCircle2 className="inline h-3.5 w-3.5 mr-1" /> <strong>Salvo no servidor</strong> às {(st as any).at?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</> },
+          error: { cls: "bg-red-50 border-red-200 text-red-900", label: <><AlertTriangle className="inline h-3.5 w-3.5 mr-1" /> <strong>Erro ao salvar:</strong> {(st as any).message}</> },
+        };
+        const info = map[st.kind];
+        if (!info) return null;
+        return (
+          <div className={`mb-4 -mt-2 flex items-center justify-between gap-3 flex-wrap text-xs px-3 py-2 rounded-sm border ${info.cls}`}>
+            <span>{info.label}</span>
+            {(st.kind === "dirty" || st.kind === "local") && localSavedAtDisplay && (
+              <button
+                type="button"
+                onClick={() => { clearDraft(); setLocalSavedAtDisplay(null); }}
+                className="underline font-bold"
+              >
+                Descartar rascunho local
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* AlertDialog: publicar matéria curta */}
       <AlertDialog open={shortPublishOpen} onOpenChange={setShortPublishOpen}>
