@@ -454,11 +454,15 @@ export default function AdminPostEditor() {
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     const scheduledAt = (data as any)?.scheduled_at ?? isoUtc;
+    // Atualiza o form com o estado autoritativo do servidor.
+    // scheduled_from_status é derivado no banco; guardado só para exibição.
     setForm((f: any) => ({
       ...f,
       status: "aprovada",
       scheduled_at: new Date(scheduledAt).toISOString().slice(0, 16),
+      scheduled_from_status: (data as any)?.scheduled_from_status ?? f.scheduled_from_status ?? null,
     }));
+    setDirty(false);
     toast.success("Publicação agendada");
     setPublishOpen(false);
   }
@@ -471,8 +475,14 @@ export default function AdminPostEditor() {
     setCancellingSchedule(false);
     if (error) { toast.error(error.message); return; }
     const newStatus = ((data as any)?.status ?? form.status) as EditorialStatus;
-    setForm((f: any) => ({ ...f, status: newStatus, scheduled_at: "" }));
-    toast.success("Agendamento cancelado");
+    setForm((f: any) => ({
+      ...f,
+      status: newStatus,
+      scheduled_at: "",
+      scheduled_from_status: null,
+    }));
+    setDirty(false);
+    toast.success("Agendamento cancelado — status restaurado para " + newStatus);
   }
 
 

@@ -488,6 +488,9 @@ export type Database = {
           scheduled_at: string | null
           scheduled_at_set_at: string | null
           scheduled_by: string | null
+          scheduled_from_status:
+            | Database["public"]["Enums"]["post_status"]
+            | null
           share_image_generated_at: string | null
           share_image_url: string | null
           similar_to: string | null
@@ -570,6 +573,9 @@ export type Database = {
           scheduled_at?: string | null
           scheduled_at_set_at?: string | null
           scheduled_by?: string | null
+          scheduled_from_status?:
+            | Database["public"]["Enums"]["post_status"]
+            | null
           share_image_generated_at?: string | null
           share_image_url?: string | null
           similar_to?: string | null
@@ -652,6 +658,9 @@ export type Database = {
           scheduled_at?: string | null
           scheduled_at_set_at?: string | null
           scheduled_by?: string | null
+          scheduled_from_status?:
+            | Database["public"]["Enums"]["post_status"]
+            | null
           share_image_generated_at?: string | null
           share_image_url?: string | null
           similar_to?: string | null
