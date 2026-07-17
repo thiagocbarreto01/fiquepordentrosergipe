@@ -1193,65 +1193,8 @@ export default function AdminPostEditor() {
             }}
           />
 
-          <div>
-            <Label className="flex items-center justify-between">
-              <span>Manchete Instagram (curta, usada só na arte)</span>
-              <span
-                className={`text-[10px] font-mono ${
-                  (form.instagram_headline ?? "").length > 80
-                    ? "text-destructive"
-                    : (form.instagram_headline ?? "").length > 60
-                      ? "text-amber-500"
-                      : "text-muted-foreground"
-                }`}
-              >
-                {(form.instagram_headline ?? "").length}/80 (ideal ≤60)
-              </span>
-            </Label>
-            <div className="flex gap-2 mt-1">
-              <Input
-                value={form.instagram_headline ?? ""}
-                maxLength={80}
-                placeholder="Ex.: Pré-candidatos devem deixar rádio e TV em junho"
-                onChange={(e) => setForm({ ...form, instagram_headline: e.target.value })}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={genIgHeadline || !form.title}
-                onClick={async () => {
-                  if (!form.title) return toast.error("Informe o título antes");
-                  setGenIgHeadline(true);
-                  try {
-                    const { data, error } = await supabase.functions.invoke(
-                      "generate-instagram-headline",
-                      { body: { title: form.title, subtitle: form.subtitle, excerpt: form.excerpt } },
-                    );
-                    if (error) throw error;
-                    if (!data?.headline) throw new Error("Sem manchete");
-                    setForm((f: any) => ({ ...f, instagram_headline: data.headline }));
-                    toast.success("Manchete Instagram gerada");
-                  } catch (e: any) {
-                    toast.error(`Falha: ${e?.message ?? e}`);
-                  } finally {
-                    setGenIgHeadline(false);
-                  }
-                }}
-              >
-                {genIgHeadline ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-                Gerar com IA
-              </Button>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              Se vazio, a arte usa o título completo com ajuste automático de fonte e reticências.
-            </p>
+          {/* Slug, SEO, vídeos e manchete Instagram foram movidos para "5. Opções avançadas". */}
 
-          </div>
-          <div>
-            <Label>Slug (URL)</Label>
-            <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })} />
-          </div>
 
 
           <EditorCoverSection
