@@ -91,8 +91,9 @@ export async function fetchSourceText(
   }
 
   const sourceIdHash = await ensureHash(ctx, sourceId);
+  // deno-lint-ignore no-explicit-any
   const allowlist = await loadAllowlistForSource(
-    ctx.supabase,
+    ctx.supabase as any,
     sourceId,
     ctx.allowlistCache,
   );
