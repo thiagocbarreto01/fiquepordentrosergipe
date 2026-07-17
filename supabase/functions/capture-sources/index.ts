@@ -1108,14 +1108,17 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   let postIdParam = url.searchParams.get("post_id");
   let sourceIdParam = url.searchParams.get("source_id");
+  let networkDryRun = url.searchParams.get("network_dry_run") === "true";
 
   if (req.method === "POST" && !postIdParam) {
     try {
       const b = await req.json();
       if (b.post_id) postIdParam = b.post_id;
       if (b.source_id) sourceIdParam = b.source_id;
+      if (b.network_dry_run === true) networkDryRun = true;
     } catch { /* ignore */ }
   }
+
 
   // Cliente administrativo interno. SUPABASE_SERVICE_ROLE_KEY nunca é aceita
   // como credencial do chamador — somente usada aqui, no servidor.
