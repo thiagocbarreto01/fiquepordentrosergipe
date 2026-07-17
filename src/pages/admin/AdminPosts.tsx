@@ -269,8 +269,11 @@ export default function AdminPosts() {
     if (page !== 1) p.set("page", String(page));
     if (perPage !== DEFAULT_PER) p.set("per", String(perPage));
     if (advOpen) p.set("adv", "1");
+    if (sort !== DEFAULT_SORT) p.set("sort", sort);
+    if (dir !== DEFAULT_DIR) p.set("dir", dir);
     setSearchParams(p, { replace: true });
-  }, [filter, period, sourceFilter, searchTerm, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, page, perPage, advOpen, setSearchParams]);
+  }, [filter, period, sourceFilter, searchTerm, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, page, perPage, advOpen, sort, dir, setSearchParams]);
+
 
   // -------- debounce da busca (400 ms) -----------
   useEffect(() => {
