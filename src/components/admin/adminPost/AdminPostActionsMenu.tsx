@@ -124,13 +124,15 @@ export function AdminPostActionsMenu({
                 <Archive className="h-4 w-4 mr-2" /> Arquivar
               </Button>
             )}
-            <Button
-              variant="outline"
-              className="w-full justify-start min-h-[44px] border-red-500 text-red-700 hover:bg-red-50"
-              onClick={wrap(() => onDelete(post))}
-            >
-              <Trash2 className="h-4 w-4 mr-2" /> Excluir permanentemente
-            </Button>
+            {canDelete && (
+              <Button
+                variant="outline"
+                className="w-full justify-start min-h-[44px] border-red-500 text-red-700 hover:bg-red-50"
+                onClick={wrap(() => onDelete(post))}
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Excluir permanentemente
+              </Button>
+            )}
           </div>
         </div>
 
