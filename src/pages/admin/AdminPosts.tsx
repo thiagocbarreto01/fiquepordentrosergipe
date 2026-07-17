@@ -188,7 +188,9 @@ function applyServerFilters(
 
 export default function AdminPosts() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
 
   // -------- URL-persisted state ----------
   const validStatus = new Set<Filter>([
