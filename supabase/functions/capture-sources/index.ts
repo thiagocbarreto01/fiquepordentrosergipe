@@ -10,36 +10,15 @@
 // nunca é aceita como credencial enviada pelo chamador.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { authenticateRequest } from "./auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
-
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-
-function newRequestId(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-  }
-}
-
-function errorEnvelope(
-  status: number,
-  code: string,
-  message: string,
-  requestId: string,
-) {
-  return json(status, { success: false, code, message, request_id: requestId });
-}
+import {
+  corsHeaders,
+  errorEnvelope,
+  jsonResponse as json,
+  logAuthorized,
+  logAuthRejected,
+  methodGuard,
+  newRequestId,
+} from "./handlers.ts";
 
 function slugify(s: string) {
   return s
@@ -1075,11 +1054,11 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   const requestId = newRequestId();
+
+  // Trata OPTIONS e rejeita métodos não suportados ANTES da autenticação.
+  const methodResp = methodGuard(req, requestId);
+  if (methodResp) return methodResp;
 
   // Tenta extrair post_id tanto da query quanto do body (se for POST)
   const url = new URL(req.url);
@@ -1105,9 +1084,7 @@ Deno.serve(async (req) => {
   // Autenticação: exclusivamente JWT de usuário staff.
   const authResult = await authenticateRequest(req, supabase);
   if (!authResult.ok) {
-    console.warn(
-      `[capture-sources] auth rejeitada req=${requestId} code=${authResult.code}`,
-    );
+    logAuthRejected(requestId, authResult.code);
     return errorEnvelope(
       authResult.status,
       authResult.code,
@@ -1116,9 +1093,7 @@ Deno.serve(async (req) => {
     );
   }
   const actor = authResult.actor;
-  console.log(
-    `[capture-sources] auth ok req=${requestId} user=${actor.user_id}`,
-  );
+  logAuthorized(requestId, actor);
 
 
 
