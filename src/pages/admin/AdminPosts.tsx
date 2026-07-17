@@ -329,7 +329,7 @@ export default function AdminPosts() {
   // Resolve IDs de fontes e categorias que casam com o termo de busca
   async function resolveSearchIds(term: string): Promise<{ sourceIds: string[]; categoryIds: string[] }> {
     if (!term) return { sourceIds: [], categoryIds: [] };
-    const like = `%${term.replace(/[%]/g, "")}%`;
+    const like = `%${escapeIlike(term)}%`;
     const [srcRes, catRes] = await Promise.all([
       supabase.from("news_sources").select("id").ilike("name", like).limit(50),
       supabase.from("categories").select("id").ilike("name", like).limit(50),
