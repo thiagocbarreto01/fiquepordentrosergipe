@@ -416,7 +416,7 @@ export default function AdminPosts() {
     })();
 
     return () => { cancelled = true; };
-  }, [filter, period, sourceFilter, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, searchTerm, page, perPage, sources, normalizedSourceIds]);
+  }, [filter, period, sourceFilter, duplicateFilter, relevanceFilter, homeFilter, archivedFilter, searchTerm, page, perPage, sort, dir, sources, normalizedSourceIds]);
 
   // Refresh externo
   useEffect(() => {
