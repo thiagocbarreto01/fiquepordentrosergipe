@@ -1224,36 +1224,12 @@ export default function AdminPostEditor() {
 
 
 
-          <div className="border border-border bg-card p-4 space-y-3">
-            <div>
-              <Label>Vídeo principal (URL)</Label>
-              <p className="text-xs text-muted-foreground mb-1">
-                YouTube, Instagram (post/reel), Vimeo ou embed. Quando preenchido, o vídeo aparece no topo da matéria, acima da imagem de capa.
-              </p>
-              <Input
-                placeholder="https://www.youtube.com/watch?v=… ou https://www.instagram.com/reel/…"
-                value={form.video_url_principal ?? ""}
-                onChange={(e) => setForm({ ...form, video_url_principal: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Vídeos relacionados (uma URL por linha)</Label>
-              <p className="text-xs text-muted-foreground mb-1">
-                Aparecem abaixo do conteúdo da matéria. Útil para galerias de vídeos curtos.
-              </p>
-              <Textarea
-                rows={3}
-                placeholder="https://www.youtube.com/watch?v=...&#10;https://www.instagram.com/reel/..."
-                value={form.videos_relacionados_text ?? ""}
-                onChange={(e) => setForm({ ...form, videos_relacionados_text: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
-              <Label>Conteúdo *</Label>
-              <div className="flex items-center gap-2 flex-wrap">
+          <EditorContentSection
+            values={{ content: form.content ?? "" }}
+            textareaRef={contentRef}
+            onChange={(patch) => setForm((f: any) => ({ ...f, ...patch }))}
+            aiActions={
+              <>
                 {!isNew && isStaff && (
                   <CompletePostAIDialog
                     postId={id}
@@ -1273,40 +1249,55 @@ export default function AdminPostEditor() {
                   <RecaptureDialog
                     postId={id}
                     currentContent={form.content || ""}
-                    onReplace={(newContent) => setForm({ ...form, previous_content: form.content, content: newContent })}
+                    onReplace={(newContent) =>
+                      setForm({ ...form, previous_content: form.content, content: newContent })
+                    }
                   />
                 )}
-              </div>
-            </div>
-            <ContentToolbar
-              onWrap={(open, close) => {
-                const el = contentRef.current;
-                if (!el) return;
-                const start = el.selectionStart ?? 0;
-                const end = el.selectionEnd ?? 0;
-                const before = form.content.slice(0, start);
-                const sel = form.content.slice(start, end);
-                const after = form.content.slice(end);
-                const next = `${before}${open}${sel}${close}${after}`;
-                setForm({ ...form, content: next });
-                requestAnimationFrame(() => {
-                  el.focus();
-                  const pos = start + open.length + sel.length + close.length;
-                  el.setSelectionRange(pos, pos);
-                });
-              }}
-            />
-            <Textarea
-              ref={contentRef}
-              rows={18}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Dica: parágrafos separados por linha em branco são preservados na publicação. Use a barra acima para formatação rápida.
-            </p>
-          </div>
+              </>
+            }
+          />
+
+          {/* 5. Opções avançadas — slug, SEO, vídeos, Instagram (recolhido por padrão) */}
+          <EditorAdvancedSection
+            values={{
+              slug: form.slug ?? "",
+              meta_title: form.meta_title ?? "",
+              meta_description: form.meta_description ?? "",
+              video_url_principal: form.video_url_principal ?? "",
+              videos_relacionados_text: form.videos_relacionados_text ?? "",
+              instagram_headline: form.instagram_headline ?? "",
+              title: form.title ?? "",
+              subtitle: form.subtitle ?? "",
+              content: form.content ?? "",
+            }}
+            slugLocked={form.status === "publicada"}
+            isNew={isNew}
+            genIgHeadline={genIgHeadline}
+            canGenIgHeadline={!!form.title}
+            slugify={slugify}
+            onChange={(patch) => setForm((f: any) => ({ ...f, ...patch }))}
+            onGenerateIgHeadline={async () => {
+              if (!form.title) return toast.error("Informe o título antes");
+              setGenIgHeadline(true);
+              try {
+                const { data, error } = await supabase.functions.invoke(
+                  "generate-instagram-headline",
+                  { body: { title: form.title, subtitle: form.subtitle, excerpt: form.excerpt } },
+                );
+                if (error) throw error;
+                if (!data?.headline) throw new Error("Sem manchete");
+                setForm((f: any) => ({ ...f, instagram_headline: data.headline }));
+                toast.success("Manchete Instagram gerada");
+              } catch (e: any) {
+                toast.error(`Falha: ${e?.message ?? e}`);
+              } finally {
+                setGenIgHeadline(false);
+              }
+            }}
+          />
         </div>
+
 
         <aside className="space-y-4 lg:sticky lg:top-24 h-fit">
           <div className="bg-card border border-border p-4 space-y-3 shadow-sm">
