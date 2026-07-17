@@ -327,6 +327,44 @@ export type Database = {
           },
         ]
       }
+      news_source_allowed_hosts: {
+        Row: {
+          allow_subdomains: boolean
+          created_at: string
+          created_by: string | null
+          hostname: string
+          id: string
+          purpose: string
+          source_id: string
+        }
+        Insert: {
+          allow_subdomains?: boolean
+          created_at?: string
+          created_by?: string | null
+          hostname: string
+          id?: string
+          purpose: string
+          source_id: string
+        }
+        Update: {
+          allow_subdomains?: boolean
+          created_at?: string
+          created_by?: string | null
+          hostname?: string
+          id?: string
+          purpose?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_source_allowed_hosts_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "news_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_sources: {
         Row: {
           created_at: string
@@ -1154,6 +1192,7 @@ export type Database = {
           similarity: number
         }[]
       }
+      normalize_hostname: { Args: { _input: string }; Returns: string }
       pin_post_to_home: {
         Args: {
           _hours: number
@@ -1162,6 +1201,19 @@ export type Database = {
           _slot?: string
         }
         Returns: undefined
+      }
+      preview_allowed_hosts_backfill: {
+        Args: never
+        Returns: {
+          already_allowed: boolean
+          hostname: string
+          invalid_reason: string
+          is_valid: boolean
+          occurrences: number
+          purpose: string
+          source_id: string
+          source_name: string
+        }[]
       }
       publish_due_scheduled_posts: { Args: never; Returns: Json }
       recluster_all_posts: { Args: { _force?: boolean }; Returns: number }

@@ -23,6 +23,7 @@ import AdminBanners from "./pages/admin/AdminBanners";
 import AdminDenuncias from "./pages/admin/AdminDenuncias";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import AdminFontes from "./pages/admin/AdminFontes";
+import AdminFontesAllowlist from "./pages/admin/AdminFontesAllowlist";
 import AdminInstagram from "./pages/admin/AdminInstagram";
 import AdminImportarInstagram from "./pages/admin/AdminImportarInstagram";
 import AdminControleHome from "./pages/admin/AdminControleHome";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/admin/banners" element={<RequireAuth adminOnly><AdminBanners /></RequireAuth>} />
             <Route path="/admin/denuncias" element={<RequireAuth staffOnly><AdminDenuncias /></RequireAuth>} />
             <Route path="/admin/fontes" element={<RequireAuth staffOnly><AdminFontes /></RequireAuth>} />
+            <Route path="/admin/fontes/allowlist" element={<RequireAuth staffOnly><AdminFontesAllowlist /></RequireAuth>} />
             <Route path="/admin/instagram" element={<RequireAuth staffOnly><AdminInstagram /></RequireAuth>} />
             <Route path="/admin/importar-instagram" element={<RequireAuth staffOnly><AdminImportarInstagram /></RequireAuth>} />
             <Route path="/admin/usuarios" element={<RequireAuth adminOnly><AdminUsuarios /></RequireAuth>} />
