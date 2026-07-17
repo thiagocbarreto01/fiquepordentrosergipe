@@ -221,7 +221,7 @@ Deno.test("shadow sem allowlist carregada: fallback legado + log allowlist_load_
   } finally { restore(); }
 });
 
-// Wrapper que injeta fetch mockado no safeFetch via helper local
+// Wrapper que injeta fetch/DNS mockados via test seams do adapter.
 async function runShadowWithFetch(opts: {
   fetchImpl: typeof fetch;
   dns?: () => Promise<Array<{ family: 4 | 6; address: string }>>;
@@ -232,32 +232,19 @@ async function runShadowWithFetch(opts: {
   legacy?: () => Promise<string>;
 }) {
   const legacy = opts.legacy ?? (async () => "LEG");
-  // Monkey-patch temporário: safeFetch usa `fetch` global se não recebido
-  // via opts. Injetamos globalThis.fetch pelo tempo desta chamada.
-  const originalFetch = globalThis.fetch;
-  const originalDeno = (globalThis as unknown as { Deno?: unknown }).Deno;
-  globalThis.fetch = opts.fetchImpl;
-  (globalThis as unknown as { Deno: unknown }).Deno = {
-    // deno-lint-ignore require-await
-    resolveDns: async () => {
-      const rr = await (opts.dns ?? (async () => [{ family: 4 as const, address: "93.184.216.34" }]))();
-      return rr.filter((r) => r.family === 4).map((r) => r.address);
-    },
-  };
-  try {
-    return await shadowFetchOrFallback({
-      requestId: "req", sourceId: SID_A, sourceIdHash: "abcd",
-      url: opts.url ?? "https://example.com/x",
-      hostPurpose: opts.hostPurpose ?? "feed",
-      responseKind: opts.responseKind ?? "feed",
-      mode: "shadow",
-      allowlist: opts.allowlist ?? HOSTS_A,
-      legacyFetch: legacy,
-    });
-  } finally {
-    globalThis.fetch = originalFetch;
-    (globalThis as unknown as { Deno: unknown }).Deno = originalDeno;
-  }
+  const dns = opts.dns ?? (async () => [{ family: 4 as const, address: "93.184.216.34" }]);
+  return await shadowFetchOrFallback({
+    requestId: "req", sourceId: SID_A, sourceIdHash: "abcd",
+    url: opts.url ?? "https://example.com/x",
+    hostPurpose: opts.hostPurpose ?? "feed",
+    responseKind: opts.responseKind ?? "feed",
+    mode: "shadow",
+    allowlist: opts.allowlist ?? HOSTS_A,
+    legacyFetch: legacy,
+    _fetchFn: opts.fetchImpl,
+    _resolveDns: dns,
+  });
+}
 }
 
 function respond(body: string, headers: Record<string, string> = {}): Response {
