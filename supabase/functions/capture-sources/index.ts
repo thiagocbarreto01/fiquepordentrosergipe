@@ -1084,9 +1084,7 @@ Deno.serve(async (req) => {
   // Autenticação: exclusivamente JWT de usuário staff.
   const authResult = await authenticateRequest(req, supabase);
   if (!authResult.ok) {
-    console.warn(
-      `[capture-sources] auth rejeitada req=${requestId} code=${authResult.code}`,
-    );
+    logAuthRejected(requestId, authResult.code);
     return errorEnvelope(
       authResult.status,
       authResult.code,
@@ -1095,9 +1093,7 @@ Deno.serve(async (req) => {
     );
   }
   const actor = authResult.actor;
-  console.log(
-    `[capture-sources] auth ok req=${requestId} user=${actor.user_id}`,
-  );
+  logAuthorized(requestId, actor);
 
 
 
