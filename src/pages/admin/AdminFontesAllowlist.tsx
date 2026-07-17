@@ -77,6 +77,7 @@ interface SourceLite {
 
 interface DryRunResult {
   dry_run: boolean;
+  status: string;
   candidates: number;
   would_insert: number;
   conflicts: number;
@@ -89,6 +90,16 @@ interface DryRunResult {
     action: string;
     validation_reason: string | null;
   }>;
+}
+
+interface RealResult {
+  dry_run: boolean;
+  status: string;
+  batch_id: string | null;
+  candidates: number;
+  inserted_count: number;
+  conflict_count: number;
+  invalid_count: number;
 }
 
 const PURPOSE_LABEL: Record<Purpose, string> = {
@@ -187,22 +198,42 @@ export default function AdminFontesAllowlist() {
   }
 
   async function runReal() {
+    if (executing) return; // trava contra clique duplo
     setExecuting(true);
     try {
-      const { data, error } = await supabase.rpc(
+      const { data, error, status } = await supabase.rpc(
         "admin_backfill_source_allowed_hosts",
-        { _dry_run: false },
+        { _dry_run: false }, // explícito; não depender do default
       );
       if (error) throw error;
-      const res = data as {
-        batch_id: string;
-        inserted: number;
-        conflicts: number;
-        invalid: number;
-      };
+
+      const res = (data ?? {}) as Partial<RealResult>;
+      const ok =
+        !!res.batch_id &&
+        res.status === "completed" &&
+        typeof res.inserted_count === "number" &&
+        typeof res.conflict_count === "number" &&
+        typeof res.invalid_count === "number";
+
+      if (!ok) {
+        // eslint-disable-next-line no-console
+        console.error("[allowlist] resposta inesperada", {
+          http_status: status,
+          rpc_status: res.status ?? null,
+          has_batch: !!res.batch_id,
+        });
+        toast({
+          title: "Resposta inesperada do backfill",
+          description:
+            "A execução não retornou um lote válido. Nada foi confirmado. Recarregue e verifique.",
+          variant: "destructive",
+        });
+        return; // mantém o diálogo aberto para revisão
+      }
+
       toast({
         title: "Backfill concluído",
-        description: `Lote ${res.batch_id.slice(0, 8)}… • inseridos: ${res.inserted} • conflitos: ${res.conflicts} • inválidos: ${res.invalid}`,
+        description: `Lote ${res.batch_id!.slice(0, 8)}… • inseridos: ${res.inserted_count} • conflitos: ${res.conflict_count} • inválidos: ${res.invalid_count}`,
       });
       setDryRunOpen(false);
       setDryRun(null);
@@ -566,21 +597,34 @@ export default function AdminFontesAllowlist() {
       </div>
 
       {/* Dry-run confirmation dialog */}
-      <AlertDialog open={dryRunOpen} onOpenChange={setDryRunOpen}>
+      <AlertDialog
+        open={dryRunOpen}
+        onOpenChange={(o) => {
+          if (executing) return; // não permite fechar durante a execução real
+          setDryRunOpen(o);
+        }}
+      >
         <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar backfill da allowlist</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
-                <p>Resultado do dry-run:</p>
-                {dryRun && (
-                  <ul className="text-sm space-y-1">
-                    <li>• Candidatos: <strong>{dryRun.candidates}</strong></li>
-                    <li>• Serão inseridos: <strong>{dryRun.would_insert}</strong></li>
-                    <li>• Conflitos (já existem): <strong>{dryRun.conflicts}</strong></li>
-                    <li>• Inválidos: <strong>{dryRun.invalid}</strong></li>
-                  </ul>
-                )}
+                <p>Resultado do dry-run (ainda nada foi gravado):</p>
+                {dryRun && (() => {
+                  const byPurpose = (p: Purpose) =>
+                    dryRun.items.filter((i) => i.purpose === p && i.action !== "invalid").length;
+                  return (
+                    <ul className="text-sm space-y-1">
+                      <li>• Candidatos totais: <strong>{dryRun.candidates}</strong></li>
+                      <li className="pl-4">– Feed: <strong>{byPurpose("feed")}</strong></li>
+                      <li className="pl-4">– Página original: <strong>{byPurpose("article")}</strong></li>
+                      <li className="pl-4">– Mídia: <strong>{byPurpose("media")}</strong></li>
+                      <li>• Serão inseridos: <strong>{dryRun.would_insert}</strong></li>
+                      <li>• Conflitos (já existem): <strong>{dryRun.conflicts}</strong></li>
+                      <li>• Inválidos: <strong>{dryRun.invalid}</strong></li>
+                    </ul>
+                  );
+                })()}
                 <p className="text-xs text-muted-foreground">
                   Ao confirmar, os hosts válidos ausentes serão inseridos em um único
                   lote atômico. Conflitos não serão sobrescritos. Nenhuma captação
