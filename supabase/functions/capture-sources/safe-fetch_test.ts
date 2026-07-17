@@ -345,6 +345,74 @@ Deno.test("safeFetch: status 5xx → remote_server_error", async () => {
   assertEquals(err.code, "remote_server_error");
 });
 
+Deno.test("safeFetch: 404 → remote_not_found", async () => {
+  const { fn } = mockFetch(() => new Response("", { status: 404 }));
+  const err = await assertRejects(() => safeFetch("https://example.com/a", {
+    sourceId: SID_A, purpose: "article", allowedHosts: HOSTS, fetchFn: fn, resolveDns: publicDns,
+  }), SafeFetchError);
+  assertEquals(err.code, "remote_not_found");
+});
+
+Deno.test("safeFetch: 204 → no_content", async () => {
+  const { fn } = mockFetch(() => new Response(null, { status: 204 }));
+  const err = await assertRejects(() => safeFetch("https://example.com/a", {
+    sourceId: SID_A, purpose: "article", allowedHosts: HOSTS, fetchFn: fn, resolveDns: publicDns,
+  }), SafeFetchError);
+  assertEquals(err.code, "no_content");
+});
+
+Deno.test("safeFetch: redirect sem Location → redirect_blocked", async () => {
+  const { fn } = mockFetch(() => new Response(null, { status: 302 }));
+  const err = await assertRejects(() => safeFetch("https://example.com/a", {
+    sourceId: SID_A, purpose: "article", allowedHosts: HOSTS, fetchFn: fn, resolveDns: publicDns,
+  }), SafeFetchError);
+  assertEquals(err.code, "redirect_blocked");
+});
+
+// ─────────── hostPurpose vs responseKind ───────────
+Deno.test("safeFetch: hostPurpose=feed + responseKind=html aceita site HTML", async () => {
+  const { fn } = mockFetch(() => ok("<html/>", "text/html; charset=UTF-8"));
+  const r = await safeFetch("https://example.com/", {
+    sourceId: SID_A, hostPurpose: "feed", responseKind: "html",
+    allowedHosts: HOSTS, fetchFn: fn, resolveDns: publicDns,
+  });
+  assertEquals(r.status, 200);
+  assertEquals(r.contentType, "text/html");
+});
+
+Deno.test("safeFetch: hostPurpose valida allowlist, responseKind valida MIME", async () => {
+  // Host aprovado para feed, mas responseKind=image rejeita text/html.
+  const { fn } = mockFetch(() => ok("<html/>", "text/html"));
+  const err = await assertRejects(() => safeFetch("https://example.com/", {
+    sourceId: SID_A, hostPurpose: "feed", responseKind: "image",
+    allowedHosts: HOSTS, fetchFn: fn, resolveDns: publicDns,
+  }), SafeFetchError);
+  assertEquals(err.code, "unsupported_content_type");
+});
+
+// ─────────── DNS A/AAAA independentes ───────────
+Deno.test("assertDnsSafe: só A público passa (AAAA ausente)", async () => {
+  await assertDnsSafe("x", async () => [{ family: 4, address: "8.8.8.8" }]);
+});
+
+Deno.test("assertDnsSafe: só AAAA público passa (A ausente)", async () => {
+  await assertDnsSafe("x", async () => [{ family: 6, address: "2001:4860:4860::8888" }]);
+});
+
+// ─────────── IPv6 adicional ───────────
+Deno.test("isPrivateIPv6: IPv4-mapped privado", () => {
+  assert(isPrivateIPv6("::ffff:192.168.1.1"));
+  assert(isPrivateIPv6("::ffff:127.0.0.1"));
+  assert(!isPrivateIPv6("::ffff:1.1.1.1"));
+});
+
+Deno.test("isPrivateIPv6: comprimido loopback/link-local/ULA/mcast/doc", () => {
+  for (const ip of ["::1", "fe80::1", "fc00::abcd", "fd12:3456::1", "ff02::1", "2001:db8:1::1"]) {
+    assert(isPrivateIPv6(ip), ip);
+  }
+});
+
+
 // ─────────── Privacidade das mensagens ───────────
 Deno.test("SafeFetchError não vaza URL/querystring/IP/headers/conteúdo", async () => {
   const url = "https://example.com/secret?token=abc123";

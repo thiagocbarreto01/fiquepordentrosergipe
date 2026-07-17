@@ -19,6 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type Purpose = "feed" | "article" | "media";
+export type ResponseKind = "feed" | "html" | "image";
 
 export interface AllowedHost {
   source_id: string;
@@ -42,7 +43,9 @@ export type SafeFetchErrorCode =
   | "response_too_large"
   | "unsupported_content_type"
   | "remote_access_denied"
+  | "remote_not_found"
   | "remote_server_error"
+  | "no_content"
   | "download_failed";
 
 export class SafeFetchError extends Error {
@@ -61,9 +64,21 @@ export interface DnsRecord {
 
 export type DnsResolver = (hostname: string) => Promise<DnsRecord[]>;
 
+/**
+ * Opções do safeFetch.
+ *
+ * `hostPurpose` decide qual host é autorizado (allowlist).
+ * `responseKind` decide qual MIME a resposta precisa ter.
+ * `allowedMimeTypes` (opcional) sobrescreve o whitelist de MIME.
+ *
+ * Para compatibilidade retroativa, `purpose` age como atalho equivalente a
+ * `hostPurpose === responseKind === purpose` (com mapeamento article→html).
+ */
 export interface SafeFetchOptions {
   sourceId: string;
-  purpose: Purpose;
+  purpose?: Purpose;
+  hostPurpose?: Purpose;
+  responseKind?: ResponseKind;
   allowedHosts: AllowedHost[];
   maxBytes?: number;
   timeoutMs?: number;
@@ -83,7 +98,7 @@ export interface SafeFetchResult {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Defaults por finalidade (F3D.1 apenas propostos — NÃO conectados)
+// Defaults por finalidade
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const DEFAULT_TIMEOUT_MS = 15_000;
@@ -95,17 +110,34 @@ export const DEFAULT_MAX_BYTES: Record<Purpose, number> = {
   media: 12 * 1024 * 1024, // 12 MB
 };
 
-// Formatos comprovadamente usados hoje. Não incluir application/octet-stream.
-export const DEFAULT_ALLOWED_MIMES: Record<Purpose, string[]> = {
+// MIME whitelist por ResponseKind. NUNCA aceitar application/octet-stream.
+export const DEFAULT_ALLOWED_MIMES_BY_KIND: Record<ResponseKind, string[]> = {
   feed: [
     "application/rss+xml",
     "application/atom+xml",
     "application/xml",
     "text/xml",
+    // Alguns servidores devolvem RSS como text/html sem parâmetro; NÃO aceitar
+    // aqui para forçar uso de responseKind=html quando a fonte for site.
   ],
-  article: ["text/html", "application/xhtml+xml"],
-  media: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+  html: ["text/html", "application/xhtml+xml"],
+  image: ["image/jpeg", "image/png", "image/webp", "image/gif"],
 };
+
+// Compat: mantém API antiga por Purpose (article → html).
+export const DEFAULT_ALLOWED_MIMES: Record<Purpose, string[]> = {
+  feed: DEFAULT_ALLOWED_MIMES_BY_KIND.feed,
+  article: DEFAULT_ALLOWED_MIMES_BY_KIND.html,
+  media: DEFAULT_ALLOWED_MIMES_BY_KIND.image,
+};
+
+function purposeToKind(p: Purpose): ResponseKind {
+  if (p === "article") return "html";
+  if (p === "media") return "image";
+  return "feed";
+}
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Normalização de hostname
@@ -401,23 +433,28 @@ export function isMimeAllowed(mime: string | null, allowed: string[]): boolean {
  * caminhos de rejeição usam códigos estruturados e mensagens sem PII.
  */
 export async function safeFetch(rawUrl: string, opts: SafeFetchOptions): Promise<SafeFetchResult> {
+  const hostPurpose: Purpose = opts.hostPurpose ?? opts.purpose ?? (() => {
+    throw new SafeFetchError("invalid_url", "hostPurpose ou purpose é obrigatório.");
+  })();
+  const responseKind: ResponseKind = opts.responseKind
+    ?? (opts.purpose ? purposeToKind(opts.purpose) : purposeToKind(hostPurpose));
   const {
     sourceId,
-    purpose,
     allowedHosts,
-    maxBytes = DEFAULT_MAX_BYTES[purpose],
+    maxBytes = DEFAULT_MAX_BYTES[hostPurpose],
     timeoutMs = DEFAULT_TIMEOUT_MS,
     maxRedirects = DEFAULT_MAX_REDIRECTS,
-    allowedMimeTypes = DEFAULT_ALLOWED_MIMES[purpose],
+    allowedMimeTypes = DEFAULT_ALLOWED_MIMES_BY_KIND[responseKind],
     fetchFn = fetch,
     resolveDns = denoDnsResolver,
     userAgent = "FiquePorDentroSE-SafeFetch/1.0",
   } = opts;
 
   let current = validateUrl(rawUrl);
-  if (!isHostAllowed(current.hostname, sourceId, purpose, allowedHosts)) {
+  if (!isHostAllowed(current.hostname, sourceId, hostPurpose, allowedHosts)) {
     throw new SafeFetchError("host_not_allowed", "Host não permitido para esta fonte/finalidade.");
   }
+
 
   const seen = new Set<string>();
   let redirects = 0;
@@ -479,7 +516,7 @@ export async function safeFetch(rawUrl: string, opts: SafeFetchOptions): Promise
         }
         throw e;
       }
-      if (!isHostAllowed(next.hostname, sourceId, purpose, allowedHosts)) {
+      if (!isHostAllowed(next.hostname, sourceId, hostPurpose, allowedHosts)) {
         throw new SafeFetchError("redirect_blocked", "Redirect para host não permitido.");
       }
       current = next;
@@ -492,16 +529,27 @@ export async function safeFetch(rawUrl: string, opts: SafeFetchOptions): Promise
       clearTimeout(timer);
       throw new SafeFetchError("remote_access_denied", "Acesso negado pelo destino.");
     }
+    if (res.status === 404) {
+      try { await res.body?.cancel(); } catch { /* noop */ }
+      clearTimeout(timer);
+      throw new SafeFetchError("remote_not_found", "Recurso não encontrado.");
+    }
     if (res.status >= 500) {
       try { await res.body?.cancel(); } catch { /* noop */ }
       clearTimeout(timer);
       throw new SafeFetchError("remote_server_error", "Erro do servidor de origem.");
+    }
+    if (res.status === 204) {
+      try { await res.body?.cancel(); } catch { /* noop */ }
+      clearTimeout(timer);
+      throw new SafeFetchError("no_content", "Resposta 204 sem conteúdo.");
     }
     if (!res.ok) {
       try { await res.body?.cancel(); } catch { /* noop */ }
       clearTimeout(timer);
       throw new SafeFetchError("download_failed", "Resposta inesperada.");
     }
+
 
     const ct = parseContentType(res.headers.get("content-type"));
     if (!isMimeAllowed(ct, allowedMimeTypes)) {
