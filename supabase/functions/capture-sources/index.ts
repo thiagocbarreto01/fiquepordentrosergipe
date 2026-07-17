@@ -350,15 +350,18 @@ async function fetchSiteItems(
   for (const c of candidates) {
     if (articles.length >= maxItems) break;
     try {
-      const r = await fetch(c.url, {
+      const articleLegacy = () => fetch(c.url, {
         headers: {
           "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
           Accept: "text/html,application/xhtml+xml",
         },
         signal: AbortSignal.timeout(12000),
+      }).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
       });
-      if (!r.ok) continue;
-      const html = await r.text();
+      // hostPurpose=article: página individual de matéria.
+      const html = await fetchSourceText(ctx, sourceId, c.url, "article", "html", articleLegacy);
 
       const meta = (prop: string) => {
         const re1 = new RegExp(`<meta[^>]*property=['"]${prop}['"][^>]*content=['"]([^'"]+)['"]`, "i");
