@@ -459,7 +459,7 @@ export default function AdminPosts() {
     loadCards(); requestIdRef.current++; setPage((v) => v);
   }
   function toggleSelected(id: string) {
-    setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
   async function remove(id: string) {
     if (!confirm("Excluir esta notícia?")) return;
