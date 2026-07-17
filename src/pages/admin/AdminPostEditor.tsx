@@ -1319,6 +1319,7 @@ export default function AdminPostEditor() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="rascunho">Rascunho</SelectItem>
                 <SelectItem value="captada">Captada</SelectItem>
                 <SelectItem value="em_revisao">Em revisão</SelectItem>
                 <SelectItem value="aprovada" disabled={!canPublish}>
@@ -1333,14 +1334,24 @@ export default function AdminPostEditor() {
               </SelectContent>
             </Select>
 
-            <div>
-              <Label>Agendar para</Label>
+            <div className="rounded-md border border-dashed border-border bg-secondary/40 p-3">
+              <Label className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
+                Publicação agendada
+              </Label>
               <Input
                 type="datetime-local"
                 value={form.scheduled_at ?? ""}
-                onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                disabled
+                aria-disabled="true"
+                readOnly
+                className="mt-1 cursor-not-allowed opacity-60"
               />
+              <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                Agendamento automático será ativado após a configuração segura do serviço.
+                Enquanto isso, use <strong>PUBLICAR AGORA</strong> quando a matéria estiver pronta.
+              </p>
             </div>
+
 
             <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
               <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
