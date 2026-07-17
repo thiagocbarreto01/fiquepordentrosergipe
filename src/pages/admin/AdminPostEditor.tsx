@@ -1375,51 +1375,22 @@ export default function AdminPostEditor() {
 
       </div>
 
-      {/* Barra fixa mobile: Salvar / Visualizar / Publicar */}
-      {!isNew && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg admin-editor-bottombar px-3 pt-2">
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              onClick={() => save()}
-              disabled={saving}
-              variant="outline"
-              size="sm"
-              className="font-bold"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
-            </Button>
-            <Button
-              onClick={() => {
-                const s = form.slug || slugify(form.title);
-                if (s) window.open(`/noticia/${s}`, "_blank");
-              }}
-              variant="outline"
-              size="sm"
-              className="font-bold"
-            >
-              Visualizar
-            </Button>
-            <Button
-              onClick={() => tryPublish()}
-              disabled={saving || !canPublish}
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-black"
-            >
-              Publicar
-            </Button>
-          </div>
-        </div>
-      )}
-      {/* Barra mobile fixa inferior — ações mínimas com safe-area */}
-      <EditorMobileActionBar
-        primaryLabel={canPublish ? "PUBLICAR AGORA" : "Salvar rascunho"}
-        onPrimary={() => (canPublish ? tryPublish() : save())}
-        primaryDisabled={saving}
-        onPreview={() => setPreviewOpen(true)}
-        onSaveDraft={() => save()}
-        canUnpublish={canPublish && currentStatus === "publicada"}
-        onUnpublish={() => save("em_revisao")}
-      />
+      {/* Barra mobile fixa inferior — ação contextual (fonte única: editorActions). */}
+      {(() => {
+        const primary = getPrimaryAction(editorRole, currentStatus);
+        return (
+          <EditorMobileActionBar
+            primaryLabel={primary.label}
+            onPrimary={() => handleEditorAction(primary.kind)}
+            primaryDisabled={saving}
+            onPreview={() => setPreviewOpen(true)}
+            onSaveDraft={primary.kind === "save" ? undefined : () => handleEditorAction("save_draft")}
+            canUnpublish={canPublish && currentStatus === "publicada"}
+            onUnpublish={() => handleEditorAction("unpublish")}
+          />
+        );
+      })()}
+
       {/* Padding inferior para o conteúdo não ficar coberto pela barra mobile */}
       <div className="md:hidden h-24" aria-hidden />
     </AdminLayout>
