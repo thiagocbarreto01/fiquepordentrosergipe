@@ -369,9 +369,10 @@ export default function AdminPostEditor() {
     if (res.error) return toast.error(res.error.message);
 
     // Salvamento real bem-sucedido → limpa o rascunho local desta chave
-    try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ }
+    clearDraft();
     setDirty(false);
-    setLocalSavedAt(null);
+    setLocalSavedAtDisplay(null);
+    setSaveState({ kind: "saved", at: new Date() });
 
     const labels: Partial<Record<EditorialStatus, string>> = {
       publicada: "Publicada!",
@@ -677,10 +678,10 @@ export default function AdminPostEditor() {
               : <>Rascunho local salvo às {localSavedAt?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}
             <span className="ml-1 opacity-75">O rascunho fica apenas neste navegador — nada é enviado ao banco.</span>
           </span>
-          {localSavedAt && (
+          {localSavedAtDisplay && (
             <button
               type="button"
-              onClick={() => { try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ } setLocalSavedAt(null); }}
+              onClick={() => { clearDraft(); setLocalSavedAtDisplay(null); }}
               className="underline text-blue-900 font-bold"
             >
               Descartar rascunho local
