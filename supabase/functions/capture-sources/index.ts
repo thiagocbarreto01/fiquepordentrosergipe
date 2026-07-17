@@ -1079,6 +1079,8 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
+
   // Tenta extrair post_id tanto da query quanto do body (se for POST)
   const url = new URL(req.url);
   let postIdParam = url.searchParams.get("post_id");
@@ -1092,43 +1094,33 @@ Deno.serve(async (req) => {
     } catch { /* ignore */ }
   }
 
+  // Cliente administrativo interno. SUPABASE_SERVICE_ROLE_KEY nunca é aceita
+  // como credencial do chamador — somente usada aqui, no servidor.
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } },
   );
 
-  // Auth: aceita
-  //  - x-cron-secret === CRON_SECRET (chamada do pg_cron)
-  //  - x-api-key === CMS_API_KEY (integração externa / debug)
-  //  - service-role no Authorization (chamadas internas)
-  //  - JWT de staff via Authorization: Bearer <user_jwt> (chamada manual do painel)
-  const authHeader = req.headers.get("authorization") ?? "";
-  const apiKey = req.headers.get("x-api-key") ?? "";
-  const cronSecret = req.headers.get("x-cron-secret") ?? "";
-  const expectedCmsKey = Deno.env.get("CMS_API_KEY") ?? "";
-  const expectedCronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-  const isCronCall = expectedCronSecret.length > 0 && cronSecret === expectedCronSecret;
-  const isServiceRole =
-    authHeader === `Bearer ${serviceRole}` || apiKey === serviceRole;
-  const isCmsKey = expectedCmsKey.length > 0 && apiKey === expectedCmsKey;
-
-  let isStaffUser = false;
-  if (!isCronCall && !isServiceRole && !isCmsKey && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const { data: userData } = await supabase.auth.getUser(token);
-    if (userData.user) {
-      const { data: staffOk } = await supabase.rpc("is_staff", { _user_id: userData.user.id });
-      isStaffUser = !!staffOk;
-    }
+  // Autenticação: exclusivamente JWT de usuário staff.
+  const authResult = await authenticateRequest(req, supabase);
+  if (!authResult.ok) {
+    console.warn(
+      `[capture-sources] auth rejeitada req=${requestId} code=${authResult.code}`,
+    );
+    return errorEnvelope(
+      authResult.status,
+      authResult.code,
+      authResult.message,
+      requestId,
+    );
   }
+  const actor = authResult.actor;
+  console.log(
+    `[capture-sources] auth ok req=${requestId} user=${actor.user_id}`,
+  );
 
-  if (!isCronCall && !isServiceRole && !isCmsKey && !isStaffUser) {
-    console.warn("[capture-sources] ❌ requisição sem auth válida");
-    return json(401, { error: "Unauthorized" });
-  }
+
 
   try {
     // Usamos postIdParam e sourceIdParam extraídos no início do serve
