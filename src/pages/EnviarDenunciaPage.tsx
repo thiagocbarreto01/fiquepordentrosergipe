@@ -25,9 +25,10 @@ export default function EnviarDenunciaPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const formOpenedAtRef = useRef<number>(Date.now());
   const [form, setForm] = useState({
     title: "", description: "", city: "", contact_name: "",
-    contact_phone: "", contact_email: "", is_anonymous: true,
+    contact_phone: "", contact_email: "", is_anonymous: true, website_url_hp: "",
   });
 
   async function submit(e: React.FormEvent) {
