@@ -198,22 +198,42 @@ export default function AdminFontesAllowlist() {
   }
 
   async function runReal() {
+    if (executing) return; // trava contra clique duplo
     setExecuting(true);
     try {
-      const { data, error } = await supabase.rpc(
+      const { data, error, status } = await supabase.rpc(
         "admin_backfill_source_allowed_hosts",
-        { _dry_run: false },
+        { _dry_run: false }, // explícito; não depender do default
       );
       if (error) throw error;
-      const res = data as {
-        batch_id: string;
-        inserted: number;
-        conflicts: number;
-        invalid: number;
-      };
+
+      const res = (data ?? {}) as Partial<RealResult>;
+      const ok =
+        !!res.batch_id &&
+        res.status === "completed" &&
+        typeof res.inserted_count === "number" &&
+        typeof res.conflict_count === "number" &&
+        typeof res.invalid_count === "number";
+
+      if (!ok) {
+        // eslint-disable-next-line no-console
+        console.error("[allowlist] resposta inesperada", {
+          http_status: status,
+          rpc_status: res.status ?? null,
+          has_batch: !!res.batch_id,
+        });
+        toast({
+          title: "Resposta inesperada do backfill",
+          description:
+            "A execução não retornou um lote válido. Nada foi confirmado. Recarregue e verifique.",
+          variant: "destructive",
+        });
+        return; // mantém o diálogo aberto para revisão
+      }
+
       toast({
         title: "Backfill concluído",
-        description: `Lote ${res.batch_id.slice(0, 8)}… • inseridos: ${res.inserted} • conflitos: ${res.conflicts} • inválidos: ${res.invalid}`,
+        description: `Lote ${res.batch_id!.slice(0, 8)}… • inseridos: ${res.inserted_count} • conflitos: ${res.conflict_count} • inválidos: ${res.invalid_count}`,
       });
       setDryRunOpen(false);
       setDryRun(null);
