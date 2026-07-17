@@ -1503,24 +1503,8 @@ export default function AdminPostEditor() {
 
 
 
-          <div className="bg-card border border-border p-4 space-y-3">
-            <h3 className="font-bold uppercase tracking-wider text-xs">SEO</h3>
-            <div>
-              <Label>Meta title</Label>
-              <Input
-                value={form.meta_title ?? ""}
-                onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Meta description</Label>
-              <Textarea
-                rows={3}
-                value={form.meta_description ?? ""}
-                onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
-              />
-            </div>
-          </div>
+          {/* SEO foi movido para "5. Opções avançadas" na coluna principal. */}
+
 
           {!isNew && history.length > 0 && (
             <div className="bg-card border border-border p-4 space-y-3">
