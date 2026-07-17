@@ -36,6 +36,10 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useAuth } from "@/hooks/useAuth";
+import { DeleteSourceDialog } from "@/components/admin/sources/DeleteSourceDialog";
+import { SourceAutomationSwitch } from "@/components/admin/sources/SourceAutomationSwitch";
+import { getSourcePermissions } from "@/components/admin/sources/permissions";
 
 
 type RunLog = {
@@ -90,6 +94,12 @@ function timeAgo(iso: string | null) {
 }
 
 export default function AdminFontes() {
+  const { isAdmin, isStaff, role } = useAuth();
+  const perms = useMemo(
+    () => getSourcePermissions({ isAdmin, isStaff, role }),
+    [isAdmin, isStaff, role],
+  );
+
   const [sources, setSources] = useState<Source[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
@@ -98,6 +108,9 @@ export default function AdminFontes() {
   const [runAllLoading, setRunAllLoading] = useState(false);
   const [lastRunLogs, setLastRunLogs] = useState<RunLog[] | null>(null);
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<
+    { id: string; name: string; linkedPosts: number } | null
+  >(null);
 
   // filtros
   const [search, setSearch] = useState("");
@@ -192,26 +205,45 @@ export default function AdminFontes() {
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm("Excluir esta fonte? As notícias captadas serão mantidas.")) return;
-    const { error } = await supabase.from("news_sources").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Fonte excluída");
-      load();
+  async function requestDelete(s: Source) {
+    if (!perms.canDelete) {
+      toast.error("Apenas administradores podem excluir fontes.");
+      return;
     }
+    // Busca contagem real de posts vinculados no momento da confirmação
+    const { count, error } = await supabase
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("source_id", s.id);
+    if (error) {
+      toast.error(`Não foi possível contar notícias vinculadas: ${error.message}`);
+      return;
+    }
+    setDeleteTarget({ id: s.id, name: s.name, linkedPosts: count ?? 0 });
   }
 
-  async function toggleActive(s: Source) {
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("news_sources").delete().eq("id", deleteTarget.id);
+    if (error) {
+      toast.error(`Falha ao excluir: ${error.message}`);
+      throw error;
+    }
+    toast.success(`Fonte "${deleteTarget.name}" excluída`);
+    setSources((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+  }
+
+  // Toggle server: retorna erro para o SourceAutomationSwitch tratar rollback
+  async function persistToggle(id: string, nextChecked: boolean): Promise<{ error?: string | null }> {
     const { error } = await supabase
       .from("news_sources")
-      .update({ is_active: !s.is_active })
-      .eq("id", s.id);
-    if (error) toast.error(error.message);
-    else {
-      // otimista
-      setSources((prev) => prev.map((p) => (p.id === s.id ? { ...p, is_active: !s.is_active } : p)));
-    }
+      .update({ is_active: nextChecked })
+      .eq("id", id);
+    return { error: error?.message ?? null };
+  }
+
+  function updateSourceLocal(id: string, next: boolean) {
+    setSources((prev) => prev.map((p) => (p.id === id ? { ...p, is_active: next } : p)));
   }
 
   async function captureNow(s: Source) {
@@ -613,7 +645,13 @@ export default function AdminFontes() {
                     </a>
                   )}
                 </div>
-                <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s)} />
+                <SourceAutomationSwitch
+                  checked={s.is_active}
+                  sourceName={s.name}
+                  disabled={!perms.canToggleActive}
+                  onToggle={(next) => persistToggle(s.id, next)}
+                  onLocalChange={(next) => updateSourceLocal(s.id, next)}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -658,9 +696,11 @@ export default function AdminFontes() {
                     Executar captação
                   </Button>
                 )}
-                <Button onClick={() => remove(s.id)} variant="outline" className="w-full font-bold border-urgent text-urgent hover:bg-urgent/10">
-                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                </Button>
+                {perms.canDelete && (
+                  <Button onClick={() => requestDelete(s)} variant="outline" className="w-full font-bold border-urgent text-urgent hover:bg-urgent/10 min-h-[44px]">
+                    <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                  </Button>
+                )}
               </div>
             </div>
           );
@@ -725,7 +765,13 @@ export default function AdminFontes() {
                   </td>
                   <td className="p-3">{s.total_captured}</td>
                   <td className="p-3">
-                    <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s)} />
+                    <SourceAutomationSwitch
+                      checked={s.is_active}
+                      sourceName={s.name}
+                      disabled={!perms.canToggleActive}
+                      onToggle={(next) => persistToggle(s.id, next)}
+                      onLocalChange={(next) => updateSourceLocal(s.id, next)}
+                    />
                   </td>
                   <td className="p-3 text-right">
                     <div className="inline-flex gap-1">
@@ -750,13 +796,16 @@ export default function AdminFontes() {
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => remove(s.id)}
-                        className="p-2 hover:bg-urgent/10 text-urgent"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {perms.canDelete && (
+                        <button
+                          onClick={() => requestDelete(s)}
+                          className="p-2 hover:bg-urgent/10 text-urgent min-w-[44px] min-h-[44px] inline-flex items-center justify-center"
+                          title="Excluir"
+                          aria-label={`Excluir fonte ${s.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -774,6 +823,14 @@ export default function AdminFontes() {
           </tbody>
         </table>
       </div>
+
+      <DeleteSourceDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+        sourceName={deleteTarget?.name ?? ""}
+        linkedPostsCount={deleteTarget?.linkedPosts ?? 0}
+        onConfirm={confirmDelete}
+      />
     </AdminLayout>
   );
 }
