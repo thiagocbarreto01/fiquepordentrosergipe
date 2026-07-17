@@ -138,7 +138,7 @@ export default function AdminBanners() {
     setUploading(true);
     try {
       const check = await validateBannerImage(file);
-      if (check.ok !== true) {
+      if (check.ok === false) {
         toast.error(check.message);
         return;
       }
