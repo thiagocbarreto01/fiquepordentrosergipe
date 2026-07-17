@@ -835,7 +835,7 @@ export default function AdminPosts() {
       </div>
 
       {viewMode === "kanban" ? (
-        <KanbanBoard posts={filteredPosts} onChangeStatus={(p, st) => updateStatus(p, st)} />
+        <KanbanBoard posts={filteredPosts} onChangeStatus={(p, st) => { void updateStatus(p, st); }} />
       ) : viewMode === "grouped" ? (
         <SourceGroupedView posts={filteredPosts} sort={groupSort} onSortChange={setGroupSort} />
       ) : (
