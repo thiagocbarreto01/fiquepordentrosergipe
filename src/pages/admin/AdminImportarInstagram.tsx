@@ -409,12 +409,13 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
   const qualityFailed = !!preview && preview.quality_ok === false;
   const publishBlocked = preview?.confidence === "baixa" || qualityFailed;
 
-  return (
-    <AdminLayout>
+  const inner = (
       <div className="max-w-3xl">
-        <h1 className="font-display text-3xl font-black flex items-center gap-2 mb-2">
-          <Instagram className="h-7 w-7 text-pink-600" /> Importar do Instagram
-        </h1>
+        {!embedded && (
+          <h1 className="font-display text-3xl font-black flex items-center gap-2 mb-2">
+            <Instagram className="h-7 w-7 text-pink-600" /> Importar do Instagram
+          </h1>
+        )}
         <p className="text-muted-foreground mb-6">
           1) Extraia os dados do post. 2) Revise legenda, OCR e imagem reais. 3) Só então gere a matéria.
           A IA é proibida de inventar fatos: usará apenas legenda, OCR e transcrição reais.
