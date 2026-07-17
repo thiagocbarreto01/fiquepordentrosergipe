@@ -76,7 +76,9 @@ export default function AdminPostEditor() {
     cover_image_source: null,
     category_id: "",
     tags: "",
-    status: "captada" as EditorialStatus,
+    // Novas notícias manuais iniciam como "rascunho".
+    // Captação automática (RSS/Auto Sync/CMS API/Instagram) continua entrando como "captada".
+    status: "rascunho" as EditorialStatus,
     is_featured: false,
     is_main_featured: false,
     is_urgent: false,
@@ -86,6 +88,9 @@ export default function AdminPostEditor() {
     main_featured_expires_at: "",
     meta_title: "",
     meta_description: "",
+    // scheduled_at: agendamento automático fica bloqueado nesta passada.
+    // A coluna existe no banco, mas o editor não grava mais valor aqui até
+    // que a Passada 4.2 configure pg_cron e RPCs seguras.
     scheduled_at: "",
     titulo_original: "",
     conteudo_original: "",
@@ -100,6 +105,8 @@ export default function AdminPostEditor() {
     video_url_principal: "",
     videos_relacionados_text: "",
   });
+  const [hydrated, setHydrated] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     document.title = isNew ? "Nova notícia — Painel" : "Editar notícia — Painel";
