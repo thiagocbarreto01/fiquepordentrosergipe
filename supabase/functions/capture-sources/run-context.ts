@@ -42,7 +42,8 @@ export interface RunContext {
 }
 
 export function createRunContext(
-  supabase: SupabaseClient,
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
   requestId: string,
   env: Record<string, string | undefined> = Deno.env.toObject(),
 ): RunContext {
