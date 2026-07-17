@@ -1054,11 +1054,11 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   const requestId = newRequestId();
+
+  // Trata OPTIONS e rejeita métodos não suportados ANTES da autenticação.
+  const methodResp = methodGuard(req, requestId);
+  if (methodResp) return methodResp;
 
   // Tenta extrair post_id tanto da query quanto do body (se for POST)
   const url = new URL(req.url);
