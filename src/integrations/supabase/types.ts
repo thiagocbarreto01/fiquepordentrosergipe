@@ -71,6 +71,7 @@ export type Database = {
           id: string
           name: string
           position: number
+          show_in_menu: boolean
           slug: string
         }
         Insert: {
@@ -81,6 +82,7 @@ export type Database = {
           id?: string
           name: string
           position?: number
+          show_in_menu?: boolean
           slug: string
         }
         Update: {
@@ -91,6 +93,7 @@ export type Database = {
           id?: string
           name?: string
           position?: number
+          show_in_menu?: boolean
           slug?: string
         }
         Relationships: []
