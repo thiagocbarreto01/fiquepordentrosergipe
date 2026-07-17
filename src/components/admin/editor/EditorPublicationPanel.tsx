@@ -58,8 +58,10 @@ export interface EditorPublicationPanelProps {
   isDenuncia: boolean;
   onToggleDenuncia: (v: boolean) => void;
 
-  // Agendamento (bloqueado nesta passada)
-  scheduledAt: string;
+  // Agendamento
+  scheduledAt: string;                 // ISO se agendada, "" caso contrário
+  onCancelSchedule?: () => void;
+  cancellingSchedule?: boolean;
 
   // Fixação (renderizada pelo pai para evitar duplicação)
   pinningSlot?: ReactNode;
