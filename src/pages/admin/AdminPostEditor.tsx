@@ -1172,22 +1172,25 @@ export default function AdminPostEditor() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <div>
-            <Label>Título *</Label>
-            <Input
-              value={form.title}
-              onChange={(e) =>
-                setForm({ ...form, title: e.target.value, slug: form.slug || slugify(e.target.value) })
-              }
-            />
-          </div>
-          <div>
-            <Label>Subtítulo</Label>
-            <Input
-              value={form.subtitle ?? ""}
-              onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
-            />
-          </div>
+          <EditorPrincipalSection
+            values={{
+              title: form.title ?? "",
+              subtitle: form.subtitle ?? "",
+              category_id: form.category_id ?? "",
+              tags: form.tags ?? "",
+            }}
+            categories={cats}
+            onChange={(patch) => {
+              setForm((f: any) => {
+                const next = { ...f, ...patch };
+                if (patch.title !== undefined && !f.slug) {
+                  next.slug = slugify(patch.title);
+                }
+                return next;
+              });
+            }}
+          />
+
           <div>
             <Label className="flex items-center justify-between">
               <span>Manchete Instagram (curta, usada só na arte)</span>
