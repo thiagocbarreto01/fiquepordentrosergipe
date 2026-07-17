@@ -373,6 +373,8 @@ export default function AdminFontesAllowlist() {
           />
         </div>
 
+        <AllowlistCorrectionCard onDone={load} />
+
         <Tabs defaultValue="preview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="preview">Prévia ({stats.total})</TabsTrigger>
