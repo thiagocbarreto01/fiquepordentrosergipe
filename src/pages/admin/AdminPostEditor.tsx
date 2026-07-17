@@ -262,17 +262,25 @@ export default function AdminPostEditor() {
 
   async function uploadCover(file: File) {
     setUploading(true);
-    const path = `posts/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
-    const { error } = await supabase.storage.from("media").upload(path, file, { upsert: false });
-    if (error) {
+    try {
+      const check = await validateCoverImage(file);
+      if (!check.ok) {
+        toast.error(check.message);
+        return;
+      }
+      const path = safeUploadName(file.name);
+      const { error } = await supabase.storage.from("media").upload(path, file, {
+        upsert: false,
+        contentType: file.type,
+      });
+      if (error) { toast.error(error.message); return; }
+      const { data } = supabase.storage.from("media").getPublicUrl(path);
+      setForm((f: any) => ({ ...f, manual_image_url: data.publicUrl }));
+      if (hydrated) setDirty(true);
+      toast.success("Imagem enviada para substituição manual");
+    } finally {
       setUploading(false);
-      toast.error(error.message);
-      return;
     }
-    const { data } = supabase.storage.from("media").getPublicUrl(path);
-    setForm((f: any) => ({ ...f, manual_image_url: data.publicUrl }));
-    setUploading(false);
-    toast.success("Imagem enviada para substituição manual");
   }
 
   async function reprocessImage() {
