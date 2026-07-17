@@ -98,8 +98,49 @@ export type Database = {
         }
         Relationships: []
       }
+      denuncia_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          denuncia_id: string
+          from_status: Database["public"]["Enums"]["denuncia_status"] | null
+          id: string
+          note: string | null
+          to_status: Database["public"]["Enums"]["denuncia_status"]
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          denuncia_id: string
+          from_status?: Database["public"]["Enums"]["denuncia_status"] | null
+          id?: string
+          note?: string | null
+          to_status: Database["public"]["Enums"]["denuncia_status"]
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          denuncia_id?: string
+          from_status?: Database["public"]["Enums"]["denuncia_status"] | null
+          id?: string
+          note?: string | null
+          to_status?: Database["public"]["Enums"]["denuncia_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "denuncia_status_history_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       denuncias: {
         Row: {
+          archived_at: string | null
+          archived_reason: string | null
+          assigned_to: string | null
           city: string | null
           contact_email: string | null
           contact_name: string | null
@@ -107,12 +148,20 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          internal_notes: string | null
+          ip_hash: string | null
           is_anonymous: boolean
+          previous_status: Database["public"]["Enums"]["denuncia_status"] | null
           status: Database["public"]["Enums"]["denuncia_status"]
           submitter_id: string | null
           title: string
+          updated_at: string
+          user_agent_hash: string | null
         }
         Insert: {
+          archived_at?: string | null
+          archived_reason?: string | null
+          assigned_to?: string | null
           city?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -120,12 +169,22 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          internal_notes?: string | null
+          ip_hash?: string | null
           is_anonymous?: boolean
+          previous_status?:
+            | Database["public"]["Enums"]["denuncia_status"]
+            | null
           status?: Database["public"]["Enums"]["denuncia_status"]
           submitter_id?: string | null
           title: string
+          updated_at?: string
+          user_agent_hash?: string | null
         }
         Update: {
+          archived_at?: string | null
+          archived_reason?: string | null
+          assigned_to?: string | null
           city?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -133,10 +192,17 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          internal_notes?: string | null
+          ip_hash?: string | null
           is_anonymous?: boolean
+          previous_status?:
+            | Database["public"]["Enums"]["denuncia_status"]
+            | null
           status?: Database["public"]["Enums"]["denuncia_status"]
           submitter_id?: string | null
           title?: string
+          updated_at?: string
+          user_agent_hash?: string | null
         }
         Relationships: []
       }
@@ -1285,6 +1351,27 @@ export type Database = {
       can_approve_publish: { Args: { _user_id: string }; Returns: boolean }
       cancel_scheduled_post: { Args: { _post_id: string }; Returns: Json }
       cluster_post_into_event: { Args: { _post_id: string }; Returns: string }
+      denuncia_archive: {
+        Args: { _id: string; _reason: string }
+        Returns: undefined
+      }
+      denuncia_delete: {
+        Args: { _confirm: string; _id: string }
+        Returns: undefined
+      }
+      denuncia_restore: { Args: { _id: string }; Returns: undefined }
+      denuncia_set_status: {
+        Args: {
+          _id: string
+          _note?: string
+          _status: Database["public"]["Enums"]["denuncia_status"]
+        }
+        Returns: undefined
+      }
+      denuncia_update_notes: {
+        Args: { _assigned_to?: string; _id: string; _internal_notes: string }
+        Returns: undefined
+      }
       detect_breaking_events: { Args: never; Returns: number }
       expire_breaking_events: { Args: never; Returns: number }
       find_duplicate_post: {
