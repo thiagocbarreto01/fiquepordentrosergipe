@@ -1278,7 +1278,7 @@ export default function AdminPostEditor() {
             slugify={slugify}
             onChange={(patch) => setForm((f: any) => ({ ...f, ...patch }))}
             onGenerateIgHeadline={async () => {
-              if (!form.title) return toast.error("Informe o título antes");
+              if (!form.title) { toast.error("Informe o título antes"); return; }
               setGenIgHeadline(true);
               try {
                 const { data, error } = await supabase.functions.invoke(
