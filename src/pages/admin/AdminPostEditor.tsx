@@ -640,6 +640,55 @@ export default function AdminPostEditor() {
         </div>
       </div>
 
+      {/* Indicador de rascunho local (autosave) */}
+      {(dirty || localSavedAt) && (
+        <div className="mb-4 -mt-2 flex items-center justify-between gap-3 flex-wrap text-xs bg-blue-50 border border-blue-200 text-blue-900 px-3 py-2 rounded-sm">
+          <span>
+            {dirty
+              ? <><strong>Alterações não salvas.</strong> {localSavedAt && <>Rascunho local salvo às {localSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}</>
+              : <>Rascunho local salvo às {localSavedAt?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}
+            <span className="ml-1 opacity-75">O rascunho fica apenas neste navegador — nada é enviado ao banco.</span>
+          </span>
+          {localSavedAt && (
+            <button
+              type="button"
+              onClick={() => { try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ } setLocalSavedAt(null); }}
+              className="underline text-blue-900 font-bold"
+            >
+              Descartar rascunho local
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* AlertDialog: publicar matéria curta */}
+      <AlertDialog open={shortPublishOpen} onOpenChange={setShortPublishOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publicar matéria curta?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  A matéria tem <strong>{shortPublishInfo?.chars ?? 0}</strong> caracteres
+                  e <strong>{shortPublishInfo?.words ?? 0}</strong> palavras — abaixo do recomendado.
+                </p>
+                <p>Você quer publicar mesmo assim?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={(e) => { e.preventDefault(); setShortPublishOpen(false); save("publicada"); }}
+            >
+              Publicar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       {!isNew && (
         <ReelGeneratorDialog
           open={reelOpen}
