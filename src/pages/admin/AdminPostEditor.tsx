@@ -1563,32 +1563,9 @@ export default function AdminPostEditor() {
             </div>
           </div>
 
-          <div className="bg-card border border-border p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="font-bold uppercase tracking-wider text-xs">Categoria & tags</h3>
-              {form.ai_review_status === "reescrito_ia" && (
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-primary/10 text-primary border border-primary/30">
-                  Sugerida pela IA
-                </span>
-              )}
-            </div>
-            <Select value={form.category_id ?? ""} onValueChange={(v) => setForm({ ...form, category_id: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {cats.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div>
-              <Label>Tags (vírgulas)</Label>
-              <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
-            </div>
-          </div>
+          {/* Categoria & tags foram movidos para EditorPrincipalSection (coluna principal). */}
+
+
 
           <div className="bg-card border border-border p-4 space-y-3">
             <h3 className="font-bold uppercase tracking-wider text-xs">SEO</h3>
