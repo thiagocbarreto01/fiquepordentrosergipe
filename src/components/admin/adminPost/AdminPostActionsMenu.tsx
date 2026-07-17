@@ -19,6 +19,8 @@ interface Props {
   onArchive: (p: any) => void;
   onRestore: (p: any) => void;
   onDelete: (p: any) => void;
+  /** Somente admin/super_admin pode ver e acionar exclusão permanente. */
+  canDelete?: boolean;
   onShare: (p: any) => void;
   onSeeDay: (p: any) => void;
   onRenew: (p: any, hours: number) => void;
