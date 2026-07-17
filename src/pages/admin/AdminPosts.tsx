@@ -222,6 +222,10 @@ export default function AdminPosts() {
   const [page, setPage] = useState<number>(initialPage);
   const [perPage, setPerPage] = useState<number>(initialPer);
   const [advOpen, setAdvOpen] = useState<boolean>(initialAdv);
+  const [sort, setSort] = useState<PostSortColumn>(initialSort);
+  const [dir, setDir] = useState<PostSortDir>(initialDir);
+  const [actionsPost, setActionsPost] = useState<any | null>(null);
+
 
   // -------- não persistido ----------
   const [viewMode, setViewMode] = useState<ViewMode>("list");
