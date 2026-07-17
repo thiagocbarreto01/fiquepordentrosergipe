@@ -42,6 +42,7 @@ import { ArticlePreviewDialog } from "@/components/admin/editor/ArticlePreviewDi
 import { UnsavedChangesDialog } from "@/components/admin/editor/UnsavedChangesDialog";
 import { RecoverDraftDialog } from "@/components/admin/editor/RecoverDraftDialog";
 import { EditorMobileActionBar } from "@/components/admin/editor/EditorMobileActionBar";
+import { EditorPinningSection } from "@/components/admin/editor/EditorPinningSection";
 import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
 import { fillMissingSeo } from "@/lib/seoAuto";
 
