@@ -9,8 +9,8 @@ import {
   type AllowedHost,
   type Purpose,
   type ResponseKind,
-} from "../capture-sources/safe-fetch.ts";
-import { authenticateRequest } from "../capture-sources/auth.ts";
+} from "./safe-fetch.ts";
+import { authenticateRequest } from "./auth.ts";
 
 const HONEST_UA =
   "FiquePorDentroSE-Aggregator/1.0 (+https://fiquepordentrosergipe.lovable.app)";
