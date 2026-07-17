@@ -576,17 +576,28 @@ function extractArticleText(html: string): string {
 
 interface PageFetchResult extends PageMedia { articleText: string; html: string | null }
 
-async function fetchPage(url: string): Promise<PageFetchResult> {
+async function fetchPage(
+  ctx: RunContext,
+  sourceId: string,
+  url: string,
+): Promise<PageFetchResult> {
   const empty: PageFetchResult = { ogImage: null, mainVideo: null, relatedVideos: [], articleText: "", html: null };
   try {
-    const r = await fetch(url, {
+    // Legacy closure — comportamento IDÊNTICO ao anterior à F3D.3A.2:
+    // valida !ok e content-type text/html devolvendo string vazia como
+    // sinal para o caller tratar como "empty".
+    const legacy = () => fetch(url, {
       headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0" },
       signal: AbortSignal.timeout(10000),
+    }).then(async (r) => {
+      if (!r.ok) return "";
+      const ct = r.headers.get("content-type") ?? "";
+      if (!ct.includes("text/html")) return "";
+      return (await r.text()).slice(0, 600_000);
     });
-    if (!r.ok) return empty;
-    const ct = r.headers.get("content-type") ?? "";
-    if (!ct.includes("text/html")) return empty;
-    const html = (await r.text()).slice(0, 600_000);
+    const raw = await fetchSourceText(ctx, sourceId, url, "article", "html", legacy);
+    if (!raw) return empty;
+    const html = raw.slice(0, 600_000);
 
     const og =
       html.match(/<meta[^>]+property=['"]og:image['"][^>]*content=['"]([^'"]+)['"]/i) ??
@@ -616,8 +627,12 @@ async function fetchPage(url: string): Promise<PageFetchResult> {
   }
 }
 
-async function fetchPageMedia(url: string): Promise<PageMedia> {
-  const r = await fetchPage(url);
+async function fetchPageMedia(
+  ctx: RunContext,
+  sourceId: string,
+  url: string,
+): Promise<PageMedia> {
+  const r = await fetchPage(ctx, sourceId, url);
   return { ogImage: r.ogImage, mainVideo: r.mainVideo, relatedVideos: r.relatedVideos };
 }
 
