@@ -1131,8 +1131,9 @@ Deno.serve(async (req) => {
   }
   const actor = authResult.actor;
   logAuthorized(requestId, actor);
-
-
+  // F3D.3A.2 — contexto por run. mode é lido do env exclusivamente (padrão "off").
+  // O cache de allowlist é descartado ao fim do handler, sem estado global.
+  const ctx: RunContext = createRunContext(supabase, requestId);
 
   try {
     // Usamos postIdParam e sourceIdParam extraídos no início do serve
