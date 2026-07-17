@@ -1032,6 +1032,7 @@ export type Database = {
           archived_count: number
         }[]
       }
+      auto_archive_preview: { Args: never; Returns: Json }
       auto_repair_posts_public: { Args: never; Returns: number }
       can_approve_publish: { Args: { _user_id: string }; Returns: boolean }
       cluster_post_into_event: { Args: { _post_id: string }; Returns: string }
