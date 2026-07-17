@@ -336,12 +336,20 @@ export default function AdminFontesAllowlist() {
                 <ArrowLeft className="h-4 w-4 mr-1" /> Voltar para Fontes
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold">Allowlist de hosts</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              Allowlist de hosts
+              <span
+                className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800"
+                title="Modo de observação: nenhuma requisição é bloqueada."
+              >
+                Segurança em observação
+              </span>
+            </h1>
             <p className="text-sm text-muted-foreground max-w-2xl">
-              A allowlist está cadastrada, mas <strong>ainda não está sendo aplicada
-              à captação</strong>. Esta tela permite fazer o backfill controlado com
-              snapshot e rollback (F3C.2).
+              Proteção de rede em modo de observação. Requisições incompatíveis
+              continuam usando o fluxo legado para preservar o funcionamento.
             </p>
+
           </div>
           <div className="flex gap-2">
             <Button
