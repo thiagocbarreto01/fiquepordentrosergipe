@@ -1145,8 +1145,136 @@ Deno.serve(async (req) => {
   // O cache de allowlist é descartado ao fim do handler, sem estado global.
   const ctx: RunContext = createRunContext(supabase, requestId);
 
+  // F3D.3A.3 — network_dry_run: staff-only, sem persistência, sem IA,
+  // sem posts/claims/runs. Máx. 1 feed + 1 artigo + 1 mídia por fonte.
+  // Inclui fontes inativas (auditoria de compatibilidade).
+  if (networkDryRun) {
+    try {
+      const { data: allSources, error: srcErr } = await supabase
+        .from("news_sources")
+        .select("id,name,source_type,url,is_active");
+      if (srcErr) throw srcErr;
+
+      const probeMode = ctx.mode === "off" ? "shadow" : ctx.mode; // força shadow no probe
+      const sources = (allSources ?? []) as Array<{
+        id: string; name: string; source_type: string; url: string | null; is_active: boolean;
+      }>;
+
+      const results = await Promise.all(sources.map(async (s) => {
+        const summary: {
+          source: string; is_active: boolean; source_type: string;
+          feed: unknown; article: unknown; media: unknown;
+        } = { source: s.name, is_active: s.is_active, source_type: s.source_type, feed: null, article: null, media: null };
+        if (!s.url) { summary.feed = { skipped: "no_url" }; return summary; }
+
+        const kind = String(s.source_type ?? "").toLowerCase();
+        const responseKind: "feed" | "html" = (kind === "rss" || kind === "feed" || kind === "xml" || kind === "sitemap") ? "feed" : "html";
+        const sourceIdHash = await hashSourceId(s.id);
+        const allowlist = await loadAllowlistForSource(supabase as unknown as Parameters<typeof loadAllowlistForSource>[0], s.id, ctx.allowlistCache);
+
+        // Probe 1: feed/listagem
+        const feedLegacy = () => fetch(s.url!, {
+          headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)", Accept: responseKind === "feed" ? "*/*" : "text/html,application/xhtml+xml" },
+          signal: AbortSignal.timeout(15000),
+        }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); });
+        let feedText = "";
+        try {
+          const r = await shadowFetchOrFallback({
+            requestId, sourceId: s.id, sourceIdHash, url: s.url,
+            hostPurpose: "feed", responseKind, mode: probeMode as "shadow",
+            allowlist, legacyFetch: feedLegacy,
+          });
+          feedText = r.text ?? r.legacyText ?? "";
+          summary.feed = { transport: r.transport, safe_result: r.safeResult, error_code: r.errorCode ?? null, bytes: (r.bytes?.byteLength ?? feedText.length), final_hostname: r.finalHostname ?? null };
+        } catch (e) {
+          summary.feed = { transport: "legacy_fallback", safe_result: "legacy_error", error_code: "legacy_error", message: e instanceof Error ? e.message : "erro" };
+          return summary;
+        }
+
+        // Extrai 1 link de artigo + 1 imagem candidata
+        let articleUrl: string | null = null;
+        let imageUrl: string | null = null;
+        try {
+          if (responseKind === "feed") {
+            const items = parseFeed(feedText);
+            const first = items[0];
+            articleUrl = first?.link ?? null;
+            imageUrl = first?.image ?? null;
+          } else {
+            const base = new URL(s.url);
+            const baseHost = base.host.replace(/^www\./, "");
+            const linkRe = /<a\b[^>]*href=['"]([^'"]+)['"]/gi;
+            let m: RegExpExecArray | null;
+            while ((m = linkRe.exec(feedText))) {
+              try {
+                const abs = new URL(m[1], base);
+                if (abs.host.replace(/^www\./, "") !== baseHost) continue;
+                const path = abs.pathname.replace(/\/+$/, "");
+                const segs = path.split("/").filter(Boolean);
+                if (segs.length < 2 && !/\.html?$/i.test(path)) continue;
+                if (/\/(category|categoria|tag|page|autor|search|busca)\b/i.test(abs.pathname)) continue;
+                articleUrl = abs.toString().split("#")[0];
+                break;
+              } catch { /* ignore */ }
+            }
+            const og = feedText.match(/<meta[^>]+property=['"]og:image['"][^>]*content=['"]([^'"]+)['"]/i);
+            imageUrl = og?.[1] ?? null;
+          }
+        } catch { /* parse falhou — sem probes derivados */ }
+
+        // Probe 2: artigo (máx 1)
+        if (articleUrl) {
+          const artLegacy = () => fetch(articleUrl!, {
+            headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0", Accept: "text/html,application/xhtml+xml" },
+            signal: AbortSignal.timeout(12000),
+          }).then(async (r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return (await r.text()).slice(0, 200_000); });
+          try {
+            const r = await shadowFetchOrFallback({
+              requestId, sourceId: s.id, sourceIdHash, url: articleUrl,
+              hostPurpose: "article", responseKind: "html", mode: probeMode as "shadow",
+              allowlist, legacyFetch: artLegacy,
+            });
+            const txt = r.text ?? r.legacyText ?? "";
+            if (!imageUrl) {
+              const og = txt.match(/<meta[^>]+property=['"]og:image['"][^>]*content=['"]([^'"]+)['"]/i);
+              if (og) { try { imageUrl = new URL(og[1], articleUrl).toString(); } catch { /* ignore */ } }
+            }
+            summary.article = { transport: r.transport, safe_result: r.safeResult, error_code: r.errorCode ?? null, bytes: (r.bytes?.byteLength ?? txt.length), final_hostname: r.finalHostname ?? null };
+          } catch (e) {
+            summary.article = { transport: "legacy_fallback", safe_result: "legacy_error", error_code: "legacy_error", message: e instanceof Error ? e.message : "erro" };
+          }
+        } else {
+          summary.article = { skipped: "no_candidate" };
+        }
+
+        // Probe 3: mídia (avaliação lexical, sem download)
+        if (imageUrl) {
+          const res = evaluateMediaHostShadow({
+            requestId, sourceIdHash, sourceId: s.id, imageUrl,
+            allowlist, mode: probeMode as "shadow",
+          });
+          summary.media = { safe_result: res, downloaded: false };
+        } else {
+          summary.media = { skipped: "no_image" };
+        }
+
+        return summary;
+      }));
+
+      return json(200, {
+        ok: true, dry_run: true, mode: ctx.mode, probe_mode: probeMode,
+        sources_total: sources.length, results,
+      });
+    } catch (err) {
+      console.error("[capture-sources] dry_run erro:", err);
+      return json(500, { error: err instanceof Error ? err.message : "erro", dry_run: true });
+    }
+  }
+
   try {
     // Usamos postIdParam e sourceIdParam extraídos no início do serve
+
+
 
     // Lógica para REPROCESSAR imagem de uma única notícia
     if (postIdParam) {
