@@ -200,7 +200,7 @@ function ExtractedPanel({ data }: { data: ExtractedData }) {
   );
 }
 
-export default function AdminImportarInstagram() {
+export default function AdminImportarInstagram({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
   const [caption, setCaption] = useState("");
