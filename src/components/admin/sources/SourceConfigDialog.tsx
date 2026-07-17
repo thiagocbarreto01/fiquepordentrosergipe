@@ -115,11 +115,18 @@ export function SourceConfigDialog({ open, onOpenChange, data }: Props) {
 
           <div className="border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-3 rounded-sm flex gap-2">
             <ShieldAlert className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-900 dark:text-amber-200">
-              <strong>Proteção de hosts ainda não configurada.</strong>{" "}
-              Será tratada na etapa de segurança <span className="font-mono">F3</span>.
+            <div className="text-xs text-amber-900 dark:text-amber-200 space-y-1">
+              <div className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                Segurança em observação
+              </div>
+              <div>
+                Proteção de rede em modo de observação. Requisições
+                incompatíveis continuam usando o fluxo legado para preservar o
+                funcionamento.
+              </div>
             </div>
           </div>
+
         </div>
 
         <DialogFooter>
