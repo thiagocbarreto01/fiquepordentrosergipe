@@ -35,7 +35,7 @@ interface Props {
 export function AdminPostActionsMenu({
   open, onOpenChange, post,
   onApprove, onPublish, onUnpublish, onArchive, onRestore, onDelete,
-  onShare, onSeeDay, onRenew,
+  onShare, onSeeDay, onRenew, canDelete = false,
 }: Props) {
   if (!post) return null;
   const s = normalizeStatus(post.status);
