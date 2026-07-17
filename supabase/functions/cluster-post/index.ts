@@ -1,7 +1,9 @@
 // Edge Function: cluster-post
-// Gera embedding via Lovable AI Gateway (google/gemini-embedding-001) e
-// anexa o post a um evento existente (cosine >= 0.78) ou cria novo evento.
-// Em caso de falha de embedding, recorre ao cluster por trigram (SQL).
+// Modo padrão SEGURO: agrupa por similaridade local (trigram) via SQL.
+// Embeddings só rodam quando explicitamente habilitados no servidor
+// (CLUSTER_EMBEDDINGS_ENABLED=true) E LOVABLE_API_KEY estiver disponível.
+// Cliente NUNCA pode habilitar embeddings via payload.
+// Falhas de IA (402/403/429/etc) resultam em fallback silencioso, sem loop.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -12,7 +14,9 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
+const EMBEDDINGS_ENABLED =
+  (Deno.env.get("CLUSTER_EMBEDDINGS_ENABLED") ?? "").toLowerCase() === "true";
 
 const SIMILARITY_THRESHOLD = 0.78;
 const EMBED_MODEL = "google/gemini-embedding-001";
@@ -24,23 +28,41 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function generateEmbedding(input: string): Promise<number[]> {
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-    },
-    body: JSON.stringify({ model: EMBED_MODEL, input }),
-  });
-  if (!resp.ok) {
-    const t = await resp.text();
-    throw new Error(`embeddings ${resp.status}: ${t.slice(0, 300)}`);
+type EmbedOutcome =
+  | { ok: true; vector: number[] }
+  | { ok: false; reason: "credit_limit" | "rate_limited" | "unauthorized" | "disabled" | "config_missing" | "error"; detail?: string };
+
+async function generateEmbedding(input: string): Promise<EmbedOutcome> {
+  if (!EMBEDDINGS_ENABLED) return { ok: false, reason: "disabled" };
+  if (!LOVABLE_API_KEY) return { ok: false, reason: "config_missing" };
+
+  let resp: Response;
+  try {
+    resp = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({ model: EMBED_MODEL, input }),
+    });
+  } catch (err) {
+    return { ok: false, reason: "error", detail: `network_error: ${String(err).slice(0, 120)}` };
   }
-  const data = await resp.json();
-  const vec = data?.data?.[0]?.embedding;
-  if (!Array.isArray(vec) || vec.length === 0) throw new Error("embedding vazio");
-  return vec;
+
+  if (resp.status === 402 || resp.status === 403) return { ok: false, reason: "credit_limit" };
+  if (resp.status === 429) return { ok: false, reason: "rate_limited" };
+  if (resp.status === 401) return { ok: false, reason: "unauthorized" };
+  if (!resp.ok) return { ok: false, reason: "error", detail: `http_${resp.status}` };
+
+  try {
+    const data = await resp.json();
+    const vec = data?.data?.[0]?.embedding;
+    if (!Array.isArray(vec) || vec.length === 0) return { ok: false, reason: "error", detail: "empty_vector" };
+    return { ok: true, vector: vec };
+  } catch {
+    return { ok: false, reason: "error", detail: "invalid_json" };
+  }
 }
 
 function toVectorLiteral(vec: number[]): string {
@@ -54,11 +76,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const post_id: string | undefined = body?.post_id;
     const force: boolean = !!body?.force;
+    // NOTE: parâmetros de habilitar embeddings vindos do cliente são IGNORADOS por segurança.
     if (!post_id) return json({ error: "post_id required" }, 400);
-
-    if (!LOVABLE_API_KEY || !SERVICE_ROLE) {
-      return json({ error: "missing server secrets" }, 500);
-    }
+    if (!SERVICE_ROLE) return json({ error: "missing server secrets" }, 500);
 
     const sb = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -72,13 +92,28 @@ Deno.serve(async (req) => {
     if (post.status !== "publicada") return json({ ok: true, skipped: "not_published" });
     if (post.event_id && !force) return json({ ok: true, event_id: post.event_id, cached: true });
 
-    // Cache: reaproveita embedding já salvo no post quando disponível
+    const runTrigramFallback = async (
+      reason: string,
+      detail?: string,
+    ) => {
+      const { data: ev, error: fbErr } = await sb.rpc("cluster_post_into_event", { _post_id: post_id });
+      await sb.from("sync_audit_log").insert({
+        event_type: "cluster_post",
+        post_id,
+        status: reason === "disabled" ? "trigram" : "fallback_trgm",
+        details: { mode: "trigram", reason, detail: detail ?? null, event_id: ev ?? null },
+      } as never);
+      if (fbErr) return json({ error: "fallback failed", details: fbErr.message }, 500);
+      return json({ ok: true, event_id: ev, mode: "trigram", reason });
+    };
+
+    // Reaproveita embedding em cache no post apenas se embeddings estiverem habilitados
     let vectorLiteral: string | null = null;
-    if (post.embedding && !force) {
+    if (EMBEDDINGS_ENABLED && post.embedding && !force) {
       vectorLiteral = typeof post.embedding === "string"
         ? post.embedding
         : toVectorLiteral(post.embedding as unknown as number[]);
-    } else {
+    } else if (EMBEDDINGS_ENABLED) {
       const inputText = [
         post.title || "",
         post.ai_summary || post.excerpt || "",
@@ -87,21 +122,15 @@ Deno.serve(async (req) => {
         Array.isArray(post.ai_entities) ? (post.ai_entities as string[]).join(" ") : "",
       ].filter(Boolean).join("\n").slice(0, 6000);
 
-      try {
-        const vec = await generateEmbedding(inputText);
-        vectorLiteral = toVectorLiteral(vec);
-      } catch (err) {
-        console.error("[cluster-post] embedding failed → trgm fallback:", err);
-        const { data: ev, error: fbErr } = await sb.rpc("cluster_post_into_event", { _post_id: post_id });
-        await sb.from("sync_audit_log").insert({
-          event_type: "cluster_post",
-          post_id,
-          status: "fallback_trgm",
-          error: String(err),
-        } as never);
-        if (fbErr) return json({ error: "fallback failed", details: fbErr.message }, 500);
-        return json({ ok: true, event_id: ev, fallback: "trgm" });
+      const outcome = await generateEmbedding(inputText);
+      if (!outcome.ok) {
+        // Fallback silencioso, sem repetir e sem vazar corpo do provedor
+        return await runTrigramFallback(outcome.reason, outcome.detail);
       }
+      vectorLiteral = toVectorLiteral(outcome.vector);
+    } else {
+      // Embeddings desabilitados no servidor — trigram direto (modo padrão)
+      return await runTrigramFallback("disabled");
     }
 
     const { data: eventId, error: ae } = await sb.rpc("attach_post_to_event_with_embedding", {
@@ -111,27 +140,19 @@ Deno.serve(async (req) => {
     } as never);
 
     if (ae) {
-      console.error("[cluster-post] attach RPC failed → trgm fallback:", ae);
-      const { data: ev } = await sb.rpc("cluster_post_into_event", { _post_id: post_id });
-      await sb.from("sync_audit_log").insert({
-        event_type: "cluster_post",
-        post_id,
-        status: "fallback_trgm",
-        error: ae.message,
-      } as never);
-      return json({ ok: true, event_id: ev, fallback: "trgm", error: ae.message });
+      return await runTrigramFallback("attach_error", ae.message?.slice(0, 200));
     }
 
     await sb.from("sync_audit_log").insert({
       event_type: "cluster_post",
       post_id,
       status: "ok",
-      details: { event_id: eventId, model: EMBED_MODEL },
+      details: { event_id: eventId, mode: "embeddings", model: EMBED_MODEL },
     } as never);
 
-    return json({ ok: true, event_id: eventId });
+    return json({ ok: true, event_id: eventId, mode: "embeddings" });
   } catch (err) {
     console.error("[cluster-post] fatal:", err);
-    return json({ error: String(err) }, 500);
+    return json({ error: "internal_error" }, 500);
   }
 });
