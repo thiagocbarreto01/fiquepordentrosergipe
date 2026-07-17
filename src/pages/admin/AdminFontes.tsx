@@ -205,26 +205,45 @@ export default function AdminFontes() {
     }
   }
 
-  async function remove(id: string) {
-    if (!confirm("Excluir esta fonte? As notícias captadas serão mantidas.")) return;
-    const { error } = await supabase.from("news_sources").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Fonte excluída");
-      load();
+  async function requestDelete(s: Source) {
+    if (!perms.canDelete) {
+      toast.error("Apenas administradores podem excluir fontes.");
+      return;
     }
+    // Busca contagem real de posts vinculados no momento da confirmação
+    const { count, error } = await supabase
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("source_id", s.id);
+    if (error) {
+      toast.error(`Não foi possível contar notícias vinculadas: ${error.message}`);
+      return;
+    }
+    setDeleteTarget({ id: s.id, name: s.name, linkedPosts: count ?? 0 });
   }
 
-  async function toggleActive(s: Source) {
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const { error } = await supabase.from("news_sources").delete().eq("id", deleteTarget.id);
+    if (error) {
+      toast.error(`Falha ao excluir: ${error.message}`);
+      throw error;
+    }
+    toast.success(`Fonte "${deleteTarget.name}" excluída`);
+    setSources((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+  }
+
+  // Toggle server: retorna erro para o SourceAutomationSwitch tratar rollback
+  async function persistToggle(id: string, nextChecked: boolean): Promise<{ error?: string | null }> {
     const { error } = await supabase
       .from("news_sources")
-      .update({ is_active: !s.is_active })
-      .eq("id", s.id);
-    if (error) toast.error(error.message);
-    else {
-      // otimista
-      setSources((prev) => prev.map((p) => (p.id === s.id ? { ...p, is_active: !s.is_active } : p)));
-    }
+      .update({ is_active: nextChecked })
+      .eq("id", id);
+    return { error: error?.message ?? null };
+  }
+
+  function updateSourceLocal(id: string, next: boolean) {
+    setSources((prev) => prev.map((p) => (p.id === id ? { ...p, is_active: next } : p)));
   }
 
   async function captureNow(s: Source) {
