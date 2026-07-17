@@ -1377,6 +1377,8 @@ export default function AdminPostEditor() {
             isDenuncia={!!form.is_denuncia}
             onToggleDenuncia={(v) => setForm((f: any) => ({ ...f, is_denuncia: v }))}
             scheduledAt={form.scheduled_at ?? ""}
+            onCancelSchedule={canPublish && !isNew ? handleCancelSchedule : undefined}
+            cancellingSchedule={cancellingSchedule}
             history={history}
             normalizeStatus={normalizeStatus}
             onAction={handleEditorAction}
