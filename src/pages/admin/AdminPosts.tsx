@@ -368,12 +368,15 @@ export default function AdminPosts() {
           searchSourceIds: sourceIds, searchCategoryIds: categoryIds,
           normalizedSourceIds: normalizedSourceIds(),
         });
+        // Ordenação escolhida + fallback determinístico (created_at DESC, id DESC).
+        const asc = dir === "asc";
         q = q
-          .order("published_at", { ascending: false, nullsFirst: false })
+          .order(sort, { ascending: asc, nullsFirst: false })
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .range(from, to)
           .abortSignal(controller.signal);
+
 
         const { data, count, error } = await q;
         if (cancelled || rid !== requestIdRef.current) return;
