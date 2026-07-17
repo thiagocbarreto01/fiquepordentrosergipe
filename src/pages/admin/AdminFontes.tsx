@@ -645,7 +645,13 @@ export default function AdminFontes() {
                     </a>
                   )}
                 </div>
-                <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s)} />
+                <SourceAutomationSwitch
+                  checked={s.is_active}
+                  sourceName={s.name}
+                  disabled={!perms.canToggleActive}
+                  onToggle={(next) => persistToggle(s.id, next)}
+                  onLocalChange={(next) => updateSourceLocal(s.id, next)}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
