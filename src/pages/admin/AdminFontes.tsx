@@ -696,9 +696,11 @@ export default function AdminFontes() {
                     Executar captação
                   </Button>
                 )}
-                <Button onClick={() => remove(s.id)} variant="outline" className="w-full font-bold border-urgent text-urgent hover:bg-urgent/10">
-                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
-                </Button>
+                {perms.canDelete && (
+                  <Button onClick={() => requestDelete(s)} variant="outline" className="w-full font-bold border-urgent text-urgent hover:bg-urgent/10 min-h-[44px]">
+                    <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                  </Button>
+                )}
               </div>
             </div>
           );
