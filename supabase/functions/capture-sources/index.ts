@@ -3,15 +3,18 @@
 // ?source_id), faz fetch do feed, parseia <item>/<entry>, valida duplicatas
 // via RPC `find_duplicate_post` e insere posts com status="captada".
 //
-// Auth:
-//   - service-role (cron interno): aceita qualquer chamada do pg_net (já roda com role=service)
-//   - manual via painel: header x-api-key === CMS_API_KEY
+// Auth: apenas JWT válido de usuário staff (redator/editor/admin/super_admin).
+// A verificação inicial de JWT é feita pelo gateway (verify_jwt=true) e revalidada
+// no handler via `authenticateRequest` (ver ./auth.ts).
+// SUPABASE_SERVICE_ROLE_KEY é usada apenas internamente pelo cliente admin;
+// nunca é aceita como credencial enviada pelo chamador.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { authenticateRequest } from "./auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-api-key, x-cron-secret",
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
@@ -20,6 +23,23 @@ const json = (status: number, body: unknown) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+function newRequestId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+}
+
+function errorEnvelope(
+  status: number,
+  code: string,
+  message: string,
+  requestId: string,
+) {
+  return json(status, { success: false, code, message, request_id: requestId });
+}
 
 function slugify(s: string) {
   return s
