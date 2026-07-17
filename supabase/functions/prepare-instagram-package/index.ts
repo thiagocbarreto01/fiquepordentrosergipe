@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
     const { data: post, error: postErr } = await admin
       .from("posts")
-      .select("id,title,subtitle,excerpt,tags,status,is_urgent,is_denuncia,cover_image_url,slug,categories(name)")
+      .select("id,title,subtitle,excerpt,tags,status,is_urgent,is_denuncia,cover_image_url,slug,categories!posts_category_id_fkey(name)")
       .eq("id", post_id)
       .maybeSingle();
     if (postErr) return err("db_read_error", postErr.message, 500, request_id);
