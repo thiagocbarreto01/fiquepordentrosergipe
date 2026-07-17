@@ -765,7 +765,13 @@ export default function AdminFontes() {
                   </td>
                   <td className="p-3">{s.total_captured}</td>
                   <td className="p-3">
-                    <Switch checked={s.is_active} onCheckedChange={() => toggleActive(s)} />
+                    <SourceAutomationSwitch
+                      checked={s.is_active}
+                      sourceName={s.name}
+                      disabled={!perms.canToggleActive}
+                      onToggle={(next) => persistToggle(s.id, next)}
+                      onLocalChange={(next) => updateSourceLocal(s.id, next)}
+                    />
                   </td>
                   <td className="p-3 text-right">
                     <div className="inline-flex gap-1">
