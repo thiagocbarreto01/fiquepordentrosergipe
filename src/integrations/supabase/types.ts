@@ -1028,6 +1028,96 @@ export type Database = {
         }
         Relationships: []
       }
+      source_allowed_hosts_batch_items: {
+        Row: {
+          action: string
+          allow_subdomains: boolean | null
+          allowed_host_id: string | null
+          batch_id: string
+          created_at: string
+          hostname: string | null
+          id: string
+          purpose: string | null
+          source_id: string | null
+          validation_reason: string | null
+        }
+        Insert: {
+          action: string
+          allow_subdomains?: boolean | null
+          allowed_host_id?: string | null
+          batch_id: string
+          created_at?: string
+          hostname?: string | null
+          id?: string
+          purpose?: string | null
+          source_id?: string | null
+          validation_reason?: string | null
+        }
+        Update: {
+          action?: string
+          allow_subdomains?: boolean | null
+          allowed_host_id?: string | null
+          batch_id?: string
+          created_at?: string
+          hostname?: string | null
+          id?: string
+          purpose?: string | null
+          source_id?: string | null
+          validation_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_allowed_hosts_batch_items_allowed_host_id_fkey"
+            columns: ["allowed_host_id"]
+            isOneToOne: false
+            referencedRelation: "news_source_allowed_hosts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "source_allowed_hosts_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "source_allowed_hosts_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      source_allowed_hosts_batches: {
+        Row: {
+          candidate_count: number
+          conflict_count: number
+          created_at: string
+          created_by: string | null
+          id: string
+          inserted_count: number
+          invalid_count: number
+          reference_time: string
+          status: string
+        }
+        Insert: {
+          candidate_count?: number
+          conflict_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inserted_count?: number
+          invalid_count?: number
+          reference_time: string
+          status?: string
+        }
+        Update: {
+          candidate_count?: number
+          conflict_count?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inserted_count?: number
+          invalid_count?: number
+          reference_time?: string
+          status?: string
+        }
+        Relationships: []
+      }
       sync_audit_log: {
         Row: {
           created_at: string
@@ -1117,14 +1207,31 @@ export type Database = {
           updated_at: string
         }[]
       }
+      _collect_allowed_host_candidates: {
+        Args: never
+        Returns: {
+          hostname: string
+          occurrences: number
+          purpose: string
+          source_id: string
+        }[]
+      }
       _validate_allowed_hostname: {
         Args: { _hostname: string }
         Returns: string
+      }
+      admin_backfill_source_allowed_hosts: {
+        Args: { _dry_run?: boolean }
+        Returns: Json
       }
       admin_dashboard_stats: { Args: never; Returns: Json }
       admin_delete_source_allowed_host: {
         Args: { _id: string }
         Returns: boolean
+      }
+      admin_rollback_source_allowed_hosts_batch: {
+        Args: { _batch_id: string }
+        Returns: Json
       }
       admin_upsert_source_allowed_host: {
         Args: {
