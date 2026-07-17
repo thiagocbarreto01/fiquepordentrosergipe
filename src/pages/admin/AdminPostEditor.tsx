@@ -1848,8 +1848,18 @@ export default function AdminPostEditor() {
           </div>
         </div>
       )}
-      {/* Espaço para não sobrepor conteúdo no mobile */}
-      {!isNew && <div className="md:hidden h-20" aria-hidden />}
+      {/* Barra mobile fixa inferior — ações mínimas com safe-area */}
+      <EditorMobileActionBar
+        primaryLabel={canPublish ? "PUBLICAR AGORA" : "Salvar rascunho"}
+        onPrimary={() => (canPublish ? tryPublish() : save())}
+        primaryDisabled={saving}
+        onPreview={() => setPreviewOpen(true)}
+        onSaveDraft={() => save()}
+        canUnpublish={canPublish && currentStatus === "publicada"}
+        onUnpublish={() => save("em_revisao")}
+      />
+      {/* Padding inferior para o conteúdo não ficar coberto pela barra mobile */}
+      <div className="md:hidden h-24" aria-hidden />
     </AdminLayout>
   );
 }
