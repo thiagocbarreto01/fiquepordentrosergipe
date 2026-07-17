@@ -725,18 +725,7 @@ export default function AdminImportarInstagram({ embedded = false }: { embedded?
                   <><Pencil className="h-4 w-4 mr-2" /> Editar antes de publicar</>
                 )}
               </Button>
-              <Button
-                disabled={loadingSave || publishBlocked}
-                onClick={() => confirmar({ mode: "publish", publishNow: true })}
-                className="w-full"
-                title={publishBlocked ? "Confiança baixa — publicação bloqueada" : undefined}
-              >
-                {savingMode === "publish" ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Publicando…</>
-                ) : (
-                  <><Send className="h-4 w-4 mr-2" /> Publicar agora</>
-                )}
-              </Button>
+              {/* Publicação direta desabilitada — importação sempre cria rascunho para revisão editorial. */}
             </div>
 
             <Button
