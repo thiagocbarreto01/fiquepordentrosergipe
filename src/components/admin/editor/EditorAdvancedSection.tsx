@@ -73,7 +73,7 @@ export function EditorAdvancedSection({
   }, [values.slug]);
 
   const suggestedMetaTitle = useMemo(
-    () => deriveMetaTitle(values.title || "", values.subtitle || ""),
+    () => deriveMetaTitle(values.title || values.subtitle || ""),
     [values.title, values.subtitle],
   );
   const suggestedMetaDescription = useMemo(
