@@ -1590,6 +1590,34 @@ export default function AdminPostEditor() {
               </label>
             </div>
 
+            {/* Fixação temporária da manchete (RPCs seguras) */}
+            <EditorPinningSection
+              postId={isNew ? null : (id ?? null)}
+              isPublished={form.status === "publicada"}
+              canManage={isStaff}
+              pinnedUntil={form.pinned_until ?? null}
+              pinnedReason={form.pinned_reason ?? null}
+              onChanged={async () => {
+                if (isNew || !id) return;
+                const { data } = await supabase
+                  .from("posts")
+                  .select("pinned_until,pinned_reason,pinned_slot,pinned_by")
+                  .eq("id", id)
+                  .maybeSingle();
+                if (data) {
+                  setForm((f: any) => ({
+                    ...f,
+                    pinned_until: (data as any).pinned_until,
+                    pinned_reason: (data as any).pinned_reason,
+                    pinned_slot: (data as any).pinned_slot,
+                    pinned_by: (data as any).pinned_by,
+                  }));
+                }
+              }}
+            />
+
+
+
 
             <div className="flex flex-col gap-2 pt-2">
               <Button onClick={() => save()} disabled={saving} variant="outline" className="w-full">
