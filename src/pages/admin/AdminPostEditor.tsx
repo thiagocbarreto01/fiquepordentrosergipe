@@ -48,7 +48,7 @@ import { EditorCoverSection } from "@/components/admin/editor/EditorCoverSection
 import { EditorContentSection } from "@/components/admin/editor/EditorContentSection";
 import { EditorAdvancedSection } from "@/components/admin/editor/EditorAdvancedSection";
 import { EditorPublicationPanel } from "@/components/admin/editor/EditorPublicationPanel";
-import { deriveEditorRole, type EditorPrimaryActionKind, type EditorSecondaryActionKind } from "@/lib/editorActions";
+import { deriveEditorRole, getPrimaryAction, type EditorPrimaryActionKind, type EditorSecondaryActionKind } from "@/lib/editorActions";
 import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
 import { fillMissingSeo } from "@/lib/seoAuto";
 
