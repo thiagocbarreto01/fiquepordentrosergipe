@@ -79,7 +79,7 @@ export default function EnviarDenunciaPage() {
             <ShieldCheck className="h-12 w-12 text-primary mx-auto mb-3" />
             <h2 className="font-display text-2xl font-black">Recebemos sua denúncia.</h2>
             <p className="mt-2 text-muted-foreground">Nossa equipe vai apurar e, se confirmada, será publicada com responsabilidade editorial.</p>
-            <button onClick={() => { setSent(false); setForm({ title:"", description:"", city:"", contact_name:"", contact_phone:"", contact_email:"", is_anonymous:true }); }} className="mt-6 px-5 py-2 bg-primary text-primary-foreground font-bold uppercase text-xs">
+            <button onClick={() => { setSent(false); formOpenedAtRef.current = Date.now(); setForm({ title:"", description:"", city:"", contact_name:"", contact_phone:"", contact_email:"", is_anonymous:true, website_url_hp:"" }); }} className="mt-6 px-5 py-2 bg-primary text-primary-foreground font-bold uppercase text-xs">
               Enviar outra
             </button>
           </div>
