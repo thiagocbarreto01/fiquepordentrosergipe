@@ -1145,7 +1145,11 @@ Deno.serve(async (req) => {
   // O cache de allowlist é descartado ao fim do handler, sem estado global.
   const ctx: RunContext = createRunContext(supabase, requestId);
 
-  // F3D.3A.3 — network_dry_run: staff-only, sem persistência, sem IA,
+  // Sanitiza mensagens de erro removendo URLs/hosts/IPs antes de devolver.
+  const sanitizeErr = (s: string): string =>
+    s.replace(/https?:\/\/\S+/gi, "[url]").replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g, "[ip]").slice(0, 160);
+
+
   // sem posts/claims/runs. Máx. 1 feed + 1 artigo + 1 mídia por fonte.
   // Inclui fontes inativas (auditoria de compatibilidade).
   if (networkDryRun) {
