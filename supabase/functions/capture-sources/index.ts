@@ -19,6 +19,12 @@ import {
   methodGuard,
   newRequestId,
 } from "./handlers.ts";
+import {
+  createRunContext,
+  evaluateMediaHost,
+  fetchSourceText,
+  type RunContext,
+} from "./run-context.ts";
 
 function slugify(s: string) {
   return s
@@ -293,13 +299,16 @@ function parseFeed(xml: string): FeedItem[] {
 // e enriquece cada um com Open Graph / metadados da página alvo.
 // ============================================================
 async function fetchSiteItems(
+  ctx: RunContext,
+  sourceId: string,
   homeUrl: string,
   maxItems: number,
 ): Promise<FeedItem[]> {
   const base = new URL(homeUrl);
   const baseHost = base.host.replace(/^www\./, "");
 
-  const homeHtml = await fetch(homeUrl, {
+  // Legacy closure — comportamento IDÊNTICO ao anterior à F3D.3A.2.
+  const homeLegacy = () => fetch(homeUrl, {
     headers: {
       "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
       Accept: "text/html,application/xhtml+xml",
@@ -309,6 +318,8 @@ async function fetchSiteItems(
     if (!r.ok) throw new Error(`HTTP ${r.status} ao baixar home`);
     return r.text();
   });
+  // hostPurpose=feed: página principal de fonte SITE é listagem, não artigo.
+  const homeHtml = await fetchSourceText(ctx, sourceId, homeUrl, "feed", "html", homeLegacy);
 
   // Extrai todos os <a href="..."> da home
   const linkRe = /<a\b[^>]*href=['"]([^'"]+)['"][^>]*>([\s\S]*?)<\/a>/gi;
@@ -339,15 +350,18 @@ async function fetchSiteItems(
   for (const c of candidates) {
     if (articles.length >= maxItems) break;
     try {
-      const r = await fetch(c.url, {
+      const articleLegacy = () => fetch(c.url, {
         headers: {
           "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)",
           Accept: "text/html,application/xhtml+xml",
         },
         signal: AbortSignal.timeout(12000),
+      }).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
       });
-      if (!r.ok) continue;
-      const html = await r.text();
+      // hostPurpose=article: página individual de matéria.
+      const html = await fetchSourceText(ctx, sourceId, c.url, "article", "html", articleLegacy);
 
       const meta = (prop: string) => {
         const re1 = new RegExp(`<meta[^>]*property=['"]${prop}['"][^>]*content=['"]([^'"]+)['"]`, "i");
@@ -562,17 +576,28 @@ function extractArticleText(html: string): string {
 
 interface PageFetchResult extends PageMedia { articleText: string; html: string | null }
 
-async function fetchPage(url: string): Promise<PageFetchResult> {
+async function fetchPage(
+  ctx: RunContext,
+  sourceId: string,
+  url: string,
+): Promise<PageFetchResult> {
   const empty: PageFetchResult = { ogImage: null, mainVideo: null, relatedVideos: [], articleText: "", html: null };
   try {
-    const r = await fetch(url, {
+    // Legacy closure — comportamento IDÊNTICO ao anterior à F3D.3A.2:
+    // valida !ok e content-type text/html devolvendo string vazia como
+    // sinal para o caller tratar como "empty".
+    const legacy = () => fetch(url, {
       headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0" },
       signal: AbortSignal.timeout(10000),
+    }).then(async (r) => {
+      if (!r.ok) return "";
+      const ct = r.headers.get("content-type") ?? "";
+      if (!ct.includes("text/html")) return "";
+      return (await r.text()).slice(0, 600_000);
     });
-    if (!r.ok) return empty;
-    const ct = r.headers.get("content-type") ?? "";
-    if (!ct.includes("text/html")) return empty;
-    const html = (await r.text()).slice(0, 600_000);
+    const raw = await fetchSourceText(ctx, sourceId, url, "article", "html", legacy);
+    if (!raw) return empty;
+    const html = raw.slice(0, 600_000);
 
     const og =
       html.match(/<meta[^>]+property=['"]og:image['"][^>]*content=['"]([^'"]+)['"]/i) ??
@@ -602,8 +627,12 @@ async function fetchPage(url: string): Promise<PageFetchResult> {
   }
 }
 
-async function fetchPageMedia(url: string): Promise<PageMedia> {
-  const r = await fetchPage(url);
+async function fetchPageMedia(
+  ctx: RunContext,
+  sourceId: string,
+  url: string,
+): Promise<PageMedia> {
+  const r = await fetchPage(ctx, sourceId, url);
   return { ogImage: r.ogImage, mainVideo: r.mainVideo, relatedVideos: r.relatedVideos };
 }
 
@@ -644,6 +673,7 @@ interface SourceRow {
 
 async function captureFromSource(
   supabase: ReturnType<typeof createClient>,
+  ctx: RunContext,
   source: SourceRow,
   categoryBySlug: Map<string, string>,
   categoryById: Map<string, string>,
@@ -661,12 +691,15 @@ async function captureFromSource(
   if (kind === "rss" || kind === "feed" || kind === "xml" || kind === "sitemap") {
     let xml: string;
     try {
-      const r = await fetch(source.url, {
+      // Legacy closure — headers/timeout/erro IDÊNTICOS ao anterior à F3D.3A.2.
+      const rssLegacy = () => fetch(source.url!, {
         headers: { "User-Agent": "FiquePorDentroSE-Captador/1.0 (+https://barretao-news-hub.lovable.app)" },
         signal: AbortSignal.timeout(15000),
+      }).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
       });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      xml = await r.text();
+      xml = await fetchSourceText(ctx, source.id, source.url, "feed", "feed", rssLegacy);
     } catch (e) {
       result.errors.push(`fetch falhou: ${e instanceof Error ? e.message : "erro"}`);
       return result;
@@ -674,7 +707,7 @@ async function captureFromSource(
     items = parseFeed(xml).slice(0, source.max_items_per_run);
   } else if (kind === "site" || kind === "html") {
     try {
-      items = await fetchSiteItems(source.url, source.max_items_per_run);
+      items = await fetchSiteItems(ctx, source.id, source.url, source.max_items_per_run);
     } catch (e) {
       result.errors.push(`scrape falhou: ${e instanceof Error ? e.message : "erro"}`);
       return result;
@@ -761,7 +794,7 @@ async function captureFromSource(
       let fullArticleText = "";
       if (sourceUrl) {
         try {
-          prefetched = await fetchPage(sourceUrl);
+          prefetched = await fetchPage(ctx, source.id, sourceUrl);
           fullArticleText = prefetched.articleText ?? "";
         } catch { /* ignorar; segue com o que veio do RSS */ }
       }
@@ -948,7 +981,7 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
       let coverSource: "rss" | "extracted" | "category_fallback" = "rss";
 
       // Reutiliza o fetch feito antes (Fase 5) para evitar 2ª requisição na mesma URL.
-      const media = prefetched ?? (sourceUrl ? await fetchPage(sourceUrl) : null);
+      const media = prefetched ?? (sourceUrl ? await fetchPage(ctx, source.id, sourceUrl) : null);
       if (!coverOriginal) {
         coverSource = "extracted";
         if (media) {
@@ -960,6 +993,10 @@ NÍVEL: JORNALÍSTICO — lide claro no primeiro parágrafo (quem, o quê, quand
         videoUrlPrincipal = media.mainVideo;
         videosRelacionados = media.relatedVideos;
       }
+
+      // F3D.3A.2 — Avaliação lexical de mídia (sem download). Em mode=off,
+      // no-op; em shadow, apenas emite telemetria. Nunca altera a URL.
+      await evaluateMediaHost(ctx, source.id, coverOriginal);
 
       let finalCoverUrl = coverOriginal;
       if (!finalCoverUrl) {
@@ -1094,8 +1131,9 @@ Deno.serve(async (req) => {
   }
   const actor = authResult.actor;
   logAuthorized(requestId, actor);
-
-
+  // F3D.3A.2 — contexto por run. mode é lido do env exclusivamente (padrão "off").
+  // O cache de allowlist é descartado ao fim do handler, sem estado global.
+  const ctx: RunContext = createRunContext(supabase, requestId);
 
   try {
     // Usamos postIdParam e sourceIdParam extraídos no início do serve
@@ -1119,8 +1157,10 @@ Deno.serve(async (req) => {
       let source: "extracted" | "category_fallback" = "extracted";
       
       if (post.source_url) {
-        const media = await fetchPageMedia(post.source_url);
+        const media = await fetchPageMedia(ctx, post.source_id ?? "", post.source_url);
         newCover = media.ogImage;
+        // Avaliação lexical de mídia (sem download).
+        await evaluateMediaHost(ctx, post.source_id ?? "", newCover);
       }
 
       // 3. Fallback: categoria
@@ -1205,7 +1245,7 @@ Deno.serve(async (req) => {
       toRun.map(async (source) => {
         console.log(`[capture-sources] ▶ captando ${source.name} (${source.url})`);
         try {
-          const r = await captureFromSource(supabase, source, categoryBySlug, categoryById);
+          const r = await captureFromSource(supabase, ctx, source, categoryBySlug, categoryById);
           console.log(
             `[capture-sources] ✅ ${source.name} | captadas=${r.captured} duplicatas=${r.duplicates} skipped=${r.skipped} erros=${r.errors.length}`,
           );
