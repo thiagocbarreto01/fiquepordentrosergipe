@@ -223,7 +223,7 @@ export default function AdminPosts() {
 
   // -------- URL-persisted state ----------
   const validStatus = new Set<Filter>([
-    "all", "captada", "pronta_para_revisao", "em_revisao", "aprovada",
+    "all", "rascunho", "captada", "pronta_para_revisao", "em_revisao", "aprovada",
     "rejeitada", "publicada", "duplicada", "arquivada",
   ]);
   const initialStatus = (searchParams.get("status") as Filter) || "captada";
