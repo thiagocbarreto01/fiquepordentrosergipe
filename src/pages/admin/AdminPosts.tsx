@@ -75,32 +75,9 @@ const TONE_CLASS: Record<string, string> = {
   ok: "text-sky-700 bg-sky-50 border-sky-200",
 };
 
-// -----------------------------------------------------------
-// Fuso America/Maceio (UTC-3, sem horário de verão)
-// Retorna início e fim do dia solicitado como ISO em UTC.
-// offsetDays = 0 → hoje;  -N → N dias atrás
-// -----------------------------------------------------------
-function maceioDayBoundsIso(offsetDays = 0) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Maceio",
-    year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const y = Number(parts.find((p) => p.type === "year")!.value);
-  const m = Number(parts.find((p) => p.type === "month")!.value);
-  const d = Number(parts.find((p) => p.type === "day")!.value) + offsetDays;
-  // Maceió = UTC-3 fixo → 00:00 local = 03:00 UTC
-  const startIso = new Date(Date.UTC(y, m - 1, d, 3, 0, 0, 0)).toISOString();
-  const endIso = new Date(Date.UTC(y, m - 1, d + 1, 2, 59, 59, 999)).toISOString();
-  return { startIso, endIso };
-}
+// sanitizeSearch, escapeIlike e maceioDayBoundsIso vivem em @/lib/postSearch
+// (testados em src/lib/postSearch.test.ts).
 
-// Escapa caracteres reservados no filtro PostgREST .or() e .ilike()
-function sanitizeSearch(raw: string) {
-  return raw
-    .replace(/[,()"\\]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 // Mapa "em_revisao" agrega três status legados/nova nomenclatura
 const STATUS_MAP: Record<EditorialStatus, string[]> = {
