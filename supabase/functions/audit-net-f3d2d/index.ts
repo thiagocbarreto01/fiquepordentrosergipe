@@ -136,8 +136,9 @@ Deno.serve(async (req) => {
   }).catch(() => null);
   if (feedFetch) {
     const xml = new TextDecoder().decode(feedFetch.bytes);
-    const m = xml.match(/<link>([^<]+metropoles\.com[^<]+)<\/link>/);
-    if (m) metroArticleUrl = m[1];
+    // pega o primeiro <item> ... <link>...</link>
+    const itemMatch = xml.match(/<item[\s\S]*?<link>([^<]+)<\/link>/i);
+    if (itemMatch) metroArticleUrl = itemMatch[1].trim();
   }
   const metroArticle = metroArticleUrl
     ? await probe("metropoles.article", metroArticleUrl, METRO_ID, "article", "html", allowedHosts)
