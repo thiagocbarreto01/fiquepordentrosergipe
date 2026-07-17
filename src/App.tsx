@@ -64,7 +64,7 @@ const App = () => (
             <Route path="/admin/fontes" element={<RequireAuth staffOnly><AdminFontes /></RequireAuth>} />
             <Route path="/admin/fontes/allowlist" element={<RequireAuth staffOnly><AdminFontesAllowlist /></RequireAuth>} />
             <Route path="/admin/instagram" element={<RequireAuth staffOnly><AdminInstagram /></RequireAuth>} />
-            <Route path="/admin/importar-instagram" element={<RequireAuth staffOnly><AdminImportarInstagram /></RequireAuth>} />
+            <Route path="/admin/importar-instagram" element={<Navigate to="/admin/instagram?tab=importar" replace />} />
             <Route path="/admin/usuarios" element={<RequireAuth adminOnly><AdminUsuarios /></RequireAuth>} />
             <Route path="/admin/home" element={<RequireAuth staffOnly><AdminControleHome /></RequireAuth>} />
             <Route path="/admin/configuracoes" element={<RequireAuth adminOnly><AdminConfiguracoes /></RequireAuth>} />
