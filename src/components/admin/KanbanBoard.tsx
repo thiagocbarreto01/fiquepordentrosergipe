@@ -63,7 +63,7 @@ export function KanbanBoard({ posts, onChangeStatus }: Props) {
 
   const grouped = useMemo(() => {
     const map: Record<EditorialStatus, KanbanPost[]> = {
-      captada: [], pronta_para_revisao: [], em_revisao: [], aprovada: [], publicada: [], rejeitada: [], duplicada: [], arquivada: [],
+      rascunho: [], captada: [], pronta_para_revisao: [], em_revisao: [], aprovada: [], publicada: [], rejeitada: [], duplicada: [], arquivada: [],
     };
     posts.forEach((p) => {
       const s = normalizeStatus(p.status);

@@ -107,9 +107,11 @@ const TONE_CLASS: Record<string, string> = {
 // (testados em src/lib/postSearch.test.ts).
 
 
-// Mapa "em_revisao" agrega três status legados/nova nomenclatura
+// Mapa "em_revisao" agrega três status legados/nova nomenclatura.
+// "rascunho" agora é uma aba separada — não é mais agrupada com "captada".
 const STATUS_MAP: Record<EditorialStatus, string[]> = {
-  captada: ["captada", "rascunho"],
+  rascunho: ["rascunho"],
+  captada: ["captada"],
   pronta_para_revisao: ["pronta_para_revisao"],
   em_revisao: ["pronta_para_revisao", "em_revisao", "revisao"],
   aprovada: ["aprovada"],
