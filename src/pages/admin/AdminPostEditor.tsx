@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload, History, AlertTriangle, ExternalLink, Sparkles, RotateCcw, Loader2, Globe, CheckCircle2, ArchiveRestore, BrainCircuit, ThumbsUp, ThumbsDown, Pin, PinOff, Film, Share2 } from "lucide-react";
+import { Upload, History, AlertTriangle, ExternalLink, Sparkles, RotateCcw, Loader2, Globe, CheckCircle2, ArchiveRestore, BrainCircuit, ThumbsUp, ThumbsDown, Pin, PinOff, Film, Share2, Eye } from "lucide-react";
 import { getSocialShareUrl, getArticleDirectUrl } from "@/lib/socialShare";
 import { Link } from "react-router-dom";
 import { ImageActionButtons } from "@/components/admin/ImageActionButtons";
@@ -35,6 +35,15 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useEditorAutosave } from "@/hooks/useEditorAutosave";
+import { useNavigationGuard } from "@/hooks/useNavigationGuard";
+import { PublishDialog } from "@/components/admin/editor/PublishDialog";
+import { ArticlePreviewDialog } from "@/components/admin/editor/ArticlePreviewDialog";
+import { UnsavedChangesDialog } from "@/components/admin/editor/UnsavedChangesDialog";
+import { RecoverDraftDialog } from "@/components/admin/editor/RecoverDraftDialog";
+import { EditorMobileActionBar } from "@/components/admin/editor/EditorMobileActionBar";
+import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
+import { fillMissingSeo } from "@/lib/seoAuto";
 
 function slugify(s: string) {
   return s
@@ -200,51 +209,78 @@ export default function AdminPostEditor() {
     if (hydrated) setDirty(true);
   };
 
-  // -------- Autosave local + beforeunload guard --------
-  const autosaveKey = `fpds:draft:${user?.id ?? "anon"}:${isNew ? "new" : id}`;
-  const autosaveTimer = useRef<number | null>(null);
-  const [localSavedAt, setLocalSavedAt] = useState<Date | null>(null);
+  // -------- Autosave local (fonte única: useEditorAutosave) --------
+  const {
+    savedAt: localSavedAt,
+    readDraft,
+    clearDraft,
+    key: autosaveKey,
+  } = useEditorAutosave({
+    userId: user?.id,
+    postId: isNew ? "new" : id,
+    data: form,
+    enabled: hydrated,
+    dirty,
+  });
+  const [localSavedAtDisplay, setLocalSavedAtDisplay] = useState<Date | null>(null);
+  useEffect(() => { setLocalSavedAtDisplay(localSavedAt); }, [localSavedAt]);
 
+  // -------- Recuperação de rascunho local ao hidratar (nunca aplica sozinho) --------
+  const [recoverOpen, setRecoverOpen] = useState(false);
+  const [recoveredPayload, setRecoveredPayload] = useState<{ savedAt: Date; data: any } | null>(null);
+  const recoverCheckedRef = useRef(false);
   useEffect(() => {
-    if (!hydrated || !dirty || !user?.id) return;
-    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = window.setTimeout(() => {
-      try {
-        localStorage.setItem(
-          autosaveKey,
-          JSON.stringify({ savedAt: new Date().toISOString(), data: form }),
-        );
-        setLocalSavedAt(new Date());
-      } catch { /* quota/disabled */ }
-    }, 1200);
-    return () => {
-      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
-    };
-  }, [form, hydrated, dirty, autosaveKey, user?.id]);
+    if (!hydrated || !user?.id || recoverCheckedRef.current) return;
+    recoverCheckedRef.current = true;
+    const raw = readDraft();
+    if (raw && raw.data) {
+      setRecoveredPayload({ savedAt: new Date(raw.savedAt), data: raw.data });
+      setRecoverOpen(true);
+      setLocalSavedAtDisplay(new Date(raw.savedAt));
+    }
+  }, [hydrated, user?.id, readDraft]);
 
+  // -------- Estado de salvamento (5 estados legíveis) --------
+  type SaveState =
+    | { kind: "idle" }
+    | { kind: "dirty" }
+    | { kind: "local"; at: Date }
+    | { kind: "saving" }
+    | { kind: "saved"; at: Date }
+    | { kind: "error"; message: string };
+  const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
   useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+    if (saveState.kind === "saving" || saveState.kind === "saved" || saveState.kind === "error") return;
+    if (dirty && localSavedAtDisplay) setSaveState({ kind: "local", at: localSavedAtDisplay });
+    else if (dirty) setSaveState({ kind: "dirty" });
+    else setSaveState({ kind: "idle" });
+  }, [dirty, localSavedAtDisplay]); // eslint-disable-line
+
+  // -------- Bloqueio de navegação SPA + beforeunload --------
+  const guard = useNavigationGuard(dirty);
+
 
   async function uploadCover(file: File) {
     setUploading(true);
-    const path = `posts/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
-    const { error } = await supabase.storage.from("media").upload(path, file, { upsert: false });
-    if (error) {
+    try {
+      const check = await validateCoverImage(file);
+      if (check.ok !== true) {
+        toast.error(check.message);
+        return;
+      }
+      const path = safeUploadName(file.name);
+      const { error } = await supabase.storage.from("media").upload(path, file, {
+        upsert: false,
+        contentType: file.type,
+      });
+      if (error) { toast.error(error.message); return; }
+      const { data } = supabase.storage.from("media").getPublicUrl(path);
+      setForm((f: any) => ({ ...f, manual_image_url: data.publicUrl }));
+      if (hydrated) setDirty(true);
+      toast.success("Imagem enviada para substituição manual");
+    } finally {
       setUploading(false);
-      toast.error(error.message);
-      return;
     }
-    const { data } = supabase.storage.from("media").getPublicUrl(path);
-    setForm((f: any) => ({ ...f, manual_image_url: data.publicUrl }));
-    setUploading(false);
-    toast.success("Imagem enviada para substituição manual");
   }
 
   async function reprocessImage() {
@@ -286,11 +322,18 @@ export default function AdminPostEditor() {
     }
 
     setSaving(true);
+    setSaveState({ kind: "saving" });
     const slug = form.slug || slugify(form.title);
     const videosRelacionados: string[] = (form.videos_relacionados_text ?? "")
       .split(/\r?\n/)
       .map((s: string) => s.trim())
       .filter(Boolean);
+    // Auto-SEO: preenche meta_title/meta_description apenas se ainda vazios.
+    // Preserva overrides manuais. Não afeta notícias antigas apenas por abrir o editor.
+    const seoPatch = fillMissingSeo({
+      title: form.title, subtitle: form.subtitle, content: form.content,
+      meta_title: form.meta_title, meta_description: form.meta_description,
+    });
     const payload: any = {
       title: form.title.trim(),
       subtitle: form.subtitle || null,
@@ -321,8 +364,8 @@ export default function AdminPostEditor() {
       main_featured_expires_at: form.is_main_featured && form.main_featured_expires_at
         ? new Date(form.main_featured_expires_at).toISOString()
         : null,
-      meta_title: form.meta_title || null,
-      meta_description: form.meta_description || null,
+      meta_title: seoPatch.meta_title ?? form.meta_title ?? null,
+      meta_description: seoPatch.meta_description ?? form.meta_description ?? null,
       video_url_principal: (form.video_url_principal || "").trim() || null,
       videos_relacionados: videosRelacionados,
       published_at:
@@ -338,12 +381,24 @@ export default function AdminPostEditor() {
     if (isNew) res = await supabase.from("posts").insert(payload).select("id").maybeSingle();
     else res = await supabase.from("posts").update(payload).eq("id", id).select("id").maybeSingle();
     setSaving(false);
-    if (res.error) return toast.error(res.error.message);
+    if (res.error) {
+      setSaveState({ kind: "error", message: res.error.message });
+      return toast.error(res.error.message);
+    }
+    // Se o auto-SEO preencheu algo, reflete no formulário para o usuário ver.
+    if (seoPatch.meta_title || seoPatch.meta_description) {
+      setForm((f: any) => ({
+        ...f,
+        meta_title: seoPatch.meta_title ?? f.meta_title,
+        meta_description: seoPatch.meta_description ?? f.meta_description,
+      }));
+    }
 
     // Salvamento real bem-sucedido → limpa o rascunho local desta chave
-    try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ }
+    clearDraft();
     setDirty(false);
-    setLocalSavedAt(null);
+    setLocalSavedAtDisplay(null);
+    setSaveState({ kind: "saved", at: new Date() });
 
     const labels: Partial<Record<EditorialStatus, string>> = {
       publicada: "Publicada!",
@@ -365,26 +420,14 @@ export default function AdminPostEditor() {
     }
   }
 
-  // Diálogo de "matéria curta" — substitui window.confirm por AlertDialog acessível.
-  const [shortPublishOpen, setShortPublishOpen] = useState(false);
-  const [shortPublishInfo, setShortPublishInfo] = useState<{ chars: number; words: number } | null>(null);
+  // Diálogos unificados
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Fase 7: publicação segura — bloqueia incompleto, abre AlertDialog em curto.
-  async function tryPublish() {
-    const q = getContentQuality(form.content || "");
-    if (q.level === "incompleto") {
-      toast.error(
-        `Conteúdo muito curto (${q.chars} chars). Complete a matéria antes de publicar — recomendado ≥ 500 caracteres.`,
-        { duration: 6000 }
-      );
-      return;
-    }
-    if (q.level === "curto") {
-      setShortPublishInfo({ chars: q.chars, words: q.words });
-      setShortPublishOpen(true);
-      return;
-    }
-    await save("publicada");
+  // tryPublish agora abre o PublishDialog com checklist unificado.
+  // A validação incompleto/curto vive dentro do checklist (via getContentQuality).
+  function tryPublish() {
+    setPublishOpen(true);
   }
 
   async function gerarComIA() {
@@ -580,7 +623,7 @@ export default function AdminPostEditor() {
       {/* Barra de ações fixa no topo para agilizar o fluxo editorial */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border -mx-4 px-4 py-3 mb-6 flex items-center justify-between gap-4 shadow-md">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => nav("/admin/posts")} className="mr-2">
+          <Button variant="ghost" size="sm" onClick={() => guard.attempt("/admin/posts")} className="mr-2">
             <RotateCcw className="h-4 w-4 mr-2" />
             Voltar
           </Button>
@@ -606,6 +649,10 @@ export default function AdminPostEditor() {
               <Film className="h-4 w-4" /> Gerar Reel
             </Button>
           )}
+          <Button onClick={() => setPreviewOpen(true)} variant="outline" size="sm" className="gap-1">
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Visualizar</span>
+          </Button>
           <Button onClick={() => save()} disabled={saving} variant="outline" size="sm">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Salvar rascunho
@@ -640,53 +687,107 @@ export default function AdminPostEditor() {
         </div>
       </div>
 
-      {/* Indicador de rascunho local (autosave) */}
-      {(dirty || localSavedAt) && (
-        <div className="mb-4 -mt-2 flex items-center justify-between gap-3 flex-wrap text-xs bg-blue-50 border border-blue-200 text-blue-900 px-3 py-2 rounded-sm">
-          <span>
-            {dirty
-              ? <><strong>Alterações não salvas.</strong> {localSavedAt && <>Rascunho local salvo às {localSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}</>
-              : <>Rascunho local salvo às {localSavedAt?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</>}
-            <span className="ml-1 opacity-75">O rascunho fica apenas neste navegador — nada é enviado ao banco.</span>
-          </span>
-          {localSavedAt && (
-            <button
-              type="button"
-              onClick={() => { try { localStorage.removeItem(autosaveKey); } catch { /* ignore */ } setLocalSavedAt(null); }}
-              className="underline text-blue-900 font-bold"
-            >
-              Descartar rascunho local
-            </button>
-          )}
-        </div>
-      )}
+      {/* Indicador de estado de salvamento — 5 estados distintos */}
+      {(() => {
+        const st = saveState;
+        if (st.kind === "idle") return null;
+        const map: Record<string, { cls: string; label: React.ReactNode }> = {
+          dirty: { cls: "bg-blue-50 border-blue-200 text-blue-900", label: <><strong>Alterações não salvas.</strong> Nada foi enviado ao servidor ainda.</> },
+          local: { cls: "bg-blue-50 border-blue-200 text-blue-900", label: <><strong>Rascunho local salvo</strong> às {(st as any).at?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}. Somente neste navegador — o servidor ainda não recebeu.</> },
+          saving: { cls: "bg-amber-50 border-amber-200 text-amber-900", label: <><Loader2 className="inline h-3.5 w-3.5 animate-spin mr-1" /> Salvando no servidor…</> },
+          saved: { cls: "bg-emerald-50 border-emerald-200 text-emerald-900", label: <><CheckCircle2 className="inline h-3.5 w-3.5 mr-1" /> <strong>Salvo no servidor</strong> às {(st as any).at?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.</> },
+          error: { cls: "bg-red-50 border-red-200 text-red-900", label: <><AlertTriangle className="inline h-3.5 w-3.5 mr-1" /> <strong>Erro ao salvar:</strong> {(st as any).message}</> },
+        };
+        const info = map[st.kind];
+        if (!info) return null;
+        return (
+          <div className={`mb-4 -mt-2 flex items-center justify-between gap-3 flex-wrap text-xs px-3 py-2 rounded-sm border ${info.cls}`}>
+            <span>{info.label}</span>
+            {(st.kind === "dirty" || st.kind === "local") && localSavedAtDisplay && (
+              <button
+                type="button"
+                onClick={() => { clearDraft(); setLocalSavedAtDisplay(null); }}
+                className="underline font-bold"
+              >
+                Descartar rascunho local
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
-      {/* AlertDialog: publicar matéria curta */}
-      <AlertDialog open={shortPublishOpen} onOpenChange={setShortPublishOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Publicar matéria curta?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-2 text-sm">
-                <p>
-                  A matéria tem <strong>{shortPublishInfo?.chars ?? 0}</strong> caracteres
-                  e <strong>{shortPublishInfo?.words ?? 0}</strong> palavras — abaixo do recomendado.
-                </p>
-                <p>Você quer publicar mesmo assim?</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={(e) => { e.preventDefault(); setShortPublishOpen(false); save("publicada"); }}
-            >
-              Publicar mesmo assim
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* PublishDialog unificado com checklist */}
+      <PublishDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        submitting={saving}
+        canOverrideCover={canPublish}
+        form={{
+          title: form.title,
+          subtitle: form.subtitle,
+          category_id: form.category_id,
+          content: form.content,
+          cover_image_url: form.cover_image_url,
+          manual_image_url: form.manual_image_url,
+          image_caption: form.image_caption,
+          image_credit: form.image_credit,
+          tags: form.tags,
+          meta_title: form.meta_title,
+          meta_description: form.meta_description,
+          is_urgent: form.is_urgent,
+          home_expires_at: form.home_expires_at,
+          is_pinned: false,
+          pinned_until: null,
+          pinned_reason: null,
+        }}
+        onConfirm={async () => { await save("publicada"); setPublishOpen(false); }}
+      />
+
+      {/* ArticlePreviewDialog — desktop/mobile */}
+      <ArticlePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        snapshot={{
+          title: form.title,
+          subtitle: form.subtitle,
+          content: form.content,
+          cover_image_url: form.cover_image_url,
+          manual_image_url: form.manual_image_url,
+          image_caption: form.image_caption,
+          image_credit: form.image_credit,
+          categoryName: cats.find((c) => c.id === form.category_id)?.name ?? null,
+          authorLabel: "Redação Fique Por Dentro Sergipe",
+          publishedAtIso: form.published_at ?? null,
+        }}
+      />
+
+      {/* Bloqueio de navegação SPA */}
+      <UnsavedChangesDialog
+        open={guard.hasPending}
+        onContinueEditing={guard.cancel}
+        onDiscard={guard.confirmDiscard}
+      />
+
+      {/* Recuperação de rascunho local (nunca aplica sozinho) */}
+      <RecoverDraftDialog
+        open={recoverOpen}
+        savedAt={recoveredPayload?.savedAt ?? null}
+        onRecover={() => {
+          if (recoveredPayload?.data) {
+            setForm(recoveredPayload.data);
+            setDirty(true);
+            toast.success("Rascunho local recuperado — nada foi enviado ao servidor.");
+          }
+          setRecoverOpen(false);
+        }}
+        onDiscard={() => {
+          clearDraft();
+          setLocalSavedAtDisplay(null);
+          setRecoverOpen(false);
+          toast.info("Rascunho local descartado.");
+        }}
+      />
+
 
 
       {!isNew && (
@@ -1406,98 +1507,77 @@ export default function AdminPostEditor() {
             </div>
 
 
+            {/*
+              Controles antigos ocultos nesta passada:
+              - Destaque Permanente (is_evergreen)
+              - Destaque Principal / Manchete (is_main_featured + main_featured_expires_at)
+              - "Destaque na home" (is_featured) manual
+              - Campo genérico "Exibir na Home até" (home_expires_at manual)
+              - Presets P1/P2/P3 e seletor de slot
+
+              As colunas continuam no banco e valores antigos ficam intactos
+              (form.is_evergreen, form.is_main_featured, etc. seguem sendo
+              inicializados do registro e regravados pelo save() como estavam).
+            */}
+
             <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
               <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
-                Visibilidade na home
+                Plantão / Urgente
               </p>
               <label className="flex items-start gap-2 cursor-pointer">
                 <Checkbox
                   checked={form.is_urgent}
-                  onCheckedChange={(v) => setForm({ ...form, is_urgent: !!v })}
+                  onCheckedChange={(v) => setForm({
+                    ...form,
+                    is_urgent: !!v,
+                    // ao desmarcar, limpar validade para evitar restos inconsistentes na UI
+                    home_expires_at: v ? form.home_expires_at : "",
+                  })}
                   className="mt-0.5"
                 />
                 <span className="text-sm">
-                  <span className="font-bold text-red-700">Plantão / Urgente</span>
+                  <span className="font-bold text-red-700">Marcar como Plantão/Urgente</span>
                   <span className="block text-xs text-muted-foreground">
-                    Aparece na faixa vermelha de Plantão no topo do site.
+                    Aparece na faixa vermelha de Plantão no topo do site. Exige validade futura.
                   </span>
                 </span>
               </label>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={form.is_featured}
-                  onCheckedChange={(v) => setForm({ ...form, is_featured: !!v })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold text-amber-700">Destaque na home</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Entra como destaque secundário (P3). Captadas só viram destaque após esta marcação.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={!!form.is_main_featured}
-                  onCheckedChange={(v) => setForm({ ...form, is_main_featured: !!v, is_featured: v ? true : form.is_featured })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold text-rose-700">Destaque Principal (Manchete)</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Prioridade P2. Reservado para escolha editorial — ocupa a manchete principal da Home.
-                  </span>
-                </span>
-              </label>
-              {form.is_main_featured && (
-                <div className="ml-6 -mt-1 mb-1 rounded-md border border-rose-200 bg-rose-50/50 p-3 space-y-2">
-                  {!form.main_featured_expires_at && (
-                    <div className="rounded-md border border-rose-400 bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-900">
-                      ⚠ P2 sem validade definida. Esta notícia NÃO recebe o bônus +80 e não ocupará a manchete até você definir uma data abaixo.
-                    </div>
-                  )}
-                  <Label className="text-xs font-semibold text-rose-900">Exibir como manchete até</Label>
+
+              {form.is_urgent && (
+                <div className="ml-6 space-y-2">
+                  <Label className="text-xs font-bold">Plantão válido até</Label>
                   <Input
                     type="datetime-local"
-                    value={form.main_featured_expires_at ?? ""}
-                    onChange={(e) => setForm({ ...form, main_featured_expires_at: e.target.value })}
+                    value={form.home_expires_at ?? ""}
+                    onChange={(e) => setForm({ ...form, home_expires_at: e.target.value })}
                   />
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-4 gap-1.5">
                     {[
-                      { label: "12 horas", h: 12 },
-                      { label: "24 horas", h: 24 },
-                      { label: "48 horas", h: 48 },
+                      { label: "2h", h: 2 },
+                      { label: "4h", h: 4 },
+                      { label: "6h", h: 6 },
+                      { label: "12h", h: 12 },
                     ].map((opt) => (
-                      <Button
-                        key={opt.h}
+                      <button
                         type="button"
-                        size="sm"
-                        variant="outline"
+                        key={opt.label}
                         onClick={() => {
                           const d = new Date(Date.now() + opt.h * 3600_000);
-                          setForm({ ...form, main_featured_expires_at: d.toISOString().slice(0, 16) });
+                          setForm({ ...form, home_expires_at: d.toISOString().slice(0, 16) });
                         }}
+                        className="text-[11px] font-bold uppercase tracking-wider bg-white hover:bg-urgent hover:text-white border border-border rounded-sm py-1.5 transition-colors"
                       >
                         +{opt.label}
-                      </Button>
+                      </button>
                     ))}
-                    {form.main_featured_expires_at && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setForm({ ...form, main_featured_expires_at: "" })}
-                      >
-                        Limpar
-                      </Button>
-                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Após esta data, o peso P2 (+80) é removido automaticamente e a Home recalcula a manchete.
+                    O Plantão sem validade futura é bloqueado no PublishDialog.
                   </p>
                 </div>
               )}
-              <label className="flex items-start gap-2 cursor-pointer">
+
+              <label className="flex items-start gap-2 cursor-pointer pt-2 border-t border-border">
                 <Checkbox
                   checked={form.is_denuncia}
                   onCheckedChange={(v) => setForm({ ...form, is_denuncia: !!v })}
@@ -1509,82 +1589,6 @@ export default function AdminPostEditor() {
               </label>
             </div>
 
-            {/* ============== Validade na Home ============== */}
-            <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
-              <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
-                Validade na Home
-              </p>
-
-              <label className="flex items-start gap-2 cursor-pointer">
-                <Checkbox
-                  checked={!!form.is_evergreen}
-                  onCheckedChange={(v) => setForm({ ...form, is_evergreen: !!v, home_expires_at: v ? "" : form.home_expires_at })}
-                  className="mt-0.5"
-                />
-                <span className="text-sm">
-                  <span className="font-bold text-emerald-700">Destaque Permanente</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Ignora a data de validade e mantém a notícia elegível para a Home indefinidamente.
-                  </span>
-                </span>
-              </label>
-
-              {!form.is_evergreen && (
-                <>
-                  <div>
-                    <Label className="text-xs font-bold">Exibir na Home até</Label>
-                    <Input
-                      type="datetime-local"
-                      value={form.home_expires_at ?? ""}
-                      onChange={(e) => setForm({ ...form, home_expires_at: e.target.value })}
-                    />
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-                      Depois desta data a notícia sai automaticamente da Home, do Plantão e dos destaques.
-                      A página continua acessível e indexada pelo Google.
-                    </p>
-                  </div>
-
-                  {(form.is_urgent || form.is_featured) && (
-                    <div className="pt-1">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-                        Expirar Plantão em
-                      </p>
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {[
-                          { label: "24h", hours: 24 },
-                          { label: "48h", hours: 48 },
-                          { label: "72h", hours: 72 },
-                          { label: "7 dias", hours: 24 * 7 },
-                        ].map((opt) => (
-                          <button
-                            type="button"
-                            key={opt.label}
-                            onClick={() => {
-                              const d = new Date();
-                              d.setHours(d.getHours() + opt.hours);
-                              setForm({ ...form, home_expires_at: d.toISOString().slice(0, 16) });
-                            }}
-                            className="text-[11px] font-bold uppercase tracking-wider bg-white hover:bg-urgent hover:text-white border border-border rounded-sm py-1.5 transition-colors"
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {form.home_expires_at && (
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, home_expires_at: "" })}
-                      className="text-[11px] font-bold text-muted-foreground hover:text-urgent underline"
-                    >
-                      Limpar validade
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
 
             <div className="flex flex-col gap-2 pt-2">
               <Button onClick={() => save()} disabled={saving} variant="outline" className="w-full">
@@ -1747,8 +1751,18 @@ export default function AdminPostEditor() {
           </div>
         </div>
       )}
-      {/* Espaço para não sobrepor conteúdo no mobile */}
-      {!isNew && <div className="md:hidden h-20" aria-hidden />}
+      {/* Barra mobile fixa inferior — ações mínimas com safe-area */}
+      <EditorMobileActionBar
+        primaryLabel={canPublish ? "PUBLICAR AGORA" : "Salvar rascunho"}
+        onPrimary={() => (canPublish ? tryPublish() : save())}
+        primaryDisabled={saving}
+        onPreview={() => setPreviewOpen(true)}
+        onSaveDraft={() => save()}
+        canUnpublish={canPublish && currentStatus === "publicada"}
+        onUnpublish={() => save("em_revisao")}
+      />
+      {/* Padding inferior para o conteúdo não ficar coberto pela barra mobile */}
+      <div className="md:hidden h-24" aria-hidden />
     </AdminLayout>
   );
 }
