@@ -1,14 +1,15 @@
 /**
  * PublishDialog — diálogo unificado de publicação com checklist.
  *
- * Bloqueios (obrigatórios): título, categoria, conteúdo, capa*, plantão válido, fixação válida.
- *   *capa: editor/admin pode confirmar exceção editorial.
- * Avisos (não bloqueantes): subtítulo, legenda, crédito, tags, texto curto, SEO incompleto.
+ * Modos (para editor/admin):
+ *  - "Publicar agora" — chama onConfirm() e vira publicada.
+ *  - "Agendar publicação" — chama onSchedule(iso) → RPC schedule_post.
  *
- * O diálogo:
- *  - não fecha durante o envio (submitting=true trava close/Escape);
- *  - desabilita o botão principal enquanto envia (impede duplo clique real);
- *  - só permite publicar quando não houver bloqueios OU quando editor/admin marcar exceção de capa.
+ * Redator: apenas o modo "publicar" (sem botão de agendar) — mas o RLS/RPC
+ * também bloqueia caso a UI seja contornada.
+ *
+ * Bloqueios: título, categoria, conteúdo, capa (com exceção editorial),
+ * plantão válido, fixação válida.
  */
 
 import { useMemo, useState, useEffect } from "react";
@@ -17,6 +18,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getContentQuality } from "@/lib/contentQuality";
 
 export type PublishFormSnapshot = {
@@ -53,7 +56,6 @@ export function computeChecklist(form: PublishFormSnapshot): Checklist {
   const hasCover = !!(form.cover_image_url?.trim() || form.manual_image_url?.trim());
   if (!hasCover) missing.push("Imagem de capa");
 
-  // Plantão precisa ter validade futura obrigatória
   if (form.is_urgent) {
     const exp = form.home_expires_at ? new Date(form.home_expires_at) : null;
     if (!exp || isNaN(exp.getTime()) || exp.getTime() <= Date.now()) {
@@ -61,7 +63,6 @@ export function computeChecklist(form: PublishFormSnapshot): Checklist {
     }
   }
 
-  // Fixação: até 24h e com motivo
   if (form.is_pinned) {
     const until = form.pinned_until ? new Date(form.pinned_until) : null;
     if (!until || isNaN(until.getTime()) || until.getTime() <= Date.now()) {
@@ -72,7 +73,6 @@ export function computeChecklist(form: PublishFormSnapshot): Checklist {
     if (!form.pinned_reason?.trim()) missing.push("Motivo da fixação");
   }
 
-  // Avisos
   if (!form.subtitle?.trim()) warnings.push("Subtítulo vazio");
   if (!form.image_caption?.trim()) warnings.push("Legenda da imagem vazia");
   if (!form.image_credit?.trim()) warnings.push("Crédito da imagem vazio");
@@ -86,29 +86,79 @@ export function computeChecklist(form: PublishFormSnapshot): Checklist {
   return { missing, warnings };
 }
 
+const MACEIO_TZ = "America/Maceio";
+function formatMaceio(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("pt-BR", {
+      timeZone: MACEIO_TZ,
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return iso; }
+}
+
 export function PublishDialog({
-  open, onOpenChange, form, canOverrideCover, submitting, onConfirm,
+  open, onOpenChange, form, canOverrideCover, canSchedule = false,
+  submitting, onConfirm, onSchedule,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   form: PublishFormSnapshot;
-  /** Editor/admin pode dispensar a obrigatoriedade da capa. */
   canOverrideCover: boolean;
+  /** editor/admin vê "Agendar publicação"; redator não. */
+  canSchedule?: boolean;
   submitting: boolean;
   onConfirm: () => void;
+  onSchedule?: (isoUtc: string) => void | Promise<void>;
 }) {
   const [overrideCover, setOverrideCover] = useState(false);
-  useEffect(() => { if (open) setOverrideCover(false); }, [open]);
+  const [mode, setMode] = useState<"now" | "schedule">("now");
+  const [scheduleLocal, setScheduleLocal] = useState<string>("");
+
+  useEffect(() => {
+    if (open) {
+      setOverrideCover(false);
+      setMode("now");
+      // sugestão default: agora + 1h, em horário local
+      const d = new Date(Date.now() + 60 * 60 * 1000);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      setScheduleLocal(
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+      );
+    }
+  }, [open]);
 
   const checklist = useMemo(() => computeChecklist(form), [form]);
 
-  // Se a única pendência bloqueante é a capa e o editor/admin marcou a exceção → libera.
   const missingWithoutCover = checklist.missing.filter((m) => m !== "Imagem de capa");
   const coverIsOnlyBlocker =
     checklist.missing.includes("Imagem de capa") && missingWithoutCover.length === 0;
-  const blocked = overrideCover && coverIsOnlyBlocker
+  const contentBlocked = overrideCover && coverIsOnlyBlocker
     ? false
     : checklist.missing.length > 0;
+
+  const scheduleIso = useMemo(() => {
+    if (!scheduleLocal) return null;
+    const d = new Date(scheduleLocal);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  }, [scheduleLocal]);
+
+  const scheduleTooEarly = useMemo(() => {
+    if (!scheduleIso) return true;
+    return new Date(scheduleIso).getTime() < Date.now() + 60_000;
+  }, [scheduleIso]);
+
+  const isSchedule = mode === "schedule" && canSchedule;
+  const actionBlocked =
+    submitting ||
+    contentBlocked ||
+    (isSchedule && (!scheduleIso || scheduleTooEarly));
+
+  const actionLabel = isSchedule
+    ? (submitting ? "Agendando…" : "Agendar publicação")
+    : (submitting ? "Publicando…" : "Publicar agora");
 
   return (
     <AlertDialog open={open} onOpenChange={(o) => { if (submitting && !o) return; onOpenChange(o); }}>
@@ -117,7 +167,32 @@ export function PublishDialog({
           <AlertDialogTitle>Publicar notícia</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-3 text-sm">
-              <p>A notícia ficará visível publicamente na Home e no portal assim que confirmada.</p>
+              <p>A notícia ficará visível publicamente na Home e no portal.</p>
+
+              {canSchedule && (
+                <div className="flex items-center gap-2 rounded-sm border border-border p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setMode("now")}
+                    disabled={submitting}
+                    className={`flex-1 py-2 min-h-[36px] font-bold uppercase tracking-wider rounded-sm ${
+                      mode === "now" ? "bg-emerald-600 text-white" : "hover:bg-secondary"
+                    }`}
+                  >
+                    Publicar agora
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("schedule")}
+                    disabled={submitting}
+                    className={`flex-1 py-2 min-h-[36px] font-bold uppercase tracking-wider rounded-sm ${
+                      mode === "schedule" ? "bg-blue-600 text-white" : "hover:bg-secondary"
+                    }`}
+                  >
+                    Agendar
+                  </button>
+                </div>
+              )}
 
               {checklist.missing.length > 0 && (
                 <div className="border border-red-200 bg-red-50 p-2 rounded-sm">
@@ -135,7 +210,6 @@ export function PublishDialog({
                       />
                       <span>
                         <strong>Exceção editorial:</strong> publicar sem imagem de capa.
-                        Só marque quando a matéria justificar (nota curta, alerta, etc.).
                       </span>
                     </label>
                   )}
@@ -151,21 +225,59 @@ export function PublishDialog({
                 </div>
               )}
 
-              <div className="border border-dashed border-border p-2 rounded-sm text-xs text-muted-foreground">
-                <strong>Agendamento:</strong> Agendamento automático será ativado
-                após a configuração segura do serviço. Enquanto isso, use “Publicar agora”.
-              </div>
+              {isSchedule && (
+                <div className="rounded-sm border border-blue-200 bg-blue-50 p-2 space-y-2">
+                  <Label className="text-[11px] uppercase font-bold tracking-wider text-blue-900">
+                    Data e hora da publicação
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={scheduleLocal}
+                    onChange={(e) => setScheduleLocal(e.target.value)}
+                    disabled={submitting}
+                    min={(() => {
+                      const d = new Date(Date.now() + 60_000);
+                      const pad = (n: number) => String(n).padStart(2, "0");
+                      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                    })()}
+                    className="bg-white"
+                  />
+                  {scheduleIso && !scheduleTooEarly && (
+                    <p className="text-[11px] text-blue-900">
+                      Será publicada em <strong>{formatMaceio(scheduleIso)}</strong>{" "}
+                      (horário de Maceió).
+                    </p>
+                  )}
+                  {scheduleTooEarly && (
+                    <p className="text-[11px] text-red-700">
+                      Escolha uma data futura (pelo menos 1 minuto).
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            disabled={submitting || blocked}
-            onClick={(e) => { e.preventDefault(); if (!blocked && !submitting) onConfirm(); }}
-            className="bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-600 text-white"
+            disabled={actionBlocked}
+            onClick={(e) => {
+              e.preventDefault();
+              if (actionBlocked) return;
+              if (isSchedule && scheduleIso && onSchedule) {
+                void onSchedule(scheduleIso);
+              } else {
+                onConfirm();
+              }
+            }}
+            className={
+              isSchedule
+                ? "bg-blue-600 hover:bg-blue-700 focus:ring-blue-600 text-white"
+                : "bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-600 text-white"
+            }
           >
-            {submitting ? "Publicando…" : "Publicar agora"}
+            {actionLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
