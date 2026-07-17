@@ -755,20 +755,28 @@ export default function AdminPosts() {
       </div>
 
       {/* Cards: Publicadas / Em revisão / Plantões ativos / Arquivadas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
         {statCards.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className={`border rounded-sm p-3 flex items-center gap-3 ${s.color}`}>
+            <div
+              key={s.label}
+              className={`border rounded-sm p-3 flex items-center gap-3 min-h-[76px] ${s.color}`}
+            >
               <Icon className="h-5 w-5 shrink-0" />
-              <div className="min-w-0">
-                <div className="text-2xl font-black leading-none">{s.value.toLocaleString("pt-BR")}</div>
-                <div className="text-[10px] uppercase font-bold tracking-wider mt-1 truncate">{s.label}</div>
+              <div className="min-w-0 flex-1">
+                <div className="text-2xl font-black leading-none">
+                  {s.value.toLocaleString("pt-BR")}
+                </div>
+                <div className="text-[10px] uppercase font-bold tracking-wider mt-1 break-words whitespace-normal">
+                  {s.label}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
+
 
       {/* Filtros principais: Status */}
       <div className="flex flex-wrap gap-2 mb-3">
