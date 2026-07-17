@@ -1466,8 +1466,13 @@ export type Database = {
           source_name: string
         }[]
       }
+      preview_posts_public_drift: {
+        Args: { _sample_limit?: number }
+        Returns: Json
+      }
       publish_due_scheduled_posts: { Args: never; Returns: Json }
       recluster_all_posts: { Args: { _force?: boolean }; Returns: number }
+      recluster_all_posts_local: { Args: { _force?: boolean }; Returns: number }
       restore_post: { Args: { _post_id: string }; Returns: undefined }
       resync_posts_public: { Args: never; Returns: number }
       schedule_post: {
