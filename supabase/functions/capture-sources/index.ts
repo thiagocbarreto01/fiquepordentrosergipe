@@ -1192,7 +1192,7 @@ Deno.serve(async (req) => {
           feedText = r.text ?? r.legacyText ?? "";
           summary.feed = { transport: r.transport, safe_result: r.safeResult, error_code: r.errorCode ?? null, bytes: (r.bytes?.byteLength ?? feedText.length), final_hostname: r.finalHostname ?? null };
         } catch (e) {
-          summary.feed = { transport: "legacy_fallback", safe_result: "legacy_error", error_code: "legacy_error", message: e instanceof Error ? e.message : "erro" };
+          summary.feed = { transport: "legacy_fallback", safe_result: "legacy_error", error_code: "legacy_error", message: sanitizeErr(e instanceof Error ? e.message : "erro") };
           return summary;
         }
 
@@ -1246,7 +1246,7 @@ Deno.serve(async (req) => {
             }
             summary.article = { transport: r.transport, safe_result: r.safeResult, error_code: r.errorCode ?? null, bytes: (r.bytes?.byteLength ?? txt.length), final_hostname: r.finalHostname ?? null };
           } catch (e) {
-            summary.article = { transport: "legacy_fallback", safe_result: "legacy_error", error_code: "legacy_error", message: e instanceof Error ? e.message : "erro" };
+            summary.article = { transport: "legacy_fallback", safe_result: "legacy_error", error_code: "legacy_error", message: sanitizeErr(e instanceof Error ? e.message : "erro") };
           }
         } else {
           summary.article = { skipped: "no_candidate" };
