@@ -37,26 +37,21 @@ export default function EnviarDenunciaPage() {
       toast.error(parsed.error.issues[0].message);
       return;
     }
-    if (!parsed.data.is_anonymous && !user) {
-      toast.error("Entre na sua conta para enviar uma denúncia com dados de contato, ou envie de forma anônima.");
-      return;
-    }
     setLoading(true);
-    const isAnonymous = parsed.data.is_anonymous;
-    const { error } = await supabase.from("denuncias").insert({
+    const payload = {
       title: parsed.data.title,
       description: parsed.data.description,
       city: parsed.data.city || null,
-      contact_name: isAnonymous ? null : (parsed.data.contact_name || null),
-      contact_phone: isAnonymous ? null : (parsed.data.contact_phone || null),
-      contact_email: isAnonymous ? null : (parsed.data.contact_email || null),
-      is_anonymous: isAnonymous,
-      submitter_id: isAnonymous ? null : user!.id,
-      status: "nova",
-    });
+      contact_name: parsed.data.is_anonymous ? null : (parsed.data.contact_name || null),
+      contact_phone: parsed.data.is_anonymous ? null : (parsed.data.contact_phone || null),
+      contact_email: parsed.data.is_anonymous ? null : (parsed.data.contact_email || null),
+      is_anonymous: parsed.data.is_anonymous,
+    };
+    const { data, error } = await supabase.functions.invoke("submit-denuncia", { body: payload });
     setLoading(false);
-    if (error) {
-      toast.error("Erro ao enviar. Tente novamente.");
+    const ok = !error && (data as any)?.success;
+    if (!ok) {
+      toast.error((data as any)?.message || "Erro ao enviar. Tente novamente.");
       return;
     }
     setSent(true);
