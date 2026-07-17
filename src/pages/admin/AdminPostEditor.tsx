@@ -45,6 +45,8 @@ import { EditorMobileActionBar } from "@/components/admin/editor/EditorMobileAct
 import { EditorPinningSection } from "@/components/admin/editor/EditorPinningSection";
 import { EditorPrincipalSection } from "@/components/admin/editor/EditorPrincipalSection";
 import { EditorCoverSection } from "@/components/admin/editor/EditorCoverSection";
+import { EditorContentSection } from "@/components/admin/editor/EditorContentSection";
+import { EditorAdvancedSection } from "@/components/admin/editor/EditorAdvancedSection";
 import { validateCoverImage, safeUploadName } from "@/lib/uploadValidation";
 import { fillMissingSeo } from "@/lib/seoAuto";
 
