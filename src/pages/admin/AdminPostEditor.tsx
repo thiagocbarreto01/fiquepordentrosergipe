@@ -264,7 +264,7 @@ export default function AdminPostEditor() {
     setUploading(true);
     try {
       const check = await validateCoverImage(file);
-      if (!check.ok) {
+      if (check.ok !== true) {
         toast.error(check.message);
         return;
       }
