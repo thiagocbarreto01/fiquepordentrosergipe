@@ -3,15 +3,18 @@
 // ?source_id), faz fetch do feed, parseia <item>/<entry>, valida duplicatas
 // via RPC `find_duplicate_post` e insere posts com status="captada".
 //
-// Auth:
-//   - service-role (cron interno): aceita qualquer chamada do pg_net (já roda com role=service)
-//   - manual via painel: header x-api-key === CMS_API_KEY
+// Auth: apenas JWT válido de usuário staff (redator/editor/admin/super_admin).
+// A verificação inicial de JWT é feita pelo gateway (verify_jwt=true) e revalidada
+// no handler via `authenticateRequest` (ver ./auth.ts).
+// SUPABASE_SERVICE_ROLE_KEY é usada apenas internamente pelo cliente admin;
+// nunca é aceita como credencial enviada pelo chamador.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { authenticateRequest } from "./auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-api-key, x-cron-secret",
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
@@ -20,6 +23,23 @@ const json = (status: number, body: unknown) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+function newRequestId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+}
+
+function errorEnvelope(
+  status: number,
+  code: string,
+  message: string,
+  requestId: string,
+) {
+  return json(status, { success: false, code, message, request_id: requestId });
+}
 
 function slugify(s: string) {
   return s
@@ -1059,6 +1079,8 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = newRequestId();
+
   // Tenta extrair post_id tanto da query quanto do body (se for POST)
   const url = new URL(req.url);
   let postIdParam = url.searchParams.get("post_id");
@@ -1072,43 +1094,33 @@ Deno.serve(async (req) => {
     } catch { /* ignore */ }
   }
 
+  // Cliente administrativo interno. SUPABASE_SERVICE_ROLE_KEY nunca é aceita
+  // como credencial do chamador — somente usada aqui, no servidor.
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } },
   );
 
-  // Auth: aceita
-  //  - x-cron-secret === CRON_SECRET (chamada do pg_cron)
-  //  - x-api-key === CMS_API_KEY (integração externa / debug)
-  //  - service-role no Authorization (chamadas internas)
-  //  - JWT de staff via Authorization: Bearer <user_jwt> (chamada manual do painel)
-  const authHeader = req.headers.get("authorization") ?? "";
-  const apiKey = req.headers.get("x-api-key") ?? "";
-  const cronSecret = req.headers.get("x-cron-secret") ?? "";
-  const expectedCmsKey = Deno.env.get("CMS_API_KEY") ?? "";
-  const expectedCronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-  const isCronCall = expectedCronSecret.length > 0 && cronSecret === expectedCronSecret;
-  const isServiceRole =
-    authHeader === `Bearer ${serviceRole}` || apiKey === serviceRole;
-  const isCmsKey = expectedCmsKey.length > 0 && apiKey === expectedCmsKey;
-
-  let isStaffUser = false;
-  if (!isCronCall && !isServiceRole && !isCmsKey && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const { data: userData } = await supabase.auth.getUser(token);
-    if (userData.user) {
-      const { data: staffOk } = await supabase.rpc("is_staff", { _user_id: userData.user.id });
-      isStaffUser = !!staffOk;
-    }
+  // Autenticação: exclusivamente JWT de usuário staff.
+  const authResult = await authenticateRequest(req, supabase);
+  if (!authResult.ok) {
+    console.warn(
+      `[capture-sources] auth rejeitada req=${requestId} code=${authResult.code}`,
+    );
+    return errorEnvelope(
+      authResult.status,
+      authResult.code,
+      authResult.message,
+      requestId,
+    );
   }
+  const actor = authResult.actor;
+  console.log(
+    `[capture-sources] auth ok req=${requestId} user=${actor.user_id}`,
+  );
 
-  if (!isCronCall && !isServiceRole && !isCmsKey && !isStaffUser) {
-    console.warn("[capture-sources] ❌ requisição sem auth válida");
-    return json(401, { error: "Unauthorized" });
-  }
+
 
   try {
     // Usamos postIdParam e sourceIdParam extraídos no início do serve
