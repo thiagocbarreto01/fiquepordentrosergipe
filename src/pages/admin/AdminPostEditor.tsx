@@ -111,79 +111,122 @@ export default function AdminPostEditor() {
   useEffect(() => {
     document.title = isNew ? "Nova notícia — Painel" : "Editar notícia — Painel";
     supabase.from("categories").select("*").order("position").then(({ data }) => setCats(data ?? []));
-    if (!isNew) {
-      supabase
-        .from("posts")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle()
-        .then(async ({ data }) => {
-          if (!data) return;
-          const normalized = normalizeStatus(data.status);
-          let currentStatus: EditorialStatus = normalized;
-          if (normalized === "captada") {
-            const { error } = await supabase
-              .from("posts")
-              .update({ status: "em_revisao" as any })
-              .eq("id", id);
-            if (!error) currentStatus = "em_revisao";
-          }
-          setForm({
-            ...data,
-            status: currentStatus,
-            tags: (data.tags ?? []).join(", "),
-            scheduled_at: data.scheduled_at
-              ? new Date(data.scheduled_at).toISOString().slice(0, 16)
-              : "",
-            home_expires_at: (data as any).home_expires_at
-              ? new Date((data as any).home_expires_at).toISOString().slice(0, 16)
-              : "",
-            main_featured_expires_at: (data as any).main_featured_expires_at
-              ? new Date((data as any).main_featured_expires_at).toISOString().slice(0, 16)
-              : "",
-            is_evergreen: !!(data as any).is_evergreen,
-            is_main_featured: !!(data as any).is_main_featured,
-            video_url_principal: (data as any).video_url_principal ?? "",
-            videos_relacionados_text: ((data as any).videos_relacionados ?? []).join("\n"),
-          });
-
-          if ((data as any).duplicate_of) {
-            const { data: orig } = await supabase
-              .from("posts")
-              .select("id, title, slug, status, published_at, created_at, source_url")
-              .eq("id", (data as any).duplicate_of)
-              .maybeSingle();
-            setDuplicateOriginal(orig);
-          }
-
-          const { data: matches } = await supabase.rpc("find_duplicate_post", {
-            _title: data.title,
-            _slug: data.slug,
-            _source_url: data.source_url ?? null,
-            _exclude_id: data.id,
-          });
-          setDuplicateMatches((matches as any[]) ?? []);
-
-          if ((data as any).source_id) {
-            const { data: src } = await supabase
-              .from("news_sources")
-              .select("name")
-              .eq("id", (data as any).source_id)
-              .maybeSingle();
-            setSourceName(src?.name ?? null);
-          }
-        });
-
-
-
-      supabase
-        .from("post_status_history")
-        .select("from_status,to_status,note,created_at,changed_by")
-        .eq("post_id", id)
-        .order("created_at", { ascending: false })
-        .then(({ data }) => setHistory(data ?? []));
+    if (isNew) {
+      // Notícia nova: nenhum fetch, apenas marca como hidratada
+      // (sem alterações) para o autosave/dirty-guard começarem limpos.
+      setHydrated(true);
+      setDirty(false);
+      return;
     }
+    supabase
+      .from("posts")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (!data) { setHydrated(true); return; }
+        // CRÍTICO: abrir uma notícia NUNCA pode alterar seu status.
+        // Removido o antigo UPDATE captada → em_revisao. Só ações
+        // explícitas do usuário mudam status.
+        const currentStatus: EditorialStatus = normalizeStatus(data.status);
+        setForm({
+          ...data,
+          status: currentStatus,
+          tags: (data.tags ?? []).join(", "),
+          // scheduled_at é apenas exibido (read-only) — nunca gravado nesta passada
+          scheduled_at: data.scheduled_at
+            ? new Date(data.scheduled_at).toISOString().slice(0, 16)
+            : "",
+          home_expires_at: (data as any).home_expires_at
+            ? new Date((data as any).home_expires_at).toISOString().slice(0, 16)
+            : "",
+          main_featured_expires_at: (data as any).main_featured_expires_at
+            ? new Date((data as any).main_featured_expires_at).toISOString().slice(0, 16)
+            : "",
+          is_evergreen: !!(data as any).is_evergreen,
+          is_main_featured: !!(data as any).is_main_featured,
+          video_url_principal: (data as any).video_url_principal ?? "",
+          videos_relacionados_text: ((data as any).videos_relacionados ?? []).join("\n"),
+        });
+        // Hidratação inicial não conta como alteração do usuário.
+        setDirty(false);
+        setHydrated(true);
+
+        if ((data as any).duplicate_of) {
+          const { data: orig } = await supabase
+            .from("posts")
+            .select("id, title, slug, status, published_at, created_at, source_url")
+            .eq("id", (data as any).duplicate_of)
+            .maybeSingle();
+          setDuplicateOriginal(orig);
+        }
+
+        const { data: matches } = await supabase.rpc("find_duplicate_post", {
+          _title: data.title,
+          _slug: data.slug,
+          _source_url: data.source_url ?? null,
+          _exclude_id: data.id,
+        });
+        setDuplicateMatches((matches as any[]) ?? []);
+
+        if ((data as any).source_id) {
+          const { data: src } = await supabase
+            .from("news_sources")
+            .select("name")
+            .eq("id", (data as any).source_id)
+            .maybeSingle();
+          setSourceName(src?.name ?? null);
+        }
+      });
+
+    supabase
+      .from("post_status_history")
+      .select("from_status,to_status,note,created_at,changed_by")
+      .eq("post_id", id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setHistory(data ?? []));
   }, [id, isNew]);
+
+  // -------- Wrap setForm para marcar dirty apenas após hidratação --------
+  const updateForm = (updater: any) => {
+    setForm((prev: any) => {
+      const next = typeof updater === "function" ? updater(prev) : { ...prev, ...updater };
+      return next;
+    });
+    if (hydrated) setDirty(true);
+  };
+
+  // -------- Autosave local + beforeunload guard --------
+  const autosaveKey = `fpds:draft:${user?.id ?? "anon"}:${isNew ? "new" : id}`;
+  const autosaveTimer = useRef<number | null>(null);
+  const [localSavedAt, setLocalSavedAt] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (!hydrated || !dirty || !user?.id) return;
+    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          autosaveKey,
+          JSON.stringify({ savedAt: new Date().toISOString(), data: form }),
+        );
+        setLocalSavedAt(new Date());
+      } catch { /* quota/disabled */ }
+    }, 1200);
+    return () => {
+      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
+    };
+  }, [form, hydrated, dirty, autosaveKey, user?.id]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
 
   async function uploadCover(file: File) {
     setUploading(true);
