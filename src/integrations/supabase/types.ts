@@ -1117,7 +1117,24 @@ export type Database = {
           updated_at: string
         }[]
       }
+      _validate_allowed_hostname: {
+        Args: { _hostname: string }
+        Returns: string
+      }
       admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_delete_source_allowed_host: {
+        Args: { _id: string }
+        Returns: boolean
+      }
+      admin_upsert_source_allowed_host: {
+        Args: {
+          _allow_subdomains?: boolean
+          _hostname: string
+          _purpose: string
+          _source_id: string
+        }
+        Returns: string
+      }
       archive_post: {
         Args: { _post_id: string; _reason?: string }
         Returns: undefined
