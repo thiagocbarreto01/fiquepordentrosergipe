@@ -435,12 +435,46 @@ export default function AdminPostEditor() {
   // Diálogos unificados
   const [publishOpen, setPublishOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [cancellingSchedule, setCancellingSchedule] = useState(false);
 
   // tryPublish agora abre o PublishDialog com checklist unificado.
   // A validação incompleto/curto vive dentro do checklist (via getContentQuality).
   function tryPublish() {
     setPublishOpen(true);
   }
+
+  async function handleSchedulePublish(isoUtc: string) {
+    if (!canPublish) return toast.error("Apenas editor/admin pode agendar");
+    if (isNew || !id) { toast.error("Salve a notícia antes de agendar"); return; }
+    if (dirty) { toast.error("Salve as alterações antes de agendar"); return; }
+    setSaving(true);
+    const { data, error } = await supabase.rpc("schedule_post", {
+      _post_id: id, _scheduled_for: isoUtc,
+    });
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    const scheduledAt = (data as any)?.scheduled_at ?? isoUtc;
+    setForm((f: any) => ({
+      ...f,
+      status: "aprovada",
+      scheduled_at: new Date(scheduledAt).toISOString().slice(0, 16),
+    }));
+    toast.success("Publicação agendada");
+    setPublishOpen(false);
+  }
+
+  async function handleCancelSchedule() {
+    if (!canPublish) return toast.error("Apenas editor/admin pode cancelar agendamento");
+    if (isNew || !id) return;
+    setCancellingSchedule(true);
+    const { data, error } = await supabase.rpc("cancel_scheduled_post", { _post_id: id });
+    setCancellingSchedule(false);
+    if (error) { toast.error(error.message); return; }
+    const newStatus = ((data as any)?.status ?? form.status) as EditorialStatus;
+    setForm((f: any) => ({ ...f, status: newStatus, scheduled_at: "" }));
+    toast.success("Agendamento cancelado");
+  }
+
 
   async function gerarComIA() {
     if (!form.title || !form.content) {
