@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, service, { auth: { persistSession: false } });
 
-  const auth = await authenticateRequest(req, createClient(url, anon, { auth: { persistSession: false } }));
+  const auth = await authenticateRequest(req, admin);
   if (!auth.ok) {
     return new Response(JSON.stringify({ error: auth.code, message: auth.message }), {
       status: auth.status, headers: { ...corsHeaders, "content-type": "application/json" },
