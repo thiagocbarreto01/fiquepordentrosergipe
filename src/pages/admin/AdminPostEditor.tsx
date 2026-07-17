@@ -209,37 +209,56 @@ export default function AdminPostEditor() {
     if (hydrated) setDirty(true);
   };
 
-  // -------- Autosave local + beforeunload guard --------
-  const autosaveKey = `fpds:draft:${user?.id ?? "anon"}:${isNew ? "new" : id}`;
-  const autosaveTimer = useRef<number | null>(null);
-  const [localSavedAt, setLocalSavedAt] = useState<Date | null>(null);
+  // -------- Autosave local (fonte única: useEditorAutosave) --------
+  const {
+    savedAt: localSavedAt,
+    readDraft,
+    clearDraft,
+    key: autosaveKey,
+  } = useEditorAutosave({
+    userId: user?.id,
+    postId: isNew ? "new" : id,
+    data: form,
+    enabled: hydrated,
+    dirty,
+  });
+  const [localSavedAtDisplay, setLocalSavedAtDisplay] = useState<Date | null>(null);
+  useEffect(() => { setLocalSavedAtDisplay(localSavedAt); }, [localSavedAt]);
 
+  // -------- Recuperação de rascunho local ao hidratar (nunca aplica sozinho) --------
+  const [recoverOpen, setRecoverOpen] = useState(false);
+  const [recoveredPayload, setRecoveredPayload] = useState<{ savedAt: Date; data: any } | null>(null);
+  const recoverCheckedRef = useRef(false);
   useEffect(() => {
-    if (!hydrated || !dirty || !user?.id) return;
-    if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = window.setTimeout(() => {
-      try {
-        localStorage.setItem(
-          autosaveKey,
-          JSON.stringify({ savedAt: new Date().toISOString(), data: form }),
-        );
-        setLocalSavedAt(new Date());
-      } catch { /* quota/disabled */ }
-    }, 1200);
-    return () => {
-      if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
-    };
-  }, [form, hydrated, dirty, autosaveKey, user?.id]);
+    if (!hydrated || !user?.id || recoverCheckedRef.current) return;
+    recoverCheckedRef.current = true;
+    const raw = readDraft();
+    if (raw && raw.data) {
+      setRecoveredPayload({ savedAt: new Date(raw.savedAt), data: raw.data });
+      setRecoverOpen(true);
+      setLocalSavedAtDisplay(new Date(raw.savedAt));
+    }
+  }, [hydrated, user?.id, readDraft]);
 
+  // -------- Estado de salvamento (5 estados legíveis) --------
+  type SaveState =
+    | { kind: "idle" }
+    | { kind: "dirty" }
+    | { kind: "local"; at: Date }
+    | { kind: "saving" }
+    | { kind: "saved"; at: Date }
+    | { kind: "error"; message: string };
+  const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
   useEffect(() => {
-    if (!dirty) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+    if (saveState.kind === "saving" || saveState.kind === "saved" || saveState.kind === "error") return;
+    if (dirty && localSavedAtDisplay) setSaveState({ kind: "local", at: localSavedAtDisplay });
+    else if (dirty) setSaveState({ kind: "dirty" });
+    else setSaveState({ kind: "idle" });
+  }, [dirty, localSavedAtDisplay]); // eslint-disable-line
+
+  // -------- Bloqueio de navegação SPA + beforeunload --------
+  const guard = useNavigationGuard(dirty);
+
 
   async function uploadCover(file: File) {
     setUploading(true);
