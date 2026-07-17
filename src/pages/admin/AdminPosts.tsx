@@ -214,7 +214,7 @@ function applyServerFilters(
 }
 
 export default function AdminPosts() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -1073,6 +1073,7 @@ export default function AdminPosts() {
         }}
         onSeeDay={(p) => setDayModalPost(p)}
         onRenew={(p, h) => renewExpiration(p, h)}
+        canDelete={isAdmin}
       />
 
 

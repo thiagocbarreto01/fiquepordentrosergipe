@@ -19,6 +19,8 @@ interface Props {
   onArchive: (p: any) => void;
   onRestore: (p: any) => void;
   onDelete: (p: any) => void;
+  /** Somente admin/super_admin pode ver e acionar exclusão permanente. */
+  canDelete?: boolean;
   onShare: (p: any) => void;
   onSeeDay: (p: any) => void;
   onRenew: (p: any, hours: number) => void;
@@ -33,7 +35,7 @@ interface Props {
 export function AdminPostActionsMenu({
   open, onOpenChange, post,
   onApprove, onPublish, onUnpublish, onArchive, onRestore, onDelete,
-  onShare, onSeeDay, onRenew,
+  onShare, onSeeDay, onRenew, canDelete = false,
 }: Props) {
   if (!post) return null;
   const s = normalizeStatus(post.status);
@@ -122,13 +124,15 @@ export function AdminPostActionsMenu({
                 <Archive className="h-4 w-4 mr-2" /> Arquivar
               </Button>
             )}
-            <Button
-              variant="outline"
-              className="w-full justify-start min-h-[44px] border-red-500 text-red-700 hover:bg-red-50"
-              onClick={wrap(() => onDelete(post))}
-            >
-              <Trash2 className="h-4 w-4 mr-2" /> Excluir permanentemente
-            </Button>
+            {canDelete && (
+              <Button
+                variant="outline"
+                className="w-full justify-start min-h-[44px] border-red-500 text-red-700 hover:bg-red-50"
+                onClick={wrap(() => onDelete(post))}
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Excluir permanentemente
+              </Button>
+            )}
           </div>
         </div>
 
