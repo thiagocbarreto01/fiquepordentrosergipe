@@ -10,36 +10,15 @@
 // nunca é aceita como credencial enviada pelo chamador.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { authenticateRequest } from "./auth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
-
-const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-
-function newRequestId(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return `req_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-  }
-}
-
-function errorEnvelope(
-  status: number,
-  code: string,
-  message: string,
-  requestId: string,
-) {
-  return json(status, { success: false, code, message, request_id: requestId });
-}
+import {
+  corsHeaders,
+  errorEnvelope,
+  jsonResponse as json,
+  logAuthorized,
+  logAuthRejected,
+  methodGuard,
+  newRequestId,
+} from "./handlers.ts";
 
 function slugify(s: string) {
   return s
