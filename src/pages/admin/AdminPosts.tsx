@@ -35,6 +35,33 @@ import {
   type PostSortColumn, type PostSortDir,
 } from "@/components/admin/adminPost/primaryAction";
 import { getPrimaryAction } from "@/components/admin/adminPost/primaryAction";
+import {
+  DeletePostDialog, ArchivePostDialog, RestorePostDialog, ArchiveBatchDialog,
+  StatusChangeDialog, ReclassifyDialog, AutoArchiveDialog,
+  type StatusKind, type AutoArchivePreview,
+} from "@/components/admin/adminPost/AdminPostDialogs";
+
+// Checklist editorial reutilizado por Aprovar/Publicar.
+function buildChecklist(p: any, kind: StatusKind) {
+  const missing: string[] = [];
+  const warnings: string[] = [];
+  if (kind === "em_revisao") return { missing, warnings };
+  if (!p?.title?.trim()) missing.push("Título");
+  if (!p?.categories && !p?.category_id) warnings.push("Sem categoria detectada — verifique antes de publicar");
+  if (!p?.content?.trim()) missing.push("Conteúdo");
+  const hasCover = p?.cover_image_url || p?.manual_image_url || p?.cover_image_original;
+  if (!hasCover) missing.push("Imagem de capa");
+  if (!p?.subtitle) warnings.push("Sem subtítulo");
+  if (!p?.image_caption) warnings.push("Sem legenda da imagem");
+  if (!p?.image_credit) warnings.push("Sem crédito da imagem");
+  if (!p?.meta_description) warnings.push("Sem meta description (SEO)");
+  if (typeof p?.content === "string" && p.content.length < 300) warnings.push("Texto muito curto");
+  if (kind === "publicada" && p?.is_urgent) {
+    const exp = p?.home_expires_at ? new Date(p.home_expires_at).getTime() : 0;
+    if (!exp || exp <= Date.now()) missing.push("Plantão exige validade futura em home_expires_at");
+  }
+  return { missing, warnings };
+}
 
 type Filter = "all" | EditorialStatus;
 type HomeFilter = "all" | "active" | "expired" | "expiring_today";
