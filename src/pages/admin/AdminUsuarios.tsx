@@ -34,6 +34,7 @@ interface UserRow {
   role: RoleValue;
   status: StatusValue;
   approved_at: string | null;
+  is_founder: boolean;
 }
 
 interface PendingAction {
@@ -55,7 +56,7 @@ export default function AdminUsuarios() {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("user_id, display_name, email, created_at, role, status, approved_at")
+      .select("user_id, display_name, email, created_at, role, status, approved_at, is_founder")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     else setUsers((data ?? []) as UserRow[]);
@@ -82,8 +83,7 @@ export default function AdminUsuarios() {
     });
   }, [users, statusFilter, search]);
 
-  const isFounder = (u: UserRow) =>
-    (u.email || "").toLowerCase() === "thiagocbarreto@hotmail.com";
+  const isFounder = (u: UserRow) => !!u.is_founder;
   const isSelf = (u: UserRow) => currentUser?.id === u.user_id;
 
   async function execute() {
