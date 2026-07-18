@@ -1334,6 +1334,14 @@ export type Database = {
         Args: { _batch_id: string }
         Returns: Json
       }
+      admin_set_user_role: {
+        Args: { _role: string; _user_id: string }
+        Returns: undefined
+      }
+      admin_set_user_status: {
+        Args: { _status: string; _user_id: string }
+        Returns: undefined
+      }
       admin_upsert_source_allowed_host: {
         Args: {
           _allow_subdomains?: boolean
@@ -1447,6 +1455,7 @@ export type Database = {
           }
         | { Args: { _role: string; _user_id: string }; Returns: boolean }
       increment_post_views: { Args: { _post_id: string }; Returns: undefined }
+      is_approved_active_user: { Args: { _user_id: string }; Returns: boolean }
       is_editor_or_admin: { Args: { _user_id: string }; Returns: boolean }
       is_main_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
@@ -1496,7 +1505,7 @@ export type Database = {
       unpin_post_from_home: { Args: { _post_id: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "editor" | "redator"
+      app_role: "admin" | "editor" | "redator" | "super_admin"
       banner_position:
         | "topo_home"
         | "entre_noticias"
@@ -1651,7 +1660,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "editor", "redator"],
+      app_role: ["admin", "editor", "redator", "super_admin"],
       banner_position: [
         "topo_home",
         "entre_noticias",
