@@ -226,7 +226,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {!loading && !isApproved && !isFounder && (
+      {!loading && !isApproved && (
         <div className="bg-alert/20 border border-alert p-4 mb-6 text-sm">
           {status === "pending"
             ? "Seu acesso está aguardando aprovação do Administrador Principal. Você não poderá realizar ações no painel até ser aprovado."
