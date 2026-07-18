@@ -34,6 +34,7 @@ interface UserRow {
   role: RoleValue;
   status: StatusValue;
   approved_at: string | null;
+  is_founder: boolean;
 }
 
 interface PendingAction {
