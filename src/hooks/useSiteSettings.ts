@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Configurações PÚBLICAS do site — visíveis a qualquer visitante.
+ * Vem via RPC `get_public_site_settings` para nunca expor flags internas
+ * (ex.: `recapture_assisted_enabled`) ao anon.
+ */
 export type SiteSettings = {
   site_name: string;
   instagram_handle: string;
@@ -10,7 +15,6 @@ export type SiteSettings = {
   whatsapp_url: string;
   youtube_url: string;
   contact_email: string;
-  recapture_assisted_enabled: boolean;
 };
 
 const DEFAULTS: SiteSettings = {
@@ -22,19 +26,16 @@ const DEFAULTS: SiteSettings = {
   whatsapp_url: "",
   youtube_url: "",
   contact_email: "contato@fiquepordentrose.com",
-  recapture_assisted_enabled: false,
 };
 
 export function useSiteSettings() {
   const { data } = useQuery({
-    queryKey: ["site_settings"],
+    queryKey: ["site_settings_public"],
     queryFn: async (): Promise<SiteSettings> => {
-      const { data, error } = await supabase
-        .from("site_settings")
-        .select("site_name,instagram_handle,instagram_url,facebook_url,threads_url,whatsapp_url,youtube_url,contact_email,recapture_assisted_enabled")
-        .maybeSingle();
-      if (error || !data) return DEFAULTS;
-      return { ...DEFAULTS, ...data } as SiteSettings;
+      const { data, error } = await supabase.rpc("get_public_site_settings");
+      if (error || !data || !data.length) return DEFAULTS;
+      const row = data[0] as Partial<SiteSettings>;
+      return { ...DEFAULTS, ...row };
     },
     staleTime: 1000 * 60 * 5,
   });
