@@ -83,8 +83,7 @@ export default function AdminUsuarios() {
     });
   }, [users, statusFilter, search]);
 
-  const isFounder = (u: UserRow) =>
-    (u.email || "").toLowerCase() === "thiagocbarreto@hotmail.com";
+  const isFounder = (u: UserRow) => !!u.is_founder;
   const isSelf = (u: UserRow) => currentUser?.id === u.user_id;
 
   async function execute() {
