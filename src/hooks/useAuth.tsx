@@ -12,6 +12,7 @@ interface AuthCtx {
   status: Status | null;
   isStaff: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isApproved: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
