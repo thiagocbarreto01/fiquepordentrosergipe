@@ -1,22 +1,55 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Check, Ban, Shield, User as UserIcon, Search, Crown } from "lucide-react";
+import { Check, Ban, Shield, User as UserIcon, Search, Crown, ShieldAlert, XCircle } from "lucide-react";
 
 const ROLES = ["super_admin", "admin", "editor", "redator", "user"] as const;
-const FOUNDER_EMAIL = "thiagocbarreto@hotmail.com";
+type RoleValue = typeof ROLES[number];
+
+const ROLE_LABEL: Record<RoleValue, string> = {
+  super_admin: "Superadministrador",
+  admin: "Administrador",
+  editor: "Editor",
+  redator: "Redator",
+  user: "Sem função",
+};
 
 type StatusFilter = "all" | "pending" | "approved" | "blocked" | "rejected";
+type StatusValue = "pending" | "approved" | "blocked" | "rejected";
+
+interface UserRow {
+  user_id: string;
+  display_name: string | null;
+  email: string | null;
+  created_at: string;
+  role: RoleValue;
+  status: StatusValue;
+  approved_at: string | null;
+}
+
+interface PendingAction {
+  user: UserRow;
+  kind: "role" | "status";
+  nextValue: string;
+}
 
 export default function AdminUsuarios() {
-  const [users, setUsers] = useState<any[]>([]);
+  const { user: currentUser, isSuperAdmin } = useAuth();
+  const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
+  const [pending, setPending] = useState<PendingAction | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -25,7 +58,7 @@ export default function AdminUsuarios() {
       .select("user_id, display_name, email, created_at, role, status, approved_at")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
-    else setUsers(data ?? []);
+    else setUsers((data ?? []) as UserRow[]);
     setLoading(false);
   }
 
@@ -49,18 +82,38 @@ export default function AdminUsuarios() {
     });
   }, [users, statusFilter, search]);
 
-  const isFounder = (u: any) => (u.email || "").toLowerCase() === FOUNDER_EMAIL;
+  const isFounder = (u: UserRow) =>
+    (u.email || "").toLowerCase() === "thiagocbarreto@hotmail.com";
+  const isSelf = (u: UserRow) => currentUser?.id === u.user_id;
 
-  async function updateUserInfo(uid: string, patch: any) {
-    const finalPatch: any = { ...patch };
-    if (patch.status === "approved") {
-      const { data: auth } = await supabase.auth.getUser();
-      finalPatch.approved_at = new Date().toISOString();
-      finalPatch.approved_by = auth.user?.id ?? null;
+  async function execute() {
+    if (!pending) return;
+    setSubmitting(true);
+    const rpc = pending.kind === "role" ? "admin_set_user_role" : "admin_set_user_status";
+    const arg = pending.kind === "role"
+      ? { _user_id: pending.user.user_id, _role: pending.nextValue }
+      : { _user_id: pending.user.user_id, _status: pending.nextValue };
+    const { error } = await supabase.rpc(rpc as any, arg as any);
+    setSubmitting(false);
+    if (error) {
+      const msg = friendlyError(error.message);
+      toast.error(msg);
+    } else {
+      toast.success(pending.kind === "role" ? "Papel atualizado" : "Status atualizado");
+      setPending(null);
+      load();
     }
-    const { error } = await supabase.from("profiles").update(finalPatch).eq("user_id", uid);
-    if (error) toast.error(error.message);
-    else { toast.success("Usuário atualizado"); load(); }
+  }
+
+  function friendlyError(m: string) {
+    if (m.includes("founder_role_locked") || m.includes("founder_status_locked"))
+      return "O superadministrador principal está protegido e não pode ser alterado.";
+    if (m.includes("cannot_demote_self")) return "Você não pode rebaixar seu próprio acesso.";
+    if (m.includes("cannot_change_own_status")) return "Você não pode alterar seu próprio status.";
+    if (m.includes("forbidden")) return "Ação restrita a administradores.";
+    if (m.includes("invalid_role")) return "Papel inválido.";
+    if (m.includes("invalid_status")) return "Status inválido.";
+    return m;
   }
 
   const statusBadge = (s: string) => {
@@ -72,9 +125,10 @@ export default function AdminUsuarios() {
       default: return "bg-secondary";
     }
   };
-  const statusLabel = (s: string) => s === "approved" ? "Aprovado" : s === "pending" ? "Pendente" : s === "rejected" ? "Rejeitado" : "Bloqueado";
+  const statusLabel = (s: string) =>
+    s === "approved" ? "Aprovado" : s === "pending" ? "Pendente" : s === "rejected" ? "Rejeitado" : "Bloqueado";
 
-  const roleIcon = (r: string) => {
+  const roleIcon = (r: RoleValue) => {
     if (r === "super_admin") return <Crown className="h-3 w-3 mr-1 text-amber-500" />;
     if (r === "admin") return <Shield className="h-3 w-3 mr-1" />;
     if (r === "editor") return <Shield className="h-3 w-3 mr-1 opacity-70" />;
@@ -82,9 +136,31 @@ export default function AdminUsuarios() {
     return null;
   };
 
+  const dialogTitle = pending
+    ? pending.kind === "role"
+      ? `Alterar papel para ${ROLE_LABEL[pending.nextValue as RoleValue]}?`
+      : pending.nextValue === "approved"
+        ? "Aprovar acesso deste usuário?"
+        : pending.nextValue === "blocked"
+          ? "Bloquear este usuário?"
+          : pending.nextValue === "rejected"
+            ? "Rejeitar acesso?"
+            : "Alterar status?"
+    : "";
+
+  const dialogDesc = pending
+    ? pending.kind === "role"
+      ? `O usuário ${pending.user.display_name || pending.user.email} passará a ter as permissões de ${ROLE_LABEL[pending.nextValue as RoleValue]}. As alterações são sincronizadas no banco.`
+      : pending.nextValue === "blocked"
+        ? "O usuário perderá acesso ao painel imediatamente. Todas as RPCs administrativas passarão a recusar suas ações."
+        : pending.nextValue === "approved"
+          ? "O usuário terá acesso liberado ao painel conforme o papel atribuído."
+          : "O acesso ao painel será revogado."
+    : "";
+
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="font-display text-3xl font-black">Usuários</h1>
           <p className="text-muted-foreground">Gerencie acesso, papéis e aprovações.</p>
@@ -92,7 +168,6 @@ export default function AdminUsuarios() {
         <Button onClick={load} variant="outline" size="sm">Atualizar</Button>
       </div>
 
-      {/* Counters */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {([
           ["pending", "Pendentes", counts.pending, "border-yellow-400"],
@@ -110,7 +185,6 @@ export default function AdminUsuarios() {
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -134,7 +208,8 @@ export default function AdminUsuarios() {
       </div>
 
       <div className="bg-card border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        {/* Desktop table */}
+        <table className="w-full text-sm hidden md:table">
           <thead className="bg-secondary text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
             <tr>
               <th className="text-left p-4">Usuário</th>
@@ -148,86 +223,199 @@ export default function AdminUsuarios() {
               <tr><td colSpan={4} className="p-12 text-center text-muted-foreground">Carregando…</td></tr>
             ) : filtered.length === 0 ? (
               <tr><td colSpan={4} className="p-12 text-center text-muted-foreground">Nenhum usuário encontrado.</td></tr>
-            ) : (
-              filtered.map((u) => {
-                const founder = isFounder(u);
-                return (
-                  <tr key={u.user_id} className="hover:bg-secondary/20 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-display font-bold text-base">{u.display_name || "Sem nome"}</span>
-                        {founder && (
-                          <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 font-black uppercase tracking-widest rounded-sm">
-                            Super Admin
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{u.email || "—"}</div>
-                      <div className="text-[10px] text-muted-foreground mt-1">
-                        Desde {new Date(u.created_at).toLocaleDateString("pt-BR")}
-                        {u.approved_at && ` · Aprovado em ${new Date(u.approved_at).toLocaleDateString("pt-BR")}`}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border rounded-sm ${statusBadge(u.status)}`}>
-                        {statusLabel(u.status)}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <Select
-                        value={u.role}
-                        onValueChange={(v) => updateUserInfo(u.user_id, { role: v })}
-                        disabled={founder}
-                      >
-                        <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {ROLES.map((r) => (
-                            <SelectItem key={r} value={r} className="text-xs">
-                              <span className="flex items-center uppercase font-bold tracking-tighter">
-                                {roleIcon(r)} {r}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {founder ? (
-                          <span className="text-[10px] text-muted-foreground italic">Protegido</span>
-                        ) : (
-                          <>
-                            {u.status === "pending" && (
-                              <Button size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700"
-                                onClick={() => updateUserInfo(u.user_id, { status: "approved" })} title="Aprovar">
-                                <Check className="h-4 w-4 mr-1" /> Aprovar
-                              </Button>
-                            )}
-                            {u.status === "approved" && (
-                              <Button size="sm" variant="outline"
-                                className="h-8 border-urgent text-urgent hover:bg-urgent hover:text-white"
-                                onClick={() => updateUserInfo(u.user_id, { status: "blocked" })} title="Bloquear">
-                                <Ban className="h-4 w-4 mr-1" /> Bloquear
-                              </Button>
-                            )}
-                            {(u.status === "blocked" || u.status === "rejected") && (
-                              <Button size="sm" variant="outline"
-                                className="h-8 border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white"
-                                onClick={() => updateUserInfo(u.user_id, { status: "approved" })} title="Desbloquear">
-                                <Check className="h-4 w-4 mr-1" /> Desbloquear
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+            ) : filtered.map((u) => {
+              const founder = isFounder(u);
+              const self = isSelf(u);
+              const roleLocked = founder;
+              // Only super_admin can promote to super_admin
+              const availableRoles = ROLES.filter((r) => r !== "super_admin" || isSuperAdmin);
+              return (
+                <tr key={u.user_id} className="hover:bg-secondary/20 transition-colors">
+                  <td className="p-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-display font-bold text-base">{u.display_name || "Sem nome"}</span>
+                      {founder && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 font-black uppercase tracking-widest rounded-sm">
+                          Principal
+                        </span>
+                      )}
+                      {self && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-900 border border-blue-300 font-black uppercase tracking-widest rounded-sm">
+                          Você
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{u.email || "—"}</div>
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      Desde {new Date(u.created_at).toLocaleDateString("pt-BR")}
+                      {u.approved_at && ` · Aprovado em ${new Date(u.approved_at).toLocaleDateString("pt-BR")}`}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border rounded-sm ${statusBadge(u.status)}`}>
+                      {statusLabel(u.status)}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <Select
+                      value={u.role}
+                      onValueChange={(v) => setPending({ user: u, kind: "role", nextValue: v })}
+                      disabled={roleLocked || (self && !isSuperAdmin)}
+                    >
+                      <SelectTrigger className="h-8 w-44 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {availableRoles.map((r) => (
+                          <SelectItem key={r} value={r} className="text-xs">
+                            <span className="flex items-center font-bold">
+                              {roleIcon(r)} {ROLE_LABEL[r]}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2 flex-wrap">
+                      {founder ? (
+                        <span className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                          <ShieldAlert className="h-3 w-3" /> Protegido
+                        </span>
+                      ) : self ? (
+                        <span className="text-[10px] text-muted-foreground italic">Autoalteração bloqueada</span>
+                      ) : (
+                        <>
+                          {u.status === "pending" && (
+                            <Button size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700"
+                              onClick={() => setPending({ user: u, kind: "status", nextValue: "approved" })}>
+                              <Check className="h-4 w-4 mr-1" /> Aprovar
+                            </Button>
+                          )}
+                          {u.status === "pending" && (
+                            <Button size="sm" variant="outline" className="h-8 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                              onClick={() => setPending({ user: u, kind: "status", nextValue: "rejected" })}>
+                              <XCircle className="h-4 w-4 mr-1" /> Rejeitar
+                            </Button>
+                          )}
+                          {u.status === "approved" && (
+                            <Button size="sm" variant="outline"
+                              className="h-8 border-urgent text-urgent hover:bg-urgent hover:text-white"
+                              onClick={() => setPending({ user: u, kind: "status", nextValue: "blocked" })}>
+                              <Ban className="h-4 w-4 mr-1" /> Bloquear
+                            </Button>
+                          )}
+                          {(u.status === "blocked" || u.status === "rejected") && (
+                            <Button size="sm" variant="outline"
+                              className="h-8 border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white"
+                              onClick={() => setPending({ user: u, kind: "status", nextValue: "approved" })}>
+                              <Check className="h-4 w-4 mr-1" /> Reativar
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-border">
+          {loading ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">Carregando…</div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">Nenhum usuário encontrado.</div>
+          ) : filtered.map((u) => {
+            const founder = isFounder(u);
+            const self = isSelf(u);
+            const availableRoles = ROLES.filter((r) => r !== "super_admin" || isSuperAdmin);
+            return (
+              <div key={u.user_id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-display font-bold">{u.display_name || "Sem nome"}</span>
+                      {founder && <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 font-black uppercase tracking-widest rounded-sm">Principal</span>}
+                      {self && <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-900 border border-blue-300 font-black uppercase tracking-widest rounded-sm">Você</span>}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+                  </div>
+                  <span className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-widest border rounded-sm shrink-0 ${statusBadge(u.status)}`}>
+                    {statusLabel(u.status)}
+                  </span>
+                </div>
+                <Select
+                  value={u.role}
+                  onValueChange={(v) => setPending({ user: u, kind: "role", nextValue: v })}
+                  disabled={founder || (self && !isSuperAdmin)}
+                >
+                  <SelectTrigger className="h-10 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((r) => (
+                      <SelectItem key={r} value={r} className="text-xs">
+                        <span className="flex items-center font-bold">{roleIcon(r)} {ROLE_LABEL[r]}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!founder && !self && (
+                  <div className="flex flex-wrap gap-2">
+                    {u.status === "pending" && (
+                      <>
+                        <Button size="sm" className="h-10 flex-1 bg-emerald-600 hover:bg-emerald-700"
+                          onClick={() => setPending({ user: u, kind: "status", nextValue: "approved" })}>
+                          <Check className="h-4 w-4 mr-1" /> Aprovar
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-10 flex-1 border-red-600 text-red-600"
+                          onClick={() => setPending({ user: u, kind: "status", nextValue: "rejected" })}>
+                          <XCircle className="h-4 w-4 mr-1" /> Rejeitar
+                        </Button>
+                      </>
+                    )}
+                    {u.status === "approved" && (
+                      <Button size="sm" variant="outline" className="h-10 w-full border-urgent text-urgent"
+                        onClick={() => setPending({ user: u, kind: "status", nextValue: "blocked" })}>
+                        <Ban className="h-4 w-4 mr-1" /> Bloquear
+                      </Button>
+                    )}
+                    {(u.status === "blocked" || u.status === "rejected") && (
+                      <Button size="sm" variant="outline" className="h-10 w-full border-emerald-600 text-emerald-600"
+                        onClick={() => setPending({ user: u, kind: "status", nextValue: "approved" })}>
+                        <Check className="h-4 w-4 mr-1" /> Reativar
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {(founder || self) && (
+                  <div className="text-[10px] text-muted-foreground italic">
+                    {founder ? "Superadministrador principal — protegido." : "Autoalteração bloqueada."}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      <AlertDialog open={!!pending} onOpenChange={(o) => !o && !submitting && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{dialogDesc}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={(e) => { e.preventDefault(); execute(); }}
+              className={pending?.nextValue === "blocked" || pending?.nextValue === "rejected" ? "bg-urgent hover:bg-urgent/90" : ""}
+            >
+              {submitting ? "Aplicando…" : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

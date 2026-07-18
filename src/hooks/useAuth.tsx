@@ -12,6 +12,7 @@ interface AuthCtx {
   status: Status | null;
   isStaff: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isApproved: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
@@ -70,15 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const FOUNDER_EMAIL = "thiagocbarreto@hotmail.com";
-  const isAdmin = role === "admin" || role === "super_admin" || user?.email === FOUNDER_EMAIL;
-  const isStaff = ["super_admin", "admin", "editor", "redator"].includes(role || "") || user?.email === FOUNDER_EMAIL;
-  const isApproved = status === "approved" || user?.email === FOUNDER_EMAIL;
+  const isAdmin = role === "admin" || role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
+  const isStaff = ["super_admin", "admin", "editor", "redator"].includes(role || "");
+  const isApproved = status === "approved";
+
 
   return (
     <Ctx.Provider
       value={{
-        user, session, role, status, isAdmin, isStaff, isApproved, loading,
+        user, session, role, status, isAdmin, isSuperAdmin, isStaff, isApproved, loading,
         signOut: async () => { await supabase.auth.signOut(); },
       }}
     >
@@ -97,6 +99,7 @@ export function useAuth() {
       status: null,
       isStaff: false,
       isAdmin: false,
+      isSuperAdmin: false,
       isApproved: false,
       loading: false,
       signOut: async () => {},

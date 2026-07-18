@@ -96,19 +96,17 @@ const STATUS_TILES: { key: EditorialStatus; label: string; group: string[]; subK
 ];
 
 export default function AdminDashboard() {
-  const { role, status, user, isAdmin, isStaff, isApproved, loading } = useAuth();
-  const FOUNDER_EMAIL = "thiagocbarreto@hotmail.com";
-  const isFounder = user?.email === FOUNDER_EMAIL;
+  const { role, status, user, isAdmin, isStaff, isApproved, isSuperAdmin, loading } = useAuth();
 
-  const roleLabel = isFounder
-    ? "Administrador Principal"
+  const roleLabel = isSuperAdmin
+    ? "Superadministrador"
     : isAdmin ? "Administrador"
     : role === "editor" ? "Editor"
     : role === "redator" ? "Redator"
     : isStaff ? "Membro da equipe"
     : "Sem acesso autorizado";
 
-  const accessLabel = isFounder || isApproved
+  const accessLabel = isApproved
     ? { text: "Acesso Ativo", color: "bg-emerald-100 text-emerald-800 border-emerald-300" }
     : status === "pending"
     ? { text: "Aguardando aprovação", color: "bg-yellow-100 text-yellow-800 border-yellow-300" }
@@ -228,7 +226,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {!loading && !isApproved && !isFounder && (
+      {!loading && !isApproved && (
         <div className="bg-alert/20 border border-alert p-4 mb-6 text-sm">
           {status === "pending"
             ? "Seu acesso está aguardando aprovação do Administrador Principal. Você não poderá realizar ações no painel até ser aprovado."
