@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider
       value={{
-        user, session, role, status, isAdmin, isStaff, isApproved, loading,
+        user, session, role, status, isAdmin, isSuperAdmin, isStaff, isApproved, loading,
         signOut: async () => { await supabase.auth.signOut(); },
       }}
     >
@@ -99,6 +99,7 @@ export function useAuth() {
       status: null,
       isStaff: false,
       isAdmin: false,
+      isSuperAdmin: false,
       isApproved: false,
       loading: false,
       signOut: async () => {},
