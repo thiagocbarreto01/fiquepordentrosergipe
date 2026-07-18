@@ -56,7 +56,7 @@ export default function AdminUsuarios() {
     setLoading(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("user_id, display_name, email, created_at, role, status, approved_at")
+      .select("user_id, display_name, email, created_at, role, status, approved_at, is_founder")
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     else setUsers((data ?? []) as UserRow[]);
