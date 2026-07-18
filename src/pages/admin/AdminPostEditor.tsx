@@ -6,7 +6,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import ContentToolbar from "@/components/admin/ContentToolbar";
 import RecaptureDialog from "@/components/admin/RecaptureDialog";
 import CompletePostAIDialog from "@/components/admin/CompletePostAIDialog";
-import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useAdminSiteSettings } from "@/hooks/useAdminSiteSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -71,7 +71,7 @@ export default function AdminPostEditor() {
   const nav = useNavigate();
   const { user, isAdmin, isStaff } = useAuth();
   const canPublish = isAdmin; // Only admins as requested
-  const siteSettings = useSiteSettings();
+  const { data: siteSettings } = useAdminSiteSettings(!!isAdmin);
   const [cats, setCats] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1310,7 +1310,7 @@ export default function AdminPostEditor() {
                     })}
                   />
                 )}
-                {!isNew && isAdmin && siteSettings.recapture_assisted_enabled && id && (
+                {!isNew && isAdmin && siteSettings?.recapture_assisted_enabled && id && (
                   <RecaptureDialog
                     postId={id}
                     currentContent={form.content || ""}

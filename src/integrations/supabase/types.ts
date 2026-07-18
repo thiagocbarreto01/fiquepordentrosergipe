@@ -1424,6 +1424,19 @@ export type Database = {
           title: string
         }[]
       }
+      get_public_site_settings: {
+        Args: never
+        Returns: {
+          contact_email: string
+          facebook_url: string
+          instagram_handle: string
+          instagram_url: string
+          site_name: string
+          threads_url: string
+          whatsapp_url: string
+          youtube_url: string
+        }[]
+      }
       has_role:
         | {
             Args: {
