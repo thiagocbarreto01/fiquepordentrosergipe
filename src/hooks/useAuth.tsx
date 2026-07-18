@@ -70,10 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const FOUNDER_EMAIL = "thiagocbarreto@hotmail.com";
-  const isAdmin = role === "admin" || role === "super_admin" || user?.email === FOUNDER_EMAIL;
-  const isStaff = ["super_admin", "admin", "editor", "redator"].includes(role || "") || user?.email === FOUNDER_EMAIL;
-  const isApproved = status === "approved" || user?.email === FOUNDER_EMAIL;
+  const isAdmin = role === "admin" || role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
+  const isStaff = ["super_admin", "admin", "editor", "redator"].includes(role || "");
+  const isApproved = status === "approved";
+
 
   return (
     <Ctx.Provider
