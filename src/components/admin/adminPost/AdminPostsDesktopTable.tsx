@@ -60,13 +60,13 @@ export function AdminPostsDesktopTable({
     <div className="bg-card border border-border overflow-hidden">
       <table className="w-full text-sm table-fixed">
         <colgroup>
-          <col className="w-[92px]" />
-          <col />
-          <col className="w-[160px]" />
-          <col className="w-[200px]" />
-          <col className="w-[160px]" />
-          <col className="w-[180px]" />
-          <col className="w-[220px]" />
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "26%" }} />
+          <col style={{ width: "9%" }} />
+          <col style={{ width: "18%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "17%" }} />
         </colgroup>
         <thead className="bg-secondary text-xs">
           <tr>
