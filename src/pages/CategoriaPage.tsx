@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import SiteLayout from "@/components/site/SiteLayout";
 import AdSlot from "@/components/site/AdSlot";
 import { NewsCard } from "@/components/site/NewsCards";
 import { Post, getNoticiasByCategory, subscribeToNoticiasFeed } from "@/lib/noticias";
 import { supabase } from "@/integrations/supabase/client";
+
+const SITE_ORIGIN = "https://www.fiquepordentrosergipe.com.br";
 
 export default function CategoriaPage() {
   const { slug = "" } = useParams();
