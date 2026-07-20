@@ -158,6 +158,7 @@ export function AdminPostsDesktopTable({
                       <span>Publicada {new Date(p.published_at).toLocaleDateString("pt-BR")}</span>
                     )}
                   </div>
+                  </div>
                 </td>
 
                 {/* 3. Categoria */}
