@@ -96,9 +96,7 @@ Deno.serve(async (req) => {
   let authed: "cron" | "admin" | null = null;
 
   if (cronToken) {
-    console.log(JSON.stringify({ debug: "cron_token_received", len: cronToken.length, first: cronToken.slice(0,2), last: cronToken.slice(-2) }));
-    const { data: ok, error: rpcErr } = await admin.rpc("verify_site_rebuild_cron_token", { _token: cronToken });
-    if (rpcErr) console.log(JSON.stringify({ debug: "rpc_error", msg: rpcErr.message }));
+    const { data: ok } = await admin.rpc("verify_site_rebuild_cron_token", { _token: cronToken });
     if (ok === true) authed = "cron";
     else return json(401, { success: false, code: "invalid_cron_token", request_id });
   } else {
