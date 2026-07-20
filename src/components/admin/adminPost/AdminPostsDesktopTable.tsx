@@ -137,7 +137,8 @@ export function AdminPostsDesktopTable({
                 </td>
 
                 {/* 2. Título + fonte + views */}
-                <td className="p-3">
+                <td className="p-3 min-w-0">
+                  <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5 mb-1">
                     <SourceBadge name={sourceName} />
                     <CaptureMethodChip method={method} />
@@ -145,7 +146,10 @@ export function AdminPostsDesktopTable({
                       <RelevanceBadge level={p.relevance_level} score={p.relevance_score} />
                     )}
                   </div>
-                  <div className="font-display font-bold text-[15px] leading-tight line-clamp-3 break-words">
+                  <div
+                    className="font-display font-bold text-[15px] leading-tight line-clamp-3 break-words [overflow-wrap:anywhere]"
+                    title={p.title}
+                  >
                     {p.title}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-2 items-center text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
