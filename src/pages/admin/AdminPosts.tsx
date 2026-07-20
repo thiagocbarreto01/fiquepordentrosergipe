@@ -587,8 +587,17 @@ export default function AdminPosts() {
     await withSubmit(async () => {
       const payload: any = { status: newStatus };
       if (newStatus === "publicada") payload.published_at = p.published_at ?? new Date().toISOString();
-      const { error } = await supabase.from("posts").update(payload).eq("id", p.id);
+      // .select() garante que RLS silencioso (0 linhas afetadas) seja detectado.
+      const { data, error } = await supabase
+        .from("posts")
+        .update(payload)
+        .eq("id", p.id)
+        .select("id,status");
       if (error) { toast.error(error.message); return; }
+      if (!data || data.length === 0) {
+        toast.error("Sem permissão para alterar o status desta notícia.");
+        return;
+      }
       toast.success(
         newStatus === "publicada" ? "Notícia publicada" :
         newStatus === "aprovada"  ? "Notícia aprovada"  :
