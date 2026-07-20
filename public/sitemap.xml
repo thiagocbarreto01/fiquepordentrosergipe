@@ -81,6 +81,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/suspeito-de-trafico-e-preso-com-drogas-durante-operacao-em-nossa-senhora-da-glor</loc>
+    <lastmod>2026-07-20T11:25:05.992Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/tce-do-rio-suspeita-de-restricao-a-concorrencia-em-pregao-aberto-por-andre-moura</loc>
     <lastmod>2026-07-20T10:57:59.019Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -897,7 +903,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/confira-a-programacao-desta-semana-do-cinema-nos-shoppings-em-aracaju</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -909,37 +915,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/brasil-e-mundo-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entretenimento-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/economia-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/esporte-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/variedades-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -951,7 +927,37 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/esporte-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/brasil-e-mundo-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/confira-a-programacao-desta-semana-do-cinema-nos-shoppings-em-aracaju</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/politica-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/variedades-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entretenimento-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

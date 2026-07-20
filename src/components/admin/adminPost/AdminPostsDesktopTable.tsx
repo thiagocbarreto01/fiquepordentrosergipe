@@ -60,13 +60,13 @@ export function AdminPostsDesktopTable({
     <div className="bg-card border border-border overflow-hidden">
       <table className="w-full text-sm table-fixed">
         <colgroup>
-          <col className="w-[92px]" />
-          <col />
-          <col className="w-[160px]" />
-          <col className="w-[200px]" />
-          <col className="w-[160px]" />
-          <col className="w-[180px]" />
-          <col className="w-[220px]" />
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "26%" }} />
+          <col style={{ width: "9%" }} />
+          <col style={{ width: "18%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "10%" }} />
+          <col style={{ width: "17%" }} />
         </colgroup>
         <thead className="bg-secondary text-xs">
           <tr>
@@ -137,7 +137,8 @@ export function AdminPostsDesktopTable({
                 </td>
 
                 {/* 2. Título + fonte + views */}
-                <td className="p-3">
+                <td className="p-3 min-w-0">
+                  <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5 mb-1">
                     <SourceBadge name={sourceName} />
                     <CaptureMethodChip method={method} />
@@ -145,7 +146,10 @@ export function AdminPostsDesktopTable({
                       <RelevanceBadge level={p.relevance_level} score={p.relevance_score} />
                     )}
                   </div>
-                  <div className="font-display font-bold text-[15px] leading-tight line-clamp-3 break-words">
+                  <div
+                    className="font-display font-bold text-[15px] leading-tight line-clamp-3 break-words [overflow-wrap:anywhere]"
+                    title={p.title}
+                  >
                     {p.title}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-2 items-center text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
@@ -153,6 +157,7 @@ export function AdminPostsDesktopTable({
                     {p.published_at && (
                       <span>Publicada {new Date(p.published_at).toLocaleDateString("pt-BR")}</span>
                     )}
+                  </div>
                   </div>
                 </td>
 
