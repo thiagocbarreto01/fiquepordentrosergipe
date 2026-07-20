@@ -327,12 +327,18 @@ export default function AdminFontes() {
   }
 
   async function persistToggle(id: string, nextChecked: boolean): Promise<{ error?: string | null }> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("news_sources")
       .update({ is_active: nextChecked })
-      .eq("id", id);
-    return { error: error?.message ?? null };
+      .eq("id", id)
+      .select("id, is_active")
+      .maybeSingle();
+    if (error) return { error: error.message };
+    if (!data) return { error: "Sem permissão para alterar esta fonte (nenhuma linha atualizada)." };
+    if (data.is_active !== nextChecked) return { error: "Alteração não persistida no banco." };
+    return { error: null };
   }
+
 
   function updateSourceLocal(id: string, next: boolean) {
     setSources((prev) => prev.map((p) => (p.id === id ? { ...p, is_active: next } : p)));
