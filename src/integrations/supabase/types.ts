@@ -1073,6 +1073,75 @@ export type Database = {
           },
         ]
       }
+      site_rebuild_queue: {
+        Row: {
+          attempt_count: number
+          available_at: string
+          coalesced_count: number
+          created_at: string
+          dispatched_at: string | null
+          id: string
+          last_error_code: string | null
+          post_id: string | null
+          processing_at: string | null
+          reason: string
+          requested_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          available_at?: string
+          coalesced_count?: number
+          created_at?: string
+          dispatched_at?: string | null
+          id?: string
+          last_error_code?: string | null
+          post_id?: string | null
+          processing_at?: string | null
+          reason: string
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          available_at?: string
+          coalesced_count?: number
+          created_at?: string
+          dispatched_at?: string | null
+          id?: string
+          last_error_code?: string | null
+          post_id?: string | null
+          processing_at?: string | null
+          reason?: string
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_rebuild_settings: {
+        Row: {
+          debounce_seconds: number
+          enabled: boolean
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          debounce_seconds?: number
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          debounce_seconds?: number
+          enabled?: boolean
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           contact_email: string | null
@@ -1312,6 +1381,7 @@ export type Database = {
           source_id: string
         }[]
       }
+      _rebuild_reason_priority: { Args: { _reason: string }; Returns: number }
       _validate_allowed_hostname: {
         Args: { _hostname: string }
         Returns: string
@@ -1379,6 +1449,15 @@ export type Database = {
       auto_repair_posts_public: { Args: never; Returns: number }
       can_approve_publish: { Args: { _user_id: string }; Returns: boolean }
       cancel_scheduled_post: { Args: { _post_id: string }; Returns: Json }
+      claim_next_site_rebuild: {
+        Args: never
+        Returns: {
+          attempt_count: number
+          id: string
+          post_id: string
+          reason: string
+        }[]
+      }
       cluster_post_into_event: { Args: { _post_id: string }; Returns: string }
       denuncia_archive: {
         Args: { _id: string; _reason: string }
@@ -1407,6 +1486,10 @@ export type Database = {
         Returns: undefined
       }
       detect_breaking_events: { Args: never; Returns: number }
+      enqueue_site_rebuild: {
+        Args: { _force?: boolean; _post_id?: string; _reason: string }
+        Returns: string
+      }
       expire_breaking_events: { Args: never; Returns: number }
       find_duplicate_post: {
         Args: {
@@ -1462,6 +1545,14 @@ export type Database = {
       is_editor_or_admin: { Args: { _user_id: string }; Returns: boolean }
       is_main_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      mark_site_rebuild_dispatched: {
+        Args: { _queue_id: string }
+        Returns: undefined
+      }
+      mark_site_rebuild_failed: {
+        Args: { _error_code: string; _queue_id: string; _retryable: boolean }
+        Returns: undefined
+      }
       match_event_by_embedding: {
         Args: { _embedding: string; _threshold?: number; _window?: string }
         Returns: {
@@ -1506,6 +1597,10 @@ export type Database = {
         Returns: Json
       }
       unpin_post_from_home: { Args: { _post_id: string }; Returns: undefined }
+      verify_site_rebuild_cron_token: {
+        Args: { _token: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "editor" | "redator" | "super_admin"
