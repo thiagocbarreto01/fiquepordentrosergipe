@@ -1,1 +1,4 @@
 project_id = "faubrqvkzgyfryfjylnb"
+
+[functions.trigger-site-rebuild]
+verify_jwt = false
