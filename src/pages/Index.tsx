@@ -101,6 +101,13 @@ export default function Index() {
   return (
     <SiteLayout>
       <Helmet>
+        <title>Fique Por Dentro Sergipe — Notícias de Sergipe, Aracaju, Brasil e Mundo</title>
+        <meta name="description" content="Portal Fique Por Dentro Sergipe: cobertura em tempo real de Sergipe, Aracaju, política, polícia, denúncias, esportes, Brasil e mundo." />
+        <link rel="canonical" href="https://www.fiquepordentrosergipe.com.br/" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.fiquepordentrosergipe.com.br/" />
+        <meta property="og:title" content="Fique Por Dentro Sergipe — Notícias de Sergipe, Aracaju, Brasil e Mundo" />
+        <meta property="og:description" content="Portal Fique Por Dentro Sergipe: cobertura em tempo real de Sergipe, Aracaju, política, polícia, denúncias, esportes, Brasil e mundo." />
         <meta property="og:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
         <meta name="twitter:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
       </Helmet>

@@ -10,7 +10,12 @@
     <meta name="description" content="Portal Fique Por Dentro Sergipe: cobertura em tempo real de Sergipe, Aracaju, política, polícia, denúncias, esportes, Brasil e mundo.">
     <meta name="author" content="Fique Por Dentro Sergipe" />
     <meta name="keywords" content="Fique Por Dentro Sergipe, notícias Sergipe, notícias Aracaju, política, polícia, denúncias, esportes, Brasil" />
-    <!-- canonical é definido por rota via react-helmet-async (NoticiaPage etc.) -->
+    <link rel="canonical" href="https://www.fiquepordentrosergipe.com.br/" />
+    <!-- canonical/og:url são reescritos por rota em build-time (scripts/prerender-news.ts)
+         e complementados em runtime via react-helmet-async para navegações SPA. -->
+    <meta property="og:url" content="https://www.fiquepordentrosergipe.com.br/" />
+    <meta property="og:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
+    <meta name="twitter:image" content="https://www.fiquepordentrosergipe.com.br/og-default.jpg" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
