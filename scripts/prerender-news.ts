@@ -296,7 +296,7 @@ async function main() {
   }
 
   console.log(
-    `[prerender] concluído: 1 home + 1 /ultimas + ${categoryCount} categorias + ${newsCount} notícias`,
+    `[prerender] concluído: 1 home + 1 /ultimas + ${categoryCount} categorias + ${newsCount} notícias + ${shareCount} páginas sociais /s/`,
   );
 }
 
