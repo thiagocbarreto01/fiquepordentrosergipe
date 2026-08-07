@@ -177,6 +177,7 @@ async function main() {
 
   let categoryCount = 0;
   let newsCount = 0;
+  let shareCount = 0;
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
