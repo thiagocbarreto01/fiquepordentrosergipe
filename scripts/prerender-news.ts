@@ -67,6 +67,7 @@ function renderHtml(template: string, meta: Meta): string {
 
   const ogType = meta.ogType || "website";
   const img = meta.ogImage || DEFAULT_OG_IMAGE;
+  const ogUrl = meta.ogUrl || meta.canonical;
 
   const tags: string[] = [
     `<title>${esc(meta.title)}</title>`,
@@ -75,17 +76,24 @@ function renderHtml(template: string, meta: Meta): string {
     `<meta property="og:type" content="${ogType}">`,
     `<meta property="og:site_name" content="${esc(SITE_NAME)}">`,
     `<meta property="og:locale" content="pt_BR">`,
-    `<meta property="og:url" content="${esc(meta.canonical)}">`,
+    `<meta property="og:url" content="${esc(ogUrl)}">`,
     `<meta property="og:title" content="${esc(meta.title)}">`,
     `<meta property="og:description" content="${esc(meta.description)}">`,
     `<meta property="og:image" content="${esc(img)}">`,
     `<meta property="og:image:secure_url" content="${esc(img)}">`,
     `<meta name="twitter:card" content="summary_large_image">`,
-    `<meta name="twitter:url" content="${esc(meta.canonical)}">`,
+    `<meta name="twitter:url" content="${esc(ogUrl)}">`,
     `<meta name="twitter:title" content="${esc(meta.title)}">`,
     `<meta name="twitter:description" content="${esc(meta.description)}">`,
     `<meta name="twitter:image" content="${esc(img)}">`,
   ];
+
+  // Redireciona humanos para a matéria oficial. Meta refresh no <head> +
+  // fallback JS no fim do <body>. Crawlers sociais ignoram e só leem as tags OG.
+  if (meta.redirectUrl) {
+    const target = esc(meta.redirectUrl);
+    tags.push(`<meta http-equiv="refresh" content="0;url=${target}">`);
+  }
 
   // Base JSON-LD: WebSite + NewsMediaOrganization (always) + page-specific.
   const baseLd = [
