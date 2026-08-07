@@ -124,7 +124,15 @@ function renderHtml(template: string, meta: Meta): string {
   }
 
   const injection = tags.join("\n    ") + "\n  ";
-  return html.replace(/<\/head>/i, `    ${injection}</head>`);
+  html = html.replace(/<\/head>/i, `    ${injection}</head>`);
+
+  if (meta.redirectUrl) {
+    const redirectScript =
+      `<p>Redirecionando para <a href="${esc(meta.redirectUrl)}">${esc(meta.title)}</a>…</p>\n` +
+      `<script>window.location.replace(${JSON.stringify(meta.redirectUrl)});</script>\n`;
+    html = html.replace(/<\/body>/i, `${redirectScript}</body>`);
+  }
+  return html;
 }
 
 function writeRoute(routePath: string, html: string) {
