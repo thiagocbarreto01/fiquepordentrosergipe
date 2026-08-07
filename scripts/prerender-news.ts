@@ -44,6 +44,10 @@ type Meta = {
   canonical: string;
   ogType?: "website" | "article";
   ogImage?: string | null;
+  /** og:url/twitter:url quando diferente do canonical (ex.: páginas /s/<slug>). */
+  ogUrl?: string;
+  /** URL para redirecionar humanos (meta refresh + JS). Crawlers só leem as tags. */
+  redirectUrl?: string;
   jsonLd?: object[];
 };
 
