@@ -44,6 +44,10 @@ type Meta = {
   canonical: string;
   ogType?: "website" | "article";
   ogImage?: string | null;
+  /** og:url/twitter:url quando diferente do canonical (ex.: páginas /s/<slug>). */
+  ogUrl?: string;
+  /** URL para redirecionar humanos (meta refresh + JS). Crawlers só leem as tags. */
+  redirectUrl?: string;
   jsonLd?: object[];
 };
 
@@ -63,6 +67,7 @@ function renderHtml(template: string, meta: Meta): string {
 
   const ogType = meta.ogType || "website";
   const img = meta.ogImage || DEFAULT_OG_IMAGE;
+  const ogUrl = meta.ogUrl || meta.canonical;
 
   const tags: string[] = [
     `<title>${esc(meta.title)}</title>`,
@@ -71,17 +76,24 @@ function renderHtml(template: string, meta: Meta): string {
     `<meta property="og:type" content="${ogType}">`,
     `<meta property="og:site_name" content="${esc(SITE_NAME)}">`,
     `<meta property="og:locale" content="pt_BR">`,
-    `<meta property="og:url" content="${esc(meta.canonical)}">`,
+    `<meta property="og:url" content="${esc(ogUrl)}">`,
     `<meta property="og:title" content="${esc(meta.title)}">`,
     `<meta property="og:description" content="${esc(meta.description)}">`,
     `<meta property="og:image" content="${esc(img)}">`,
     `<meta property="og:image:secure_url" content="${esc(img)}">`,
     `<meta name="twitter:card" content="summary_large_image">`,
-    `<meta name="twitter:url" content="${esc(meta.canonical)}">`,
+    `<meta name="twitter:url" content="${esc(ogUrl)}">`,
     `<meta name="twitter:title" content="${esc(meta.title)}">`,
     `<meta name="twitter:description" content="${esc(meta.description)}">`,
     `<meta name="twitter:image" content="${esc(img)}">`,
   ];
+
+  // Redireciona humanos para a matéria oficial. Meta refresh no <head> +
+  // fallback JS no fim do <body>. Crawlers sociais ignoram e só leem as tags OG.
+  if (meta.redirectUrl) {
+    const target = esc(meta.redirectUrl);
+    tags.push(`<meta http-equiv="refresh" content="0;url=${target}">`);
+  }
 
   // Base JSON-LD: WebSite + NewsMediaOrganization (always) + page-specific.
   const baseLd = [
@@ -112,7 +124,15 @@ function renderHtml(template: string, meta: Meta): string {
   }
 
   const injection = tags.join("\n    ") + "\n  ";
-  return html.replace(/<\/head>/i, `    ${injection}</head>`);
+  html = html.replace(/<\/head>/i, `    ${injection}</head>`);
+
+  if (meta.redirectUrl) {
+    const redirectScript =
+      `<p>Redirecionando para <a href="${esc(meta.redirectUrl)}">${esc(meta.title)}</a>…</p>\n` +
+      `<script>window.location.replace(${JSON.stringify(meta.redirectUrl)});</script>\n`;
+    html = html.replace(/<\/body>/i, `${redirectScript}</body>`);
+  }
+  return html;
 }
 
 function writeRoute(routePath: string, html: string) {
@@ -157,6 +177,7 @@ async function main() {
 
   let categoryCount = 0;
   let newsCount = 0;
+  let shareCount = 0;
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -252,13 +273,30 @@ async function main() {
         }),
       );
       newsCount++;
+
+      // Página social /s/<slug>: mesmas tags OG da matéria, og:url próprio,
+      // canonical apontando para a matéria e redirect para humanos.
+      writeRoute(
+        `/s/${p.slug}`,
+        renderHtml(template, {
+          title,
+          description: seoDesc,
+          canonical,
+          ogType: "article",
+          ogImage: img,
+          ogUrl: `${SITE_ORIGIN}/s/${p.slug}`,
+          redirectUrl: canonical,
+          jsonLd: [newsArticle],
+        }),
+      );
+      shareCount++;
     }
   } catch (err) {
     console.warn("[prerender] falha ao consultar Supabase; rotas dinâmicas não pré-renderizadas:", err);
   }
 
   console.log(
-    `[prerender] concluído: 1 home + 1 /ultimas + ${categoryCount} categorias + ${newsCount} notícias`,
+    `[prerender] concluído: 1 home + 1 /ultimas + ${categoryCount} categorias + ${newsCount} notícias + ${shareCount} páginas sociais /s/`,
   );
 }
 
