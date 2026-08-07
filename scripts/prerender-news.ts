@@ -273,6 +273,23 @@ async function main() {
         }),
       );
       newsCount++;
+
+      // Página social /s/<slug>: mesmas tags OG da matéria, og:url próprio,
+      // canonical apontando para a matéria e redirect para humanos.
+      writeRoute(
+        `/s/${p.slug}`,
+        renderHtml(template, {
+          title,
+          description: seoDesc,
+          canonical,
+          ogType: "article",
+          ogImage: img,
+          ogUrl: `${SITE_ORIGIN}/s/${p.slug}`,
+          redirectUrl: canonical,
+          jsonLd: [newsArticle],
+        }),
+      );
+      shareCount++;
     }
   } catch (err) {
     console.warn("[prerender] falha ao consultar Supabase; rotas dinâmicas não pré-renderizadas:", err);
