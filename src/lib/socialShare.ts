@@ -7,7 +7,7 @@ const SHARE_PREVIEW_BASE_URL = "https://www.fiquepordentrosergipe.com.br";
  *  Inclui `&v=<timestamp>` para evitar cache do WhatsApp/Facebook. */
 export function getSocialShareUrl(slug: string): string {
   const safeSlug = encodeURIComponent(String(slug ?? "").trim());
-  return `${SHARE_PREVIEW_BASE_URL}/api/share-preview?slug=${safeSlug}&v=${Date.now()}`;
+  return `${SHARE_PREVIEW_BASE_URL}/s/${safeSlug}?v=${Date.now()}`;
 }
 
 /** URL pública canônica da matéria (link direto, sem prévia dinâmica). */
