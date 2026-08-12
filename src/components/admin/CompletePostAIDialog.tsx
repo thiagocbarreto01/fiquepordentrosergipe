@@ -50,7 +50,12 @@ export default function CompletePostAIDialog({ postId, currentTitle, currentCont
 
   const aplicar = () => {
     if (!data) return;
-    onApply(data.preview);
+    // Garante que o conteúdo da IA não venha com <br>
+    const cleanContent = data.preview.conteudo.replace(/<br\s*\/?>/gi, "\n");
+    onApply({
+      ...data.preview,
+      conteudo: cleanContent
+    });
     toast.success("Aplicado. Revise e salve.");
     setOpen(false);
   };

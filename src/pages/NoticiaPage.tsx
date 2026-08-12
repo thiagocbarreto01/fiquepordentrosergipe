@@ -353,19 +353,27 @@ export default function NoticiaPage() {
 
                 <div className="article-content prose prose-lg max-w-none mt-6 font-serif-news leading-relaxed text-foreground/90">
                   {looksHtml ? (
-                    <div dangerouslySetInnerHTML={{ __html: dedupedContent }} />
+                    <div 
+                      dangerouslySetInnerHTML={{ 
+                        __html: dedupedContent.replace(/\n\n/g, "<br /><br />").replace(/(?<!>)\n(?!<)/g, " ")
+                      }} 
+                    />
                   ) : (
                     <div className="whitespace-pre-wrap">
                       {(() => {
-                        const paragraphs = dedupedContent.split("\n").filter(p => p.trim().length > 0);
-                        if (paragraphs.length <= 2) return dedupedContent;
-                        const firstPart = paragraphs.slice(0, 2).join("\n\n");
-                        const rest = paragraphs.slice(2).join("\n\n");
+                        const paragraphs = dedupedContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+                        if (paragraphs.length <= 2) {
+                          return paragraphs.map((p, i) => (
+                            <p key={i} className="mb-4">{p}</p>
+                          ));
+                        }
+                        const firstPart = paragraphs.slice(0, 2);
+                        const rest = paragraphs.slice(2);
                         return (
                           <>
-                            <div className="mb-6">{firstPart}</div>
+                            {firstPart.map((p, i) => <p key={i} className="mb-4">{p}</p>)}
                             <AdSlot position="dentro_materia" />
-                            <div className="mt-6">{rest}</div>
+                            {rest.map((p, i) => <p key={i} className="mt-4">{p}</p>)}
                           </>
                         );
                       })()}

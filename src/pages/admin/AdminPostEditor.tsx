@@ -149,8 +149,13 @@ export default function AdminPostEditor() {
         // Removido o antigo UPDATE captada → em_revisao. Só ações
         // explícitas do usuário mudam status.
         const currentStatus: EditorialStatus = normalizeStatus(data.status);
+        
+        // Normaliza o conteúdo ao carregar (retrocompatibilidade com tags <br>)
+        const normalizedContent = data.content ? data.content.replace(/<br\s*\/?>/gi, "\n") : "";
+
         setForm({
           ...data,
+          content: normalizedContent,
           status: currentStatus,
           tags: (data.tags ?? []).join(", "),
           // scheduled_at é apenas exibido (read-only) — nunca gravado nesta passada
