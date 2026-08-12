@@ -139,36 +139,36 @@ export function PortalHero({ main, secondaries }: { main: Post; secondaries: Pos
         </div>
       </article>
 
-      {/* DIREITA 30% — 3 destaques empilhados, mais densos e legíveis */}
-      <div className="lg:col-span-3 flex flex-col gap-3">
+      {/* DIREITA 30% — 3 destaques empilhados, layout vertical conforme pedido */}
+      <div className="lg:col-span-3 flex flex-col gap-4">
         {secondaries.slice(0, 3).map((p) => (
           <Link
             key={p.id}
             to={`/noticia/${p.slug}`}
-            className="group flex gap-3 bg-white rounded-md border border-border/60 p-2.5 hover:shadow-md hover:border-primary/40 transition-all flex-1 min-h-0"
+            className="group flex flex-col bg-white rounded-md border border-border/60 overflow-hidden hover:shadow-md hover:border-primary/40 transition-all"
           >
-            <div className="relative w-[130px] lg:w-[140px] shrink-0 aspect-[4/3] overflow-hidden rounded-sm bg-muted">
+            <div className="relative w-full aspect-[16/9] overflow-hidden bg-muted shrink-0">
               <SmartImage
                 src={getPostImage(p)} fallbackUrl={p.categories?.default_cover_image_url}
                 alt={p.title}
                 aspectRatio="unset"
                 loading="lazy"
                 hoverZoom
-                className="h-full w-full"
+                className="h-full w-full object-cover block"
                 onError={(e) => handleImgError(e, p)}
               />
               {p.categories?.name && (
-                <span className="absolute top-1 left-1 text-[9px] font-black uppercase tracking-widest bg-primary text-primary-foreground px-1.5 py-0.5 rounded-sm shadow-sm">
+                <span className="absolute top-2 left-2 z-10 text-[9px] font-black uppercase tracking-widest bg-primary text-primary-foreground px-2 py-0.5 rounded-sm shadow-sm">
                   {p.categories.name}
                 </span>
               )}
             </div>
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-urgent mb-1">
-                <Clock className="h-2.5 w-2.5" />
+            <div className="px-3 py-3 flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-urgent">
+                <Clock className="h-3 w-3" />
                 <span>{timeAgo(p.published_at)}</span>
               </div>
-              <h3 className="font-display text-[15px] lg:text-[16px] font-extrabold leading-[1.15] text-foreground group-hover:text-primary transition-colors line-clamp-3">
+              <h3 className="font-display text-[16px] lg:text-[17px] font-extrabold leading-[1.2] text-foreground group-hover:text-primary transition-colors line-clamp-3">
                 {p.title}
               </h3>
             </div>
