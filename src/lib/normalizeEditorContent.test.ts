@@ -29,4 +29,17 @@ describe('normalizeEditorContent', () => {
     const output = normalizeEditorContent(input);
     expect(output).toBe('<p>Esta é uma linha que continuava no PDF por causa da largura.</p>');
   });
+
+  it('deve preservar listas', () => {
+    const input = '102 – Soledade / Maracaju\n300-1 – Circular Zona Oeste';
+    const output = normalizeEditorContent(input);
+    expect(output).toContain('<p>102 – Soledade / Maracaju</p>');
+    expect(output).toContain('<p>300-1 – Circular Zona Oeste</p>');
+  });
+
+  it('deve preservar depoimentos em novos parágrafos', () => {
+    const input = 'O estudante destacou os benefícios.\n\n"É um avanço importante", pontuou.';
+    const output = normalizeEditorContent(input);
+    expect(output).toBe('<p>O estudante destacou os benefícios.</p>\n\n<p>"É um avanço importante", pontuou.</p>');
+  });
 });

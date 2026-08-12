@@ -354,6 +354,7 @@ export default function NoticiaPage() {
                 <div className="article-content prose prose-lg max-w-none mt-6 font-serif-news leading-relaxed text-foreground/90">
                   {looksHtml ? (
                     <div 
+                      className="[&>p]:mb-[1.25rem] last:[&>p]:mb-0"
                       dangerouslySetInnerHTML={{ 
                         __html: dedupedContent.replace(/\n\n/g, "<br /><br />").replace(/(?<!>)\n(?!<)/g, " ")
                       }} 
@@ -364,16 +365,16 @@ export default function NoticiaPage() {
                         const paragraphs = dedupedContent.split(/\n\s*\n/).filter(p => p.trim().length > 0);
                         if (paragraphs.length <= 2) {
                           return paragraphs.map((p, i) => (
-                            <p key={i} className="mb-4">{p}</p>
+                            <p key={i} className="mb-[1.25rem] last:mb-0">{p}</p>
                           ));
                         }
                         const firstPart = paragraphs.slice(0, 2);
                         const rest = paragraphs.slice(2);
                         return (
                           <>
-                            {firstPart.map((p, i) => <p key={i} className="mb-4">{p}</p>)}
+                            {firstPart.map((p, i) => <p key={i} className="mb-[1.25rem]">{p}</p>)}
                             <AdSlot position="dentro_materia" />
-                            {rest.map((p, i) => <p key={i} className="mt-4">{p}</p>)}
+                            {rest.map((p, i) => <p key={i} className="mb-[1.25rem] last:mb-0">{p}</p>)}
                           </>
                         );
                       })()}

@@ -401,9 +401,9 @@ export function NewsThumbItem({ post }: { post: Post }) {
   return (
     <Link
       to={`/noticia/${post.slug}`}
-      className="group flex items-center gap-3 md:gap-4 py-3 md:py-3.5 border-b border-border last:border-0 hover:bg-secondary/20 transition-colors -mx-2 px-2 rounded-sm min-w-0"
+      className="group flex flex-col sm:flex-row items-center sm:items-start gap-3 md:gap-4 py-3 md:py-3.5 border-b border-border last:border-0 hover:bg-secondary/20 transition-colors -mx-2 px-2 rounded-sm min-w-0"
     >
-      <div className="relative shrink-0 w-[110px] md:w-[120px] aspect-[4/3] overflow-hidden rounded-sm bg-muted">
+      <div className="relative shrink-0 w-full sm:w-[130px] md:w-[140px] aspect-[16/9] sm:aspect-[4/3] overflow-hidden rounded-sm bg-muted">
         <SmartImage
           src={getPostImage(post)} fallbackUrl={post.categories?.default_cover_image_url}
           alt={post.title}
@@ -416,20 +416,20 @@ export function NewsThumbItem({ post }: { post: Post }) {
           <span className="absolute top-1 left-1 h-1.5 w-1.5 bg-urgent rounded-full animate-pulse shadow" />
         )}
       </div>
-      <div className="flex-1 min-w-0 w-full overflow-hidden flex flex-col">
+      <div className="flex-1 min-w-0 w-full overflow-hidden flex flex-col pt-0.5">
         <div className="flex items-center gap-2 mb-1">
           {post.categories?.name && (
             <span className="text-primary text-[9px] md:text-[10px] font-black uppercase tracking-widest truncate">
               {post.categories.name}
             </span>
           )}
+          <span className="text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60 ml-auto sm:ml-0">
+            {timeAgo(post.published_at)}
+          </span>
         </div>
-        <h4 className="font-display text-sm md:text-[15px] font-bold leading-[1.35] text-foreground group-hover:text-primary transition-colors line-clamp-3 break-words [word-break:normal] [overflow-wrap:break-word] hyphens-none">
+        <h4 className="font-display text-[15px] md:text-[16px] font-extrabold leading-[1.2] text-foreground group-hover:text-primary transition-colors line-clamp-3 break-words [word-break:normal] [overflow-wrap:break-word] hyphens-none">
           {post.title}
         </h4>
-        <span className="mt-1 text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60">
-          {timeAgo(post.published_at)}
-        </span>
       </div>
     </Link>
   );
