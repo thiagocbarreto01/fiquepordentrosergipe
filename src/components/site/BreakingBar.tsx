@@ -20,15 +20,18 @@ export default function BreakingBar() {
 
     const load = async () => {
       try {
-        const since = new Date(Date.now() - 90 * 60 * 1000).toISOString();
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const since = startOfDay.toISOString();
+        
         const { data } = await supabase
           .from("posts_public" as any)
           .select(
             "id, title, slug, is_urgent, is_main_featured, is_denuncia, published_at, created_at, categories ( name, slug )",
           )
-          .or(`is_urgent.eq.true,published_at.gte.${since}`)
+          .gte("published_at", since)
           .order("published_at", { ascending: false })
-          .limit(15);
+          .limit(30);
         if (!active) return;
         const list = pickBreaking((data ?? []) as unknown as Post[], 12);
         setItems(list);
