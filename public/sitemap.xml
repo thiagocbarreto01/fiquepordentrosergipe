@@ -81,6 +81,78 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/delegado-andre-david-realiza-adesivaco-ao-lado-de-sua-coligacao-neste-domingo</loc>
+    <lastmod>2026-08-15T13:04:34.445Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/pm-prende-homem-por-invasao-de-domicilio-em-nossa-senhora-da-gloria</loc>
+    <lastmod>2026-08-15T13:04:16.121Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/valmir-de-francisquinho-e-priscila-felizola-realizam-adesivaco-simultaneamente-e</loc>
+    <lastmod>2026-08-15T13:03:58.424Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/prefeita-emilia-reforca-participacao-popular-na-construcao-do-novo-pda</loc>
+    <lastmod>2026-08-15T13:02:48.770Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/carro-cai-em-cratera-apos-asfalto-ceder-no-bairro-industrial-em-aracaju</loc>
+    <lastmod>2026-08-14T23:24:21.740Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/tres-homens-investigados-por-violencia-contra-a-mulher-sao-presos-em-sergipe</loc>
+    <lastmod>2026-08-14T23:23:48.826Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/dupla-suspeita-de-furtar-loja-de-grife-em-aracaju-e-presa-no-maranhao</loc>
+    <lastmod>2026-08-14T23:23:02.312Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/pm-prende-suspeito-por-trafico-de-drogas-e-apreende-47-municoes-em-aracaju</loc>
+    <lastmod>2026-08-14T23:22:20.874Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/transito-e-alterado-durante-eventos-esportivos-e-religiosos-no-fim-de-semana</loc>
+    <lastmod>2026-08-14T23:21:37.898Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/ifs-esta-com-inscricoes-abertas-para-mais-de-300-vagas-em-cursos-tecnicos-e-de-g</loc>
+    <lastmod>2026-08-13T01:33:51.732Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/policia-militar-prende-homem-por-violencia-domestica-em-sao-cristovao</loc>
+    <lastmod>2026-08-13T01:32:51.101Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/advogado-e-cliente-sao-baleados-na-porta-do-forum-olimpio-mendonca-no-orlando-da</loc>
+    <lastmod>2026-08-13T01:32:18.962Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.fiquepordentrosergipe.com.br/noticia/prefeitura-de-aracaju-amplia-cardioaju-para-fortalecer-prevencao-de-doencas-card</loc>
     <lastmod>2026-08-12T21:19:16.071Z</lastmod>
     <changefreq>weekly</changefreq>
@@ -1383,7 +1455,13 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/economia-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/politica-f5-news-sergipe-atualizado</loc>
+    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1395,7 +1473,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/brasil-e-mundo-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/esporte-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1413,13 +1491,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/esporte-f5-news-sergipe-atualizado</loc>
-    <lastmod>2026-06-25T15:15:18.317Z</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/f5-play-entrevista-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/brasil-e-mundo-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -1431,7 +1503,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.fiquepordentrosergipe.com.br/noticia/politica-f5-news-sergipe-atualizado</loc>
+    <loc>https://www.fiquepordentrosergipe.com.br/noticia/economia-f5-news-sergipe-atualizado</loc>
     <lastmod>2026-06-25T15:15:18.317Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
