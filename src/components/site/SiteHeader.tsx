@@ -65,7 +65,7 @@ export default function SiteHeader() {
           <img
             src={logo}
             alt="Fique Por Dentro Sergipe"
-            className="h-14 md:h-20 lg:h-24 w-auto select-none drop-shadow-sm transition-transform duration-300 group-hover:scale-[1.03]"
+            className="h-16 md:h-24 lg:h-28 w-auto select-none drop-shadow-sm transition-transform duration-300 group-hover:scale-[1.03]"
             draggable={false}
           />
         </Link>
