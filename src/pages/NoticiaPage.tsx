@@ -294,14 +294,16 @@ export default function NoticiaPage() {
               mainVideo?.provider === "mp4" ? "vídeo" : "";
 
             // Dedupe: remove any <img> in content whose src matches the main image
+            // Remove a marca interna "[Fonte original: ...]" (matérias captadas antigas): a fonte nunca aparece ao leitor.
+            const baseContent = (post.content ?? "").replace(/\s*\[\s*Fonte\s+original\s*:[^\]]*\]\s*/gi, "\n");
             const dedupedContent = (() => {
-              if (!mainImageUrl) return post.content;
+              if (!mainImageUrl) return baseContent;
               try {
                 const escaped = mainImageUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
                 const re = new RegExp(`<(?:figure|p)[^>]*>\\s*<img[^>]*src=["']${escaped}["'][^>]*>[\\s\\S]*?</(?:figure|p)>|<img[^>]*src=["']${escaped}["'][^>]*/?>`, "gi");
-                return post.content.replace(re, "");
+                return baseContent.replace(re, "");
               } catch {
-                return post.content;
+                return baseContent;
               }
             })();
 

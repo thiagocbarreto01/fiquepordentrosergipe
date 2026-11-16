@@ -827,9 +827,8 @@ async function captureFromSource(
           ? fullArticleText
           : cleanDesc;
       const excerpt = chosenBody ? chosenBody.slice(0, 500) : null;
-      const originalContent = chosenBody
-        ? `${chosenBody}\n\n[Fonte original: ${sourceUrl ?? source.name}]`
-        : `Notícia captada de ${source.name}. Acesse a fonte original: ${sourceUrl ?? source.url}`;
+      // A fonte NÃO entra no texto da matéria (fica só em source_url/source_id, visível no painel).
+      const originalContent = chosenBody || "";
 
       // Reescrita por IA — qualidade JORNALÍSTICA padrão, com limpeza profunda.
       // Resultado: texto que parece produzido pela própria redação da Fique Por Dentro Sergipe.
