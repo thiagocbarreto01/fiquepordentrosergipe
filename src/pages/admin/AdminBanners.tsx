@@ -67,6 +67,7 @@ type BannerRow = {
   is_active: boolean;
   starts_at: string | null;
   ends_at: string | null;
+  sort_order: number;
   clicks: number;
   impressions: number;
   created_at: string;
@@ -81,6 +82,7 @@ const EMPTY: BannerFormValues = {
   is_active: true,
   starts_at: "",
   ends_at: "",
+  sort_order: 0,
 };
 
 function scheduleState(b: BannerRow): { label: string; tone: "active" | "scheduled" | "expired" | "paused" } {
@@ -114,7 +116,7 @@ export default function AdminBanners() {
     setLoading(true);
     const { data, error } = await supabase
       .from("banners")
-      .select("id,name,sponsor,image_url,link_url,position,is_active,starts_at,ends_at,clicks,impressions,created_at")
+      .select("id,name,sponsor,image_url,link_url,position,is_active,starts_at,ends_at,sort_order,clicks,impressions,created_at")
       .order("created_at", { ascending: false });
     if (error) toast.error("Falha ao carregar banners: " + error.message);
     setItems((data ?? []) as BannerRow[]);
@@ -171,6 +173,7 @@ export default function AdminBanners() {
       is_active: !!b.is_active,
       starts_at: isoToLocalInput(b.starts_at),
       ends_at: isoToLocalInput(b.ends_at),
+      sort_order: b.sort_order ?? 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -206,6 +209,7 @@ export default function AdminBanners() {
         is_active: v.is_active,
         starts_at: localInputToIso(v.starts_at),
         ends_at: localInputToIso(v.ends_at),
+        sort_order: v.sort_order,
       };
       if (editingId) {
         const { error } = await supabase.from("banners").update(payload).eq("id", editingId);
@@ -297,6 +301,17 @@ export default function AdminBanners() {
               aria-invalid={!!errors.name}
             />
             {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="banner-order">Ordem de exibição (menor aparece primeiro)</Label>
+            <Input
+              id="banner-order"
+              type="number"
+              min={0}
+              value={form.sort_order ?? 0}
+              onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
+            />
           </div>
 
           <div>

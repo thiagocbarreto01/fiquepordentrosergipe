@@ -27,6 +27,7 @@ export type Database = {
           name: string
           position: Database["public"]["Enums"]["banner_position"] | null
           sponsor: string | null
+          sort_order: number
           starts_at: string | null
           updated_at: string
         }
@@ -42,6 +43,7 @@ export type Database = {
           name: string
           position?: Database["public"]["Enums"]["banner_position"] | null
           sponsor?: string | null
+          sort_order?: number
           starts_at?: string | null
           updated_at?: string
         }
@@ -57,6 +59,7 @@ export type Database = {
           name?: string
           position?: Database["public"]["Enums"]["banner_position"] | null
           sponsor?: string | null
+          sort_order?: number
           starts_at?: string | null
           updated_at?: string
         }
@@ -1343,6 +1346,7 @@ export type Database = {
           link_url: string | null
           name: string | null
           position: Database["public"]["Enums"]["banner_position"] | null
+          sort_order: number | null
         }
         Insert: {
           id?: string | null

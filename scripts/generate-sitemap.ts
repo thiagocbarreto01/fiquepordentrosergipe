@@ -2,15 +2,11 @@
 import { writeFileSync } from "fs";
 import { resolve } from "path";
 import { createClient } from "@supabase/supabase-js";
+import { getBuildSupabaseConfig } from "./supabase-config";
 
 const BASE_URL = "https://www.fiquepordentrosergipe.com.br";
 
-const SUPABASE_URL =
-  process.env.VITE_SUPABASE_URL || "https://faubrqvkzgyfryfjylnb.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWJycXZremd5ZnJ5Zmp5bG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDA2MTgsImV4cCI6MjA5NjE3NjYxOH0.bY4KIW1Hh2O1s6zxTHXkrhKDNGqHKyGyMIN74SKC1uI";
+const { url: SUPABASE_URL, key: SUPABASE_ANON_KEY } = getBuildSupabaseConfig();
 
 interface SitemapEntry {
   path: string;
@@ -48,10 +44,11 @@ async function main() {
       auth: { persistSession: false },
     });
 
-    const { data: cats } = await supabase
+    const { data: cats, error: catsError } = await supabase
       .from("categories")
       .select("slug")
       .order("position", { ascending: true });
+    if (catsError) throw catsError;
     for (const c of cats ?? []) {
       if (c?.slug) {
         entries.push({
@@ -62,11 +59,12 @@ async function main() {
       }
     }
 
-    const { data: posts } = await supabase
+    const { data: posts, error: postsError } = await supabase
       .from("posts_public" as any)
       .select("slug, published_at, updated_at, created_at")
       .order("published_at", { ascending: false })
       .limit(5000);
+    if (postsError) throw postsError;
     for (const p of (posts ?? []) as any[]) {
       if (!p?.slug) continue;
       entries.push({
@@ -77,7 +75,8 @@ async function main() {
       });
     }
   } catch (err) {
-    console.warn("[sitemap] falha ao buscar dados do Supabase, gerando somente rotas fixas:", err);
+    console.warn("[sitemap] backend indisponível; sitemap existente preservado.");
+    return;
   }
 
   const urls = entries.map((e) =>

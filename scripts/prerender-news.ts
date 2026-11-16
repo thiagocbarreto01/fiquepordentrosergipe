@@ -7,18 +7,14 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { createClient } from "@supabase/supabase-js";
+import { getBuildSupabaseConfig } from "./supabase-config";
 
 const SITE_ORIGIN = "https://www.fiquepordentrosergipe.com.br";
 const SITE_NAME = "Fique Por Dentro Sergipe";
 const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og-default.jpg`;
 const LOGO_URL = `${SITE_ORIGIN}/favicon.png`;
 
-const SUPABASE_URL =
-  process.env.VITE_SUPABASE_URL || "https://faubrqvkzgyfryfjylnb.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  process.env.VITE_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWJycXZremd5ZnJ5Zmp5bG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDA2MTgsImV4cCI6MjA5NjE3NjYxOH0.bY4KIW1Hh2O1s6zxTHXkrhKDNGqHKyGyMIN74SKC1uI";
+const { url: SUPABASE_URL, key: SUPABASE_ANON_KEY } = getBuildSupabaseConfig();
 
 const DIST_INDEX = resolve("dist/index.html");
 

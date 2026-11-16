@@ -44,6 +44,7 @@ export const bannerFormSchema = z
     is_active: z.boolean(),
     starts_at: z.string().optional().nullable(),
     ends_at: z.string().optional().nullable(),
+    sort_order: z.coerce.number().int().min(0).max(9999).default(0),
   })
   .refine(
     (v) =>

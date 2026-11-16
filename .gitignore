@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local credentials and provider links
+.env
+.env.*
+!.env.example
+.vercel/
+backups/
+artifacts/
+.vercel
+.env*
+
+.secrets/
+vercel-login.log
+.env.local
+.vercel
+site/
+.env.preview.local

@@ -39,6 +39,7 @@ export default function AdSlot({ position }: { position: Position }) {
         .from("banners_public")
         .select("id, image_url, link_url, name")
         .eq("position", position)
+        .order("sort_order", { ascending: true })
         .limit(20);
 
       if (cancelled) return;
