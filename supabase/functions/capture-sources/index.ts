@@ -70,6 +70,21 @@ function norm(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 
+// Remove o nome do site que vem colado no fim do título (ex.: "Título - O que é notícia em Sergipe",
+// "Agenda | A8 Sergipe"). Só corta o último segmento quando ele é uma marca conhecida, para não
+// mutilar títulos legítimos. Sem esse corte, a palavra "Sergipe" do sufixo distorcia a categoria.
+const SITE_SUFFIX_RE =
+  /\s+[-–—|•:]{1,2}\s+(?:o\s+que\s+[eé]\s+not[ií]cia\s+em\s+sergipe|a8\s*sergipe|a8se|portal\s+infonet|infonet)\s*$/i;
+function cleanTitle(raw: string): string {
+  let t = (raw ?? "").trim();
+  for (let i = 0; i < 2; i++) {
+    const next = t.replace(SITE_SUFFIX_RE, "").trim();
+    if (next === t) break;
+    t = next;
+  }
+  return t || (raw ?? "").trim();
+}
+
 // Mapa de categorias externas (vindas do RSS) → slug de categoria interna.
 // Chaves devem estar normalizadas (lowercase, sem acento).
 const CATEGORY_MAP: Record<string, string> = {
@@ -92,7 +107,7 @@ const KEYWORD_MAP: Record<string, string[]> = {
   "denuncias": ["denuncia", "irregularidade", "reclamacao", "denunciar", "criminoso"],
   "policia": ["crime", "policia", "operacao", "preso", "assalto", "homicidio", "feminicidio", "trafico", "drogas", "assaltante", "roubo", "delegado", "viatura", "pmse", "prf", "pcse"],
   "politica": ["governo", "congresso", "camara", "senado", "prefeito", "eleicao", "parlamentar", "ministerio", "politica", "vereador", "deputado", "governador", "prefeitura", "alesse"],
-  "esporte": ["futebol", "jogo", "campeonato", "selecao", "jogador", "gol", "tecnico", "time", "brasileirao", "copa", "libertadores", "esporte", "confianca", "sergipe", "itabaiana"],
+  "esporte": ["futebol", "jogo", "campeonato", "selecao", "jogador", "gol", "tecnico", "time", "brasileirao", "copa", "libertadores", "esporte", "confianca"],
   "aracaju": ["aracaju", "capital sergipana", "bairro de aracaju", "atalaia", "jardins", "13 de julho", "ponto novo", "farolandia", "santos dumont", "bugio", "augusto franco", "siqueira campos", "soledade", "jabotiana", "piazza", "aeroporto", "santa maria"],
   "municipios": ["interior", "municipio", "lagarto", "itabaiana", "estancia", "socorro", "barra dos coqueiros", "propria", "sao cristovao", "tobias barreto", "capela", "simao dias", "itabaianinha", "caninde", "laranjeiras", "itaporanga", "poco redondo", "neopolis", "boquim", "umbauba", "cristinapolis", "aquidaba"],
   "sergipe": ["sergipe", "sergipano", "estado", "governo do estado", "tce", "mp-se", "mpe", "tribunal de contas", "governo de sergipe", "governo estadual", "governador de sergipe"],
@@ -461,7 +476,7 @@ function resolveFinalCategoryId(args: {
   if (defaultSlug === "brasil" || defaultSlug === "mundo") {
     return args.categoryBySlug.get("brasil") ?? args.categoryBySlug.get("municipios") ?? null;
   }
-  return args.categoryBySlug.get("municipios") ?? args.categoryBySlug.get("sergipe") ?? args.categoryBySlug.get("brasil") ?? null;
+  return args.categoryBySlug.get("sergipe") ?? args.categoryBySlug.get("municipios") ?? args.categoryBySlug.get("brasil") ?? null;
 }
 
 // Tenta buscar og:image / twitter:image da própria URL da matéria como fallback.
@@ -793,7 +808,7 @@ async function captureFromSource(
       }
 
       const cleanDesc = cleanContent(item.description);
-      const originalTitle = item.title.slice(0, 300);
+      const originalTitle = cleanTitle(item.title).slice(0, 300);
 
       // Fase 5: sempre que possível, buscar o CORPO COMPLETO do artigo na página da fonte.
       // Reaproveita o mesmo fetch para extrair mídia (og:image + vídeos) — evita chamada dupla.
