@@ -1,4 +1,7 @@
-project_id = "faubrqvkzgyfryfjylnb"
+project_id = "rjqjzmqzgzaepryvqvxn"
 
 [functions.trigger-site-rebuild]
 verify_jwt = false
+
+[auth]
+enable_signup = false
