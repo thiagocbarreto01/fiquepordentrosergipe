@@ -11,7 +11,7 @@ import logoFiquePorDentro from "@/assets/logo-fique-por-dentro.png";
 import sponsorsStrip from "@/assets/sponsors-strip.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
-const SUPABASE_PUBLIC_MEDIA_PREFIX = `${String(import.meta.env.VITE_SUPABASE_URL ?? "").replace(//+$/, "")}/storage/v1/object/public/media/`;
+const SUPABASE_PUBLIC_MEDIA_PREFIX = `${String(import.meta.env.VITE_SUPABASE_URL ?? "").replace(/\/+$/, "")}/storage/v1/object/public/media/`;
 
 // =============================================================================
 // Brand palette — TV Barretão / portal regional inspired
