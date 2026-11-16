@@ -4,9 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "tsx scripts/generate-sitemap.ts",
     "dev": "vite",
-    "prebuild": "tsx scripts/generate-sitemap.ts",
     "build": "vite build",
     "postbuild": "tsx scripts/prerender-news.ts",
     "build:dev": "vite build --mode development",
