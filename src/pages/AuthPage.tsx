@@ -5,7 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import logo from "@/assets/logo-fique-por-dentro.png";
 import { z } from "zod";
@@ -19,7 +18,6 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
 
   useEffect(() => {
     document.title = "Entrar — Fique Por Dentro Sergipe";
@@ -36,25 +34,9 @@ export default function AuthPage() {
     toast.success("Bem-vindo(a)!");
   }
 
-  async function signUp() {
-    const e = emailSchema.safeParse(email); if (!e.success) return toast.error(e.error.issues[0].message);
-    const p = passwordSchema.safeParse(password); if (!p.success) return toast.error(p.error.issues[0].message);
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { display_name: name || email.split("@")[0] },
-      },
-    });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Cadastro enviado. Aguarde aprovação do administrador.");
-  }
-
   async function reset() {
     const e = emailSchema.safeParse(email); if (!e.success) return toast.error("Informe um e-mail válido para recuperar.");
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/` });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/redefinir-senha` });
     if (error) return toast.error(error.message);
     toast.success("Enviamos um link para seu e-mail.");
   }
@@ -68,31 +50,16 @@ export default function AuthPage() {
         <h1 className="font-display text-2xl font-black text-center mb-1">Acesso da Redação</h1>
         <p className="text-sm text-muted-foreground text-center mb-6">Área restrita para equipe Fique Por Dentro Sergipe</p>
 
-        <Tabs defaultValue="login">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="login">Entrar</TabsTrigger>
-            <TabsTrigger value="signup">Criar conta</TabsTrigger>
-          </TabsList>
-          <TabsContent value="login" className="space-y-3 pt-4">
-            <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <div><Label>Senha</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-            <Button onClick={signIn} disabled={loading} className="w-full bg-primary hover:bg-primary/90 font-bold uppercase tracking-wider">
-              {loading ? "Entrando…" : "Entrar"}
-            </Button>
-            <button type="button" onClick={reset} className="text-xs text-muted-foreground hover:text-primary block w-full text-center">
-              Esqueci minha senha
-            </button>
-          </TabsContent>
-          <TabsContent value="signup" className="space-y-3 pt-4">
-            <div><Label>Nome</Label><Input value={name} onChange={(e) => setName(e.target.value)} /></div>
-            <div><Label>E-mail</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-            <div><Label>Senha</Label><Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-            <Button onClick={signUp} disabled={loading} className="w-full bg-urgent hover:bg-urgent/90 text-urgent-foreground font-bold uppercase tracking-wider">
-              {loading ? "Criando…" : "Criar conta"}
-            </Button>
-            <p className="text-xs text-muted-foreground">A primeira pessoa que criar conta deve ser promovida a admin pelo banco. Após isso, o admin gerencia papéis pelo painel.</p>
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-3">
+          <div><Label htmlFor="auth-email">E-mail</Label><Input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+          <div><Label htmlFor="auth-password">Senha</Label><Input id="auth-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") signIn(); }} /></div>
+          <Button onClick={signIn} disabled={loading} className="w-full bg-primary hover:bg-primary/90 font-bold uppercase tracking-wider">
+            {loading ? "Entrando…" : "Entrar"}
+          </Button>
+          <button type="button" onClick={reset} className="text-xs text-muted-foreground hover:text-primary block w-full text-center">
+            Esqueci minha senha
+          </button>
+        </div>
       </div>
     </div>
   );

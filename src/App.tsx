@@ -15,6 +15,7 @@ import UltimasPage from "./pages/UltimasPage";
 import BuscaPage from "./pages/BuscaPage";
 import EnviarDenunciaPage from "./pages/EnviarDenunciaPage";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPosts from "./pages/admin/AdminPosts";
 import AdminPostEditor from "./pages/admin/AdminPostEditor";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/materia/:slug" element={<NoticiaPage />} />
             <Route path="/denuncias/enviar" element={<EnviarDenunciaPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
 
             <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
             <Route path="/painel" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
